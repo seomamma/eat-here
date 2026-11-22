@@ -66,6 +66,16 @@ export function Toasts() {
               </div>
             </Card>
           </div>
+        ) : t.kind === 'notice' ? (
+          <div
+            class="toast toast--notice interactive"
+            key={t.id}
+            onClick={() => dismissToast(t.id)}
+          >
+            <Card accent="sky">
+              <span class="toast-line">{t.text}</span>
+            </Card>
+          </div>
         ) : (
           <div
             class={`toast toast--gift${INGREDIENTS[t.ingredient].rarity === 'rare' ? ' toast--rare' : ''} interactive`}

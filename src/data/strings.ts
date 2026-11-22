@@ -1,6 +1,21 @@
 /** All player-facing UI strings (English). */
 export const STRINGS = {
   gameTitle: 'EAT HERE!',
+  title: {
+    subtitle: 'A cozy pizzeria',
+    continue: 'Continue',
+    newGame: 'New Game',
+    summary: (day: number, rank: string, coins: number) =>
+      `Day ${day} \u00b7 ${rank} \u00b7 ${coins} coins`,
+    confirmTitle: 'Start over?',
+    confirmBody: 'Your pizzeria will be lost.',
+    cancel: 'Cancel',
+    startOver: 'Start over',
+  },
+  notice: {
+    restoredBackup: 'We restored your last good save.',
+    saveFailed: "Couldn't save your game. Free some browser storage.",
+  },
   moneyLabel: 'Money',
   weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   hudDayLine: (day: number, weekday: string, time: string) =>

@@ -7,8 +7,11 @@ import { ShopPanel } from './components/ShopPanel';
 import { Toasts } from './components/Toasts';
 import { RankUpModal } from './components/RankUpModal';
 import { ReportModal } from './components/ReportModal';
+import { TitleScreen } from './components/TitleScreen';
+import { screen } from './store';
 
 export function App() {
+  if (screen.value === 'title') return <TitleScreen />;
   return (
     <>
       <NightOverlay />

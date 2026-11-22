@@ -38,7 +38,8 @@ export const recipeStates = signal<GameState['recipes']>({} as GameState['recipe
 
 export type Toast =
   | { id: number; kind: 'level'; recipeId: RecipeId; level: number }
-  | { id: number; kind: 'gift'; guestName: string; ingredient: IngredientId };
+  | { id: number; kind: 'gift'; guestName: string; ingredient: IngredientId }
+  | { id: number; kind: 'notice'; text: string };
 /** Transient feedback cards (level up, gifts); they dismiss themselves and never pause the sim. */
 export const toasts = signal<Toast[]>([]);
 const TOAST_MS = 4000;
@@ -46,7 +47,7 @@ let nextToastId = 1;
 
 type NewToast = Toast extends infer T ? (T extends Toast ? Omit<T, 'id'> : never) : never;
 
-function pushToast(toast: NewToast): void {
+export function pushToast(toast: NewToast): void {
   const id = nextToastId++;
   toasts.value = [...toasts.value, { ...toast, id } as Toast];
   setTimeout(() => dismissToast(id), TOAST_MS);
@@ -55,6 +56,18 @@ function pushToast(toast: NewToast): void {
 export function dismissToast(id: number): void {
   toasts.value = toasts.value.filter((t) => t.id !== id);
 }
+
+/** Which full-screen view is up: the title menu (no sim running) or the game. */
+export const screen = signal<'title' | 'game'>('title');
+
+/** What the title screen shows and does; filled in by main before the first render. */
+export interface TitleMenu {
+  /** Null when there is no valid save. */
+  save: { day: number; rankName: string; money: number } | null;
+  onContinue: () => void;
+  onNewGame: () => void;
+}
+export const titleMenu = signal<TitleMenu | null>(null);
 
 /** Snapshot of the selected guest for the info card. */
 export interface GuestCardInfo {
