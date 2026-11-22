@@ -97,10 +97,11 @@ Every guest arrives with an **empty bar** (0–100, shown as 5 stars filling up 
 
 | Experience | Points (draft) |
 |---|---|
-| Got seated quickly | +10 |
-| Order taken quickly | +5 |
-| Food arrived quickly | +10 |
-| Dish quality (recipe level × 5, + favorite bonus) | +10 … +30 |
+| Nice little place (always, when they sit down) | +10 |
+| Got seated quickly (≤ 15 s) | +15 |
+| Order taken quickly (≤ 10 s) | +10 |
+| Food arrived quickly (≤ 25 s) | +15 |
+| Dish quality (10 + recipe level × 5, + favorite bonus) | +15 … +35 |
 | Decor appeal near their seat (sum of appeal in radius) | +0 … +20 |
 | Used toilet (post-MVP) | +10 |
 | Looked at special decor while walking (post-MVP) | +5 each |
@@ -181,14 +182,14 @@ All furniture is data-driven: size (footprint), price, **appeal**, function (sea
 
 Fame accumulates from happy guests. Hitting thresholds triggers a **RANK UP!** with fanfare, and each rank unlocks something.
 
-| Rank | Name | Fame needed (draft) | Unlocks |
+| Rank | Name | Fame needed | Unlocks |
 |---|---|---|---|
 | 1 | Hole in the Wall | 0 | start |
-| 2 | Neighborhood Spot | 50 | Pepperoni, more guests per day |
-| 3 | Local Favorite | 200 | new decor, staff hiring (post-MVP) |
-| 4 | Talk of the Town | 600 | expansion, new guest type |
-| 5 | City Classic | 1500 | regulars, more ovens |
-| 6 | Legendary Pizzeria | 4000 | **ending celebration** |
+| 2 | Neighborhood Spot | 350 | Pepperoni, more guests per day |
+| 3 | Local Favorite | 1400 | new decor, staff hiring (post-MVP) |
+| 4 | Talk of the Town | 4200 | expansion, new guest type |
+| 5 | City Classic | 10500 | regulars, more ovens |
+| 6 | Legendary Pizzeria | 28000 | **ending celebration** |
 
 Higher rank → more guests arrive per day (spawn rate grows with rank and appeal).
 

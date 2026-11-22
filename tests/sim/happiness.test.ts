@@ -8,6 +8,7 @@ import {
 } from '../../src/data/happiness';
 import { FURNITURE } from '../../src/data/furniture';
 import { GUEST_NAMES } from '../../src/data/guests';
+import { RANKS } from '../../src/data/ranks';
 import { RECIPES } from '../../src/data/recipes';
 import { isGuest, isStaff, type Guest } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
@@ -59,26 +60,29 @@ describe('happiness points', () => {
     expect(GUEST_NAMES).toContain(guest.name);
   });
 
-  it('seated quickly: +10 within the limit, 0 just beyond it', () => {
+  it('welcome +10 is always given; seated quickly +15 within the limit, 0 just beyond it', () => {
     const fast = setup();
     fast.state.tick = fast.guest.stepTick + secToTicks(SEAT_QUICK_SEC);
     onSeated(fast.state, fast.guest);
-    expect(fast.guest.happiness).toBe(10);
-    expect(fast.guest.happinessLog).toEqual([{ reason: 'seated', points: 10 }]);
+    expect(fast.guest.happiness).toBe(25);
+    expect(fast.guest.happinessLog).toEqual([
+      { reason: 'welcome', points: 10 },
+      { reason: 'seated', points: 15 },
+    ]);
 
     const slow = setup();
     slow.state.tick = slow.guest.stepTick + secToTicks(SEAT_QUICK_SEC) + 1;
     onSeated(slow.state, slow.guest);
-    expect(slow.guest.happiness).toBe(0);
-    expect(slow.guest.happinessLog).toEqual([]);
+    expect(slow.guest.happiness).toBe(10);
+    expect(slow.guest.happinessLog).toEqual([{ reason: 'welcome', points: 10 }]);
   });
 
-  it('order taken quickly: +5, slow gives nothing, and the next step restarts the timer', () => {
+  it('order taken quickly: +10, slow gives nothing, and the next step restarts the timer', () => {
     const fast = setup();
     fast.state.tick = 500;
     fast.guest.stepTick = 500 - secToTicks(ORDER_QUICK_SEC);
     onOrderTaken(fast.state, fast.guest);
-    expect(fast.guest.happiness).toBe(5);
+    expect(fast.guest.happiness).toBe(10);
     expect(fast.guest.stepTick).toBe(500);
 
     const slow = setup();
@@ -88,16 +92,16 @@ describe('happiness points', () => {
     expect(slow.guest.happiness).toBe(0);
   });
 
-  it('food quickly: +10, plus dish quality 10 at level 1 (no decor)', () => {
+  it('food quickly: +15, plus dish quality 15 at level 1 (no decor)', () => {
     const { state, guest } = setup();
     state.tick = 1000;
     guest.stepTick = 1000 - secToTicks(FOOD_QUICK_SEC);
     onServed(state, guest);
     expect(guest.happinessLog).toEqual([
-      { reason: 'food', points: 10 },
-      { reason: 'quality', points: 10 },
+      { reason: 'food', points: 15 },
+      { reason: 'quality', points: 15 },
     ]);
-    expect(guest.happiness).toBe(20);
+    expect(guest.happiness).toBe(30);
   });
 
   it('slow food gives only the quality points', () => {
@@ -105,24 +109,24 @@ describe('happiness points', () => {
     state.tick = 1000;
     guest.stepTick = 1000 - secToTicks(FOOD_QUICK_SEC) - 1;
     onServed(state, guest);
-    expect(guest.happinessLog).toEqual([{ reason: 'quality', points: 10 }]);
+    expect(guest.happinessLog).toEqual([{ reason: 'quality', points: 15 }]);
   });
 
-  it('dish quality follows the recipe level: 5 + 5 x level', () => {
-    expect([1, 2, 3, 5].map(qualityPoints)).toEqual([10, 15, 20, 30]);
+  it('dish quality follows the recipe level: 10 + 5 x level', () => {
+    expect([1, 2, 3, 5].map(qualityPoints)).toEqual([15, 20, 25, 35]);
     const { state, guest } = setup();
     state.recipes.marinara.level = 3;
     state.tick = guest.stepTick + secToTicks(FOOD_QUICK_SEC) + 100;
     onServed(state, guest);
-    expect(guest.happinessLog).toEqual([{ reason: 'quality', points: 20 }]);
+    expect(guest.happinessLog).toEqual([{ reason: 'quality', points: 25 }]);
   });
 
-  it('a perfect Lv.1 visit without decor adds up to 35', () => {
+  it('a perfect Lv.1 visit without decor adds up to 65', () => {
     const { state, guest } = setup();
     onSeated(state, guest);
     onOrderTaken(state, guest);
     onServed(state, guest);
-    expect(guest.happiness).toBe(10 + 5 + 10 + 10);
+    expect(guest.happiness).toBe(10 + 15 + 10 + 15 + 15);
   });
 
   it('never exceeds the maximum', () => {
@@ -281,7 +285,7 @@ describe('visit integration', () => {
   it('is deterministic including fame and rank', () => {
     const run = () => {
       const g = openGame(9);
-      g.state.fame = 140;
+      g.state.fame = (RANKS[1]?.fame ?? 0) - 10;
       for (let i = 0; i < 4000; i++) g.tickOnce();
       return JSON.stringify(g.state);
     };

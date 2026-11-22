@@ -4,21 +4,23 @@
 export const HAPPINESS_MAX = 100;
 
 /** A step is "quick" when it took at most this many seconds; slow steps give 0 (no penalty). */
-export const SEAT_QUICK_SEC = 10;
+export const SEAT_QUICK_SEC = 15;
 export const ORDER_QUICK_SEC = 10;
 export const FOOD_QUICK_SEC = 25;
 
 export const HAPPINESS_POINTS = {
+  /** Always awarded when the guest sits down (D-028: a cozy place is pleasant by default). */
+  welcome: 10,
   /** From arriving at the door until sitting on the chair (walking in included). */
-  seated: 10,
+  seated: 15,
   /** From raising the hand until the waiter has taken the order. */
-  order: 5,
+  order: 10,
   /** From the order being taken until the dish is served. */
-  food: 10,
+  food: 15,
 } as const;
 
-/** Dish quality points = base + recipe level * perLevel (Lv.1 = 10 ... Lv.5 = 30). */
-export const QUALITY_BASE = 5;
+/** Dish quality points = base + recipe level * perLevel (Lv.1 = 15 ... Lv.5 = 35). */
+export const QUALITY_BASE = 10;
 export const QUALITY_PER_LEVEL = 5;
 
 /** Decor appeal counts decor furniture within this Chebyshev radius (tiles) of the chair. */

@@ -39,6 +39,7 @@ export const STRINGS = {
     stars: (stars: number) => `${stars.toFixed(1)} of 5 stars`,
     noReasons: 'Nothing yet',
     reasons: {
+      welcome: 'Nice little place',
       seated: 'Seated quickly',
       order: 'Order taken quickly',
       food: 'Food came quickly',

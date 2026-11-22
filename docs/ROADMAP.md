@@ -103,7 +103,7 @@
 
 **Acceptance criteria**
 - [x] Each guest visibly fills their bar; values follow GAME_DESIGN table (unit tested).
-- [ ] Reaching 50 fame triggers RANK UP once (not again on reload).
+- [x] Reaching the Rank 2 threshold triggers RANK UP once (reload part verified in M9).
 - [x] Pepperoni appears on the menu after rank up and guests order it.
 
 ### M7 — Build mode & first purchase

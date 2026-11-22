@@ -1,7 +1,7 @@
 /**
  * Restaurant ranks (GAME_DESIGN §9). Fame thresholds, unlocks and arrival-rate bonus per rank.
- * Thresholds are 3x the GAME_DESIGN draft: with ~25 guests/day at ~2.3 fame each the draft
- * 50 fame arrived at the end of day 1; 150 gives rank 2 on day 3 (measured in M6).
+ * Thresholds are 7x the GAME_DESIGN draft (D-028): happiness scale was raised, so fame per
+ * guest is higher; 350 puts rank 2 around day 3 (measured in M6).
  */
 import type { RecipeId } from './recipes';
 
@@ -24,7 +24,7 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 2,
     name: 'Neighborhood Spot',
-    fame: 150,
+    fame: 350,
     recipes: ['pepperoni'],
     perks: ['More guests per day'],
     spawnRate: 1.15,
@@ -32,7 +32,7 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 3,
     name: 'Local Favorite',
-    fame: 600,
+    fame: 1400,
     recipes: [],
     perks: ['New decor', 'More guests per day'],
     spawnRate: 1.3,
@@ -40,7 +40,7 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 4,
     name: 'Talk of the Town',
-    fame: 1800,
+    fame: 4200,
     recipes: [],
     perks: ['Expansion', 'New guest type', 'More guests per day'],
     spawnRate: 1.5,
@@ -48,7 +48,7 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 5,
     name: 'City Classic',
-    fame: 4500,
+    fame: 10500,
     recipes: [],
     perks: ['Regulars', 'More ovens', 'More guests per day'],
     spawnRate: 1.7,
@@ -56,7 +56,7 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 6,
     name: 'Legendary Pizzeria',
-    fame: 12000,
+    fame: 28000,
     recipes: [],
     perks: ['Ending celebration'],
     spawnRate: 2,

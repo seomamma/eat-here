@@ -18,7 +18,7 @@ import { footprintTiles, type Furniture } from '../grid';
 import type { GameState } from '../state';
 import { secToTicks } from './spawner';
 
-export type HappinessReason = 'seated' | 'order' | 'food' | 'quality' | 'decor';
+export type HappinessReason = 'welcome' | 'seated' | 'order' | 'food' | 'quality' | 'decor';
 
 export interface HappinessEntry {
   reason: HappinessReason;
@@ -68,8 +68,9 @@ export function checkSlow(state: GameState, events: Emitter<GameEvents>, g: Gues
   events.emit('guestEmote', { guestId: g.id, emote: 'slow' });
 }
 
-/** The guest sat down: quick seating pays off. */
+/** The guest sat down: the welcome bonus is always given, quick seating pays extra. */
 export function onSeated(state: GameState, g: Guest): void {
+  awardHappiness(g, 'welcome', HAPPINESS_POINTS.welcome);
   if (tookAtMost(state, g, SEAT_QUICK_SEC)) awardHappiness(g, 'seated', HAPPINESS_POINTS.seated);
   beginStep(state, g);
 }
