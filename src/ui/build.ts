@@ -1,4 +1,4 @@
-import { signal } from '@preact/signals';
+import { computed, signal } from '@preact/signals';
 import {
   FURNITURE,
   type FurnitureCategory,
@@ -103,6 +103,19 @@ export function openGuests(): void {
 
 /** Pause reason held while build mode is on (placing or moving): time stands still. */
 const BUILD_PAUSE = 'build';
+/** Pause reason held while any menu or panel is open (the guest info card is not a menu). */
+const MENU_PAUSE = 'menu';
+
+/** True while the Menu hub, Shop (either tab), Recipes, Guests book, Settings or Today is open. */
+export const anyMenuOpen = computed(
+  () =>
+    menuOpen.value ||
+    shopOpen.value ||
+    recipesOpen.value ||
+    guestsOpen.value ||
+    settingsOpen.value ||
+    todayOpen.value,
+);
 
 let simRef: Game | null = null;
 
@@ -121,6 +134,10 @@ export function bindBuild(sim: Game): void {
   buildMode.subscribe((on) => {
     if (on) sim.pause(BUILD_PAUSE);
     else sim.resume(BUILD_PAUSE);
+  });
+  anyMenuOpen.subscribe((open) => {
+    if (open) sim.pause(MENU_PAUSE);
+    else sim.resume(MENU_PAUSE);
   });
   // Money changes the validity of a new purchase (e.g. debug top-up).
   sim.events.on('moneyChanged', () => refresh());

@@ -19,6 +19,7 @@ import {
 } from './systems/surfaces';
 import { checkMoments } from './systems/moments';
 import { replanAfterBuild } from './systems/replan';
+import { relocateAfterMove } from './systems/relocate';
 import { tickGuests } from './systems/guests';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 import { tickStaff } from './systems/staff';
@@ -259,9 +260,13 @@ export class Game {
     if (!check.ok) return check;
     const piece = this.state.furniture.find((f) => f.id === id);
     if (!piece) return { ok: false, reason: 'unknownFurniture' };
+    const from = { x: piece.x, y: piece.y, rot: piece.rot };
     piece.x = x;
     piece.y = y;
     piece.rot = rot;
+    this.invalidateWalkGrid();
+    // Users of the piece go with it; anyone on the new footprint is nudged aside.
+    relocateAfterMove({ state: this.state, walk: this.walk(), events: this.events }, piece, from);
     this.afterFurnitureChange();
     this.events.emit('furnitureMoved', { id, x, y, rot });
     return { ok: true };

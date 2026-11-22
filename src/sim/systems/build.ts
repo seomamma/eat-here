@@ -17,8 +17,9 @@ import type { GameState } from '../state';
 
 export type PlacementReason =
   'outOfBounds' | 'notFloor' | 'overlap' | 'blocksWay' | 'characterHere';
+/** Pieces in use can be moved (M12b): characters are relocated or nudged by `relocateAfterMove`. */
 export type BuyReason = PlacementReason | 'notNow' | 'notInShop' | 'locked' | 'notEnoughMoney';
-export type MoveReason = PlacementReason | 'notNow' | 'unknownFurniture' | 'inUse';
+export type MoveReason = PlacementReason | 'notNow' | 'unknownFurniture';
 
 export type PlacementResult = { ok: true } | { ok: false; reason: PlacementReason };
 export type BuyResult = { ok: true } | { ok: false; reason: BuyReason };
@@ -32,7 +33,7 @@ const NEIGHBOURS: readonly [number, number][] = [
 ];
 
 /** Tiles reachable from `from` over walkable tiles (4-directional flood fill). */
-function reachableFrom(walk: WalkGrid, from: TilePos): Set<number> {
+export function reachableFrom(walk: WalkGrid, from: TilePos): Set<number> {
   const seen = new Set<number>();
   if (!isWalkable(walk, from.x, from.y)) return seen;
   const queue = [from.y * walk.width + from.x];
@@ -97,8 +98,9 @@ function characterTiles(state: GameState): Set<string> {
 }
 
 /**
- * A piece that cannot be moved right now: a chair claimed by a guest, a table a seated guest
+ * A piece that cannot be sold right now: a chair claimed by a guest, a table a seated guest
  * faces, the oven while a chef works at it, a pass with reserved dishes or staff using it.
+ * Moving such a piece is allowed (`relocateAfterMove` carries the users along).
  */
 export function isInUse(state: GameState, f: Furniture): boolean {
   const guests = state.characters.filter(isGuest);
@@ -166,6 +168,8 @@ export function validatePlacement(
   y: number,
   rot: Rot,
   ignoreFurnitureId?: string,
+  /** Moving: characters on the footprint are nudged aside instead of refusing the placement. */
+  allowCharacters = false,
 ): PlacementResult {
   const others = state.furniture.filter((f) => f.id !== ignoreFurnitureId);
   const occupied = buildOccupancy(others);
@@ -175,12 +179,16 @@ export function validatePlacement(
   for (const t of tiles) {
     const type = tileAt(state.grid, t.x, t.y);
     if (type === 'door') return { ok: false, reason: 'blocksWay' };
+    // Guests step in from the door onto the tile in front of it: it stays free.
+    if (t.x === DOOR_X && t.y === DOOR_Y - 1) return { ok: false, reason: 'blocksWay' };
     if (type !== 'floor_wood' && type !== 'floor_tile') return { ok: false, reason: 'notFloor' };
   }
   if (tiles.some((t) => occupied.has(`${t.x},${t.y}`))) return { ok: false, reason: 'overlap' };
-  const standing = characterTiles(state);
-  if (tiles.some((t) => standing.has(`${t.x},${t.y}`))) {
-    return { ok: false, reason: 'characterHere' };
+  if (!allowCharacters) {
+    const standing = characterTiles(state);
+    if (tiles.some((t) => standing.has(`${t.x},${t.y}`))) {
+      return { ok: false, reason: 'characterHere' };
+    }
   }
   const piece: Furniture = { id: '__placing', defId, x, y, rot, level: 1 };
   if (!reachabilityOk(state, [...others, piece])) return { ok: false, reason: 'blocksWay' };
@@ -202,7 +210,7 @@ export function validateBuy(
   return validatePlacement(state, defId, x, y, rot);
 }
 
-/** Everything `moveFurniture` checks (phase, piece in use, placement); a pure query for the UI. */
+/** Everything `moveFurniture` checks (phase, placement); a pure query for the UI. */
 export function validateMove(
   state: GameState,
   id: string,
@@ -213,8 +221,7 @@ export function validateMove(
   if (state.clock.phase === 'night') return { ok: false, reason: 'notNow' };
   const piece = state.furniture.find((f) => f.id === id);
   if (!piece) return { ok: false, reason: 'unknownFurniture' };
-  if (isInUse(state, piece)) return { ok: false, reason: 'inUse' };
-  return validatePlacement(state, piece.defId, x, y, rot, id);
+  return validatePlacement(state, piece.defId, x, y, rot, id, true);
 }
 
 /** Valid tile closest to the room centre for a new piece (rot 0), or null when none fits. */

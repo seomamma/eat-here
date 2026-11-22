@@ -227,6 +227,7 @@ export const STRINGS = {
   statusNight: 'Night',
   statusPaused: 'Paused',
   statusPausedSub: 'building',
+  statusPausedMenu: 'menu',
   night: { day: (day: number) => `Day ${day}` },
   report: {
     title: (day: number) => `Day ${day} closed`,

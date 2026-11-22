@@ -293,7 +293,7 @@ describe('days with vending machine and toilet', () => {
     });
   }
 
-  it('a sold or moved machine is refused while a guest uses it, then works again', () => {
+  it('a machine a guest uses cannot be sold, but can be moved', () => {
     setChance(1, 0);
     const g = openGame(14);
     g.state.rank = 3;
@@ -309,9 +309,9 @@ describe('days with vending machine and toilet', () => {
       ok: false,
       reason: 'inUse',
     });
-    expect(g.dispatch({ type: 'moveFurniture', id: vm.id, x: 7, y: 5, rot: 0 })).toEqual({
-      ok: false,
-      reason: 'inUse',
+    // Moving is allowed: the user is carried along (see relocate.test.ts).
+    expect(g.dispatch({ type: 'moveFurniture', id: vm.id, x: 7 + OX, y: 5 + OY, rot: 0 })).toEqual({
+      ok: true,
     });
   });
 

@@ -13,7 +13,7 @@ function runUntil(g: Game, done: () => boolean, max = 6000): void {
 }
 
 describe('furniture in use', () => {
-  it('refuses to move a chair claimed by a guest and the table it faces', () => {
+  it('a chair claimed by a guest and the oven or pass at work cannot be sold, but can be moved', () => {
     const g = openGame(3);
     runUntil(g, () => g.state.characters.some((c) => isGuest(c) && c.seatId !== null));
     const guest = g.state.characters.find((c) => isGuest(c) && c.seatId);
@@ -21,44 +21,18 @@ describe('furniture in use', () => {
     const chair = g.state.furniture.find((f) => f.id === guest.seatId);
     if (!chair) throw new Error('no chair');
     expect(isInUse(g.state, chair)).toBe(true);
-    expect(g.dispatch({ type: 'moveFurniture', id: chair.id, x: 8, y: 9, rot: 0 })).toEqual({
+    expect(g.dispatch({ type: 'sellFurniture', id: chair.id })).toEqual({
       ok: false,
       reason: 'inUse',
     });
-    // Rotating in place counts as moving.
-    expect(
-      g.dispatch({ type: 'moveFurniture', id: chair.id, x: chair.x, y: chair.y, rot: 0 }),
-    ).toEqual({ ok: false, reason: 'inUse' });
-    const table = g.state.furniture.find(
-      (f) => f.defId === 'table_small' && Math.abs(f.x - chair.x) + Math.abs(f.y - chair.y) === 1,
-    );
-    if (!table) throw new Error('no table');
-    expect(g.dispatch({ type: 'moveFurniture', id: table.id, x: 8, y: 9, rot: 0 })).toEqual({
-      ok: false,
-      reason: 'inUse',
-    });
-    // The other table and its chairs are free as long as nobody claimed them.
-    const others = g.state.furniture.filter(
-      (f) => f.defId === 'table_small' && f.id !== table.id && !isInUse(g.state, f),
-    );
-    for (const t of others) expect(isInUse(g.state, t)).toBe(false);
-  });
-
-  it('refuses to move the oven while a chef cooks and the pass while dishes are on it', () => {
-    const g = openGame(3);
+    // Rotating in place is a move, and moves are allowed while in use (see relocate.test.ts).
+    expect(validateMove(g.state, chair.id, chair.x, chair.y, 0).ok).toBe(true);
     const oven = g.state.furniture.find((f) => f.defId === 'oven_pizza');
-    const pass = g.state.furniture.find((f) => f.defId === 'counter_pass');
-    if (!oven || !pass) throw new Error('missing stations');
+    if (!oven) throw new Error('missing oven');
     expect(isInUse(g.state, oven)).toBe(false);
     runUntil(g, () => g.state.characters.some((c) => isStaff(c) && c.action === 'cook'));
-    expect(
-      g.dispatch({ type: 'moveFurniture', id: oven.id, x: oven.x, y: oven.y, rot: 0 }),
-    ).toEqual({ ok: false, reason: 'inUse' });
-    runUntil(g, () => g.state.orders.some((o) => o.slot !== null));
-    expect(validateMove(g.state, pass.id, pass.x, pass.y, 0)).toEqual({
-      ok: false,
-      reason: 'inUse',
-    });
+    expect(isInUse(g.state, oven)).toBe(true);
+    expect(validateMove(g.state, oven.id, oven.x, oven.y, 0).ok).toBe(true);
   });
 });
 
@@ -110,7 +84,14 @@ describe('building while the restaurant runs', () => {
     const g = new Game(createInitialState(11));
     g.state.money = 5000;
     // The start tables are rarely free at runtime; an extra table without chairs always is.
-    g.state.furniture.push({ id: 'extra', defId: 'table_small', x: 7, y: 6, rot: 0, level: 1 });
+    g.state.furniture.push({
+      id: 'extra',
+      defId: 'table_small',
+      x: 7 + OX,
+      y: 6 + OY,
+      rot: 0,
+      level: 1,
+    });
     let moves = 0;
     let buys = 0;
     for (let day = 1; day <= 3; day++) {
@@ -124,14 +105,16 @@ describe('building while the restaurant runs', () => {
           // Shuffle a table between two places and drop a plant somewhere free.
           const tables = g.state.furniture.filter((f) => f.defId === 'table_small');
           for (const table of tables) {
-            const to = table.y <= 7 ? table.y + 3 : table.y - 3;
+            const to = table.y <= 7 + OY ? table.y + 3 : table.y - 3;
             if (g.dispatch({ type: 'moveFurniture', id: table.id, x: table.x, y: to, rot: 0 }).ok) {
               moves++;
             }
           }
           if (t % 69 === 0) {
-            const x = 1 + ((t / 69) % 8);
-            if (g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x, y: 7, rot: 0 }).ok) {
+            const x = 1 + OX + ((t / 69) % 8);
+            if (
+              g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x, y: 7 + OY, rot: 0 }).ok
+            ) {
               buys++;
             }
           }

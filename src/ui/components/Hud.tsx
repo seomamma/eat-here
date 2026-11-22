@@ -2,7 +2,7 @@ import { DAY_CLOSE_MINUTE } from '../../data/balance';
 import { STRINGS } from '../../data/strings';
 import { formatClock, formatHour, weekdayIndex } from '../../sim/time';
 import { RANKS, rankDef } from '../../data/ranks';
-import { buildMode, todayOpen } from '../build';
+import { anyMenuOpen, buildMode, todayOpen } from '../build';
 import { day, fame, minuteOfDay, money, phase, rank } from '../store';
 import { Card } from './Card';
 import { MoneyAmount } from './MoneyAmount';
@@ -76,10 +76,10 @@ function StatusBadge() {
   let key: string;
   let label: string;
   let sub: string | null = null;
-  if (buildMode.value) {
+  if (buildMode.value || anyMenuOpen.value) {
     key = 'paused';
     label = STRINGS.statusPaused;
-    sub = STRINGS.statusPausedSub;
+    sub = buildMode.value ? STRINGS.statusPausedSub : STRINGS.statusPausedMenu;
   } else if (p === 'night') {
     key = 'night';
     label = STRINGS.statusNight;

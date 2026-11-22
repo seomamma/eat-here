@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../../src/data/furniture';
-import { GRID_HEIGHT, GRID_WIDTH } from '../../src/data/layout';
+import { DOOR_X, DOOR_Y, GRID_HEIGHT, GRID_WIDTH } from '../../src/data/layout';
 import { SHOP_ITEMS } from '../../src/data/shop';
 import { STRINGS } from '../../src/data/strings';
 import { isGuest } from '../../src/sim/characters';
@@ -74,6 +74,11 @@ describe('validatePlacement', () => {
   it('keeps the door tile free', () => {
     const s = createInitialState(1);
     expect(reason(validatePlacement(s, 'plant_potted', 4, 11, 0))).toBe('blocksWay');
+  });
+
+  it('keeps the tile in front of the door free for arriving guests', () => {
+    const s = createInitialState(1);
+    expect(reason(validateAbs(s, 'plant_potted', DOOR_X, DOOR_Y - 1, 0))).toBe('blocksWay');
   });
 
   it('rejects overlap with other furniture', () => {

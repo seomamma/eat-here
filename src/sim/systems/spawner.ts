@@ -4,6 +4,7 @@ import { rankDef } from '../../data/ranks';
 import { DOOR_X, DOOR_Y } from '../../data/layout';
 import type { LookId, RegularId } from '../../data/regulars';
 import { isGuest, type Guest } from '../characters';
+import { furnitureAt } from '../grid';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
 
@@ -78,7 +79,7 @@ export function createGuest(state: GameState, o: NewGuest): Guest {
     prevX: x,
     prevY: y,
     // Walk in one tile from the door.
-    path: [{ x, y: y - 1 }],
+    path: furnitureAt(state, x, y - 1) ? [] : [{ x, y: y - 1 }],
     dir: 'ur',
   };
 }
