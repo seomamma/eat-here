@@ -11,10 +11,8 @@ import { interpolatePosition } from './interpolate';
 import { SPARKLE_FRAME_COUNT, levelTextureKey } from './levelTextures';
 import { floorStyleAt, wallStyleOf } from '../sim/systems/surfaces';
 import { coinRise, squash } from './juice';
+import { ART_ATLAS, artEntities } from './art';
 import {
-  CHAR_ANIMS,
-  CHAR_FRAME_COUNT,
-  CHAR_VARIANT_COUNT,
   COIN_TEX,
   DISH_TEX,
   EMOTE_TEX,
@@ -28,14 +26,10 @@ import {
   SPARKLE_TEX,
   TEX,
   WALL_BACK_RISE,
-  charTexKey,
   floorTexKey,
   furnitureTexKey,
   isMirroredRot,
-  lookVariant,
-  staffVariant,
   wallTexKey,
-  type CharAnim,
   type CharFacing,
 } from './placeholderTextures';
 
@@ -68,10 +62,6 @@ const SPARKLE_BLINK_MS = 650;
 /** Oven flicker period while baking. */
 const OVEN_FLICKER_MS = 220;
 
-/** Animation speed (ART_DIRECTION §6: 8 fps loops; idle breathing is slower). */
-const WALK_FPS = 8;
-const IDLE_FPS = 2;
-
 /** Front = down-right, back = up-right; the other two directions mirror them. */
 const DIR_VIEW: Record<IsoDir, { facing: CharFacing; flip: boolean }> = {
   dr: { facing: 'front', flip: false },
@@ -80,8 +70,8 @@ const DIR_VIEW: Record<IsoDir, { facing: CharFacing; flip: boolean }> = {
   ul: { facing: 'back', flip: true },
 };
 
-function animKey(variant: number, facing: CharFacing, anim: CharAnim): string {
-  return `char${variant}_${facing}_${anim}`;
+function animKey(entity: string, anim: string, facing: CharFacing): string {
+  return `${entity}_${anim}_${facing}`;
 }
 
 /** Seated guests sit just in front of their chair (same tile) and a bit higher than standing. */
@@ -94,31 +84,25 @@ const STEP_OF_DIR: Record<IsoDir, { x: number; y: number }> = {
   ul: { x: -1, y: 0 },
   ur: { x: 0, y: -1 },
 };
-/** Eating uses a slower loop than walking. */
-const EAT_FPS = 2;
-const COOK_FPS = 3;
 
-/** Palette index of a character: 0 = debug walker, guest variants follow. */
-function paletteOf(c: Character): number {
-  if (isStaff(c)) return staffVariant(c.role);
-  if (isGuest(c) && c.look) return lookVariant(c.look);
-  return isGuest(c) ? (c.variant % GUEST_VARIANTS) + 1 : 0;
-}
-/** Guest palettes are variants 1..3 (0 = debug walker, then staff). */
-const GUEST_VARIANTS = 3;
-
-function animOf(c: Character): CharAnim {
-  if (isStaff(c)) {
-    if (c.path.length > 0) return c.carrying ? 'carry' : 'walk';
-    return c.phase === 'working' && c.action === 'cook' ? 'cook' : 'idle';
-  }
-  if (c.path.length > 0) return 'walk';
+/** Atlas entity of a character: staff by role, named guests by look, others by body variant. */
+function entityOf(c: Character): string {
+  if (isStaff(c)) return c.role;
   if (isGuest(c)) {
-    if (c.phase === 'eating') return 'eat';
-    if (c.phase === 'browsing' || c.phase === 'paying') return 'sit';
+    if (c.look) return c.look;
+    return c.variant % GUEST_VARIANTS === 0 ? 'guest' : `guest${c.variant % GUEST_VARIANTS}`;
   }
-  return 'idle';
+  return 'guest';
 }
+/** Palette-swapped guest bodies (guest, guest1..guest3). */
+const GUEST_VARIANTS = 4;
+
+/** Chef at the oven: share of the cook time spent sliding the pizza in / taking it out. */
+const BAKE_SHARE = 0.25;
+const TAKE_SHARE = 0.2;
+/** In between, the chef stokes the fire for STOKE_TICKS every STOKE_PERIOD_TICKS. */
+const STOKE_TICKS = 12;
+const STOKE_PERIOD_TICKS = 50;
 
 /** Short-lived world effects (emote bubbles, coin popups), animated from scene time. */
 const EMOTE_POP_MS = 180;
@@ -167,6 +151,9 @@ export class WorldRenderer {
   private tilesBuilt = false;
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
+  /** Soft shadow under each character, and the cook time (ticks) a chef started with. */
+  private readonly shadows = new Map<string, Phaser.GameObjects.Image>();
+  private readonly cookTotals = new Map<string, number>();
   /** Floor tile images ("x,y") and back-wall segment images, restyled when the player paints. */
   private readonly floorImages = new Map<string, Phaser.GameObjects.Image>();
   private readonly wallImages = new Map<
@@ -193,31 +180,53 @@ export class WorldRenderer {
     this.createAnimations();
   }
 
+  /** One Phaser animation per atlas character entity and facing (from the anim manifest). */
   private createAnimations(): void {
-    const fps: Record<CharAnim, number> = {
-      walk: WALK_FPS,
-      idle: IDLE_FPS,
-      sit: IDLE_FPS,
-      eat: EAT_FPS,
-      carry: WALK_FPS,
-      cook: COOK_FPS,
-    };
-    for (let v = 0; v < CHAR_VARIANT_COUNT; v++) {
-      for (const facing of ['front', 'back'] as const) {
-        for (const anim of CHAR_ANIMS) {
-          const key = animKey(v, facing, anim);
-          if (this.scene.anims.exists(key)) continue;
-          this.scene.anims.create({
-            key,
-            frames: Array.from({ length: CHAR_FRAME_COUNT[anim] }, (_, i) => ({
-              key: charTexKey(v, facing, anim, i),
-            })),
-            frameRate: fps[anim],
-            repeat: -1,
-          });
-        }
+    for (const [entity, e] of Object.entries(artEntities(this.scene))) {
+      if (e.kind !== 'character') continue;
+      for (const [name, a] of Object.entries(e.anims)) {
+        const m = /^(.*)_(front|back)$/.exec(name);
+        if (!m) continue;
+        const key = animKey(entity, m[1] as string, m[2] as CharFacing);
+        if (this.scene.anims.exists(key)) continue;
+        this.scene.anims.create({
+          key,
+          frames: a.frames.map((frame) => ({ key: ART_ATLAS, frame })),
+          frameRate: a.fps,
+          repeat: a.loop ? -1 : 0,
+        });
       }
     }
+  }
+
+  /** Animation name of a character right now (falls back to idle when the entity lacks it). */
+  private animOf(c: Character): string {
+    if (isStaff(c)) {
+      if (c.path.length > 0) return c.carrying ? 'carry' : 'walk';
+      if (c.phase === 'working' && c.action === 'cook') return this.cookAnim(c);
+      this.cookTotals.delete(c.id);
+      if (c.phase === 'working' && c.action === 'takeOrder') return 'order';
+      return 'idle';
+    }
+    if (c.path.length > 0) return 'walk';
+    if (isGuest(c)) {
+      if (c.phase === 'eating') return 'eat';
+      if (c.phase === 'wantsToOrder') return 'hand';
+      if (c.phase === 'browsing' || c.phase === 'waitingForFood' || c.phase === 'paying')
+        return 'sit';
+    }
+    return 'idle';
+  }
+
+  /** Chef baking: slide the pizza in, stoke now and then, take it out at the end. */
+  private cookAnim(c: Character & { timer: number }): string {
+    const total = Math.max(this.cookTotals.get(c.id) ?? 0, c.timer);
+    this.cookTotals.set(c.id, total);
+    const done = total - c.timer;
+    if (done < total * BAKE_SHARE) return 'bake';
+    if (c.timer <= total * TAKE_SHARE) return 'take';
+    const t = done - total * BAKE_SHARE;
+    return t % STOKE_PERIOD_TICKS < STOKE_TICKS ? 'stoke' : 'idle';
   }
 
   /**
@@ -321,16 +330,20 @@ export class WorldRenderer {
       let sprite = this.characters.get(c.id);
       if (!sprite) {
         sprite = this.scene.add
-          .sprite(0, 0, charTexKey(paletteOf(c), 'front', 'idle', 0))
+          .sprite(0, 0, ART_ATLAS, `${entityOf(c)}_idle_front_0`)
           .setOrigin(0.5, 1);
         this.characters.set(c.id, sprite);
+        this.shadows.set(
+          c.id,
+          this.scene.add.image(0, 0, ART_ATLAS, 'shadow_still_none_0').setOrigin(0.5, 0.5),
+        );
       }
       const p = interpolatePosition(c, alpha);
       // Tile (x, y) has its diamond centre at tileToScreen(x + 0.5, y + 0.5).
       const o = tileToScreen(p.x + 0.5, p.y + 0.5);
       const view = DIR_VIEW[c.dir];
-      const anim = animOf(c);
-      const seated = anim === 'sit' || anim === 'eat';
+      const anim = this.animOf(c);
+      const seated = anim === 'sit' || anim === 'eat' || anim === 'hand';
       sprite
         .setPosition(
           Math.round(o.x),
@@ -338,12 +351,22 @@ export class WorldRenderer {
         ) // feet row sits on the centre pixel
         .setFlipX(view.flip)
         .setDepth(depthKey(p.x, p.y) + (seated ? DEPTH_SEATED_BIAS : 0));
-      sprite.play(animKey(paletteOf(c), view.facing, anim), true);
+      const entity = entityOf(c);
+      let key = animKey(entity, anim, view.facing);
+      if (!this.scene.anims.exists(key)) key = animKey(entity, 'idle', view.facing);
+      sprite.play(key, true);
+      this.shadows
+        .get(c.id)
+        ?.setPosition(sprite.x, Math.round(o.y) - 1)
+        .setVisible(!seated)
+        .setDepth(sprite.depth - 0.02);
     }
     for (const [id, sprite] of this.characters) {
       if (!live.has(id)) {
         sprite.destroy();
         this.characters.delete(id);
+        this.shadows.get(id)?.destroy();
+        this.shadows.delete(id);
       }
     }
     this.syncBubbles(state);

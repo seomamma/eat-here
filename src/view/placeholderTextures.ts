@@ -1,8 +1,6 @@
 import Phaser from 'phaser';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
-import type { LookId } from '../data/regulars';
-import { STAFF, type StaffRole } from '../data/staff';
 import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { TILE_H, TILE_W } from './iso';
 
@@ -74,75 +72,6 @@ export const TEX = {
 export const CHAR_W = 16;
 export const CHAR_H = 24;
 export type CharFacing = 'front' | 'back';
-export type CharAnim = 'idle' | 'walk' | 'sit' | 'eat' | 'carry' | 'cook';
-export const CHAR_ANIMS: readonly CharAnim[] = ['idle', 'walk', 'sit', 'eat', 'carry', 'cook'];
-export const CHAR_FRAME_COUNT: Record<CharAnim, number> = {
-  idle: 2,
-  walk: 4,
-  sit: 1,
-  eat: 2,
-  carry: 4,
-  cook: 2,
-};
-
-/**
- * Colour variants: 0 = debug walker, 1..3 = guest variants 0..2 (shirt dark/mid/light, hair).
- * Palette swaps share the same shapes (ART_DIRECTION §7: variants come from palette).
- */
-interface CharPalette {
-  shirt: readonly [string, string, string];
-  hair: string;
-  /** Front apron / vest colour (default cream). */
-  apron?: string;
-  role?: StaffRole;
-  /** Small pixel detail that makes a named guest recognisable. */
-  accessory?: 'bun_shawl' | 'cap' | 'ponytail';
-}
-const CHAR_PALETTES: readonly CharPalette[] = [
-  { shirt: [C.tomato1, C.tomato2, C.tomato3], hair: C.wood1 },
-  { shirt: [C.cool1, C.cool2, C.cool3], hair: C.wood1 },
-  { shirt: [C.basil1, C.basil2, C.basil3], hair: C.cheese1 },
-  { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.outline },
-];
-/** Looks of named guests (regulars and companions), placeholder art for Phase B. */
-const GREY_HAIR = '#B9B4B0';
-const LOOK_PALETTES: Record<LookId, CharPalette> = {
-  nonna_rosa: {
-    shirt: [C.cool1, C.cool2, C.cool3],
-    hair: GREY_HAIR,
-    apron: C.cool2,
-    accessory: 'bun_shawl',
-  },
-  oliver: { shirt: [C.basil1, C.basil2, C.basil3], hair: C.outline, accessory: 'cap' },
-  mia: { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.wood2, accessory: 'ponytail' },
-};
-const LOOK_IDS = Object.keys(LOOK_PALETTES) as LookId[];
-const STAFF_ROLES = Object.keys(STAFF) as StaffRole[];
-const GUEST_AND_DEBUG_COUNT = CHAR_PALETTES.length;
-/** Staff palettes follow the debug walker and guests, in the order of the STAFF data. */
-const ALL_PALETTES: readonly CharPalette[] = [
-  ...CHAR_PALETTES,
-  ...STAFF_ROLES.map((role) => ({ ...STAFF[role].palette, role })),
-  ...LOOK_IDS.map((id) => LOOK_PALETTES[id]),
-];
-export const CHAR_VARIANT_COUNT = ALL_PALETTES.length;
-export function staffVariant(role: StaffRole): number {
-  return GUEST_AND_DEBUG_COUNT + STAFF_ROLES.indexOf(role);
-}
-
-/** Palette index of a named guest's look. */
-export function lookVariant(look: LookId): number {
-  return GUEST_AND_DEBUG_COUNT + STAFF_ROLES.length + LOOK_IDS.indexOf(look);
-}
-
-export function charTexKey(
-  variant: number,
-  facing: CharFacing,
-  anim: CharAnim,
-  frame: number,
-): string {
-  return `char${variant}_${facing}_${anim}_${frame}`;
-}
 
 /** Emote bubbles and coin (16x16 / 7x7). */
 export const EMOTE_TEX = {
@@ -435,123 +364,8 @@ function doorFrame(): Raster {
 }
 
 // ---------------------------------------------------------------------------------------
-// Characters: 16x24, two facings (front = down-right, back = up-right; the others are mirrored)
+// Characters now come from the sprite atlas (assets/sprites/characters, D-040)
 // ---------------------------------------------------------------------------------------
-
-/** Crude placeholder person: head, torso, two legs, dark outline, feet on the last row. */
-function characterFrame(
-  variant: number,
-  facing: CharFacing,
-  anim: CharAnim,
-  frame: number,
-): Raster {
-  const pal = ALL_PALETTES[variant] ?? (ALL_PALETTES[0] as CharPalette);
-  const [shirt1, shirt2, shirt3] = pal.shirt;
-  const fill = new Raster(CHAR_W, CHAR_H);
-  const rect = (x0: number, y0: number, x1: number, y1: number, c: string) => {
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) fill.set(x, y, c);
-  };
-  const front = facing === 'front';
-  const walking = anim === 'walk' || anim === 'carry';
-  const sitting = anim === 'sit' || anim === 'eat';
-  // Upper body drops 1 px on contact frames (walk 0/2) and on the second idle frame (breathing).
-  // Seated: the whole body sits lower (legs are folded under the table).
-  let bob = walking ? (frame % 2 === 0 ? 1 : 0) : frame === 1 && anim === 'idle' ? 1 : 0;
-  if (sitting) bob = 5;
-  // Legs: [leftTop, rightTop, leftX, rightX] (a lifted foot ends higher).
-  let leftEnd = 23;
-  let rightEnd = 23;
-  let leftX = 4;
-  let rightX = 9;
-  if (walking) {
-    if (frame === 0) [leftX, rightX] = [3, 10];
-    if (frame === 1) leftEnd = 21;
-    if (frame === 2) [leftX, rightX] = [3, 10];
-    if (frame === 3) rightEnd = 21;
-  }
-  if (sitting) {
-    // Thighs/knees only, resting on the seat.
-    rect(4, 21, 11, 23, C.cool1);
-    rect(4, 23, 5, 23, C.wood1);
-    rect(10, 23, 11, 23, C.wood1);
-  } else {
-    rect(leftX, 18, leftX + 2, leftEnd, C.cool1);
-    rect(rightX, 18, rightX + 2, rightEnd, C.cool1);
-    rect(leftX, leftEnd - 1, leftX + 2, leftEnd, C.wood1); // shoes
-    rect(rightX, rightEnd - 1, rightX + 2, rightEnd, C.wood1);
-  }
-  // Torso and arms.
-  const torsoEnd = sitting ? 20 : 17;
-  rect(4, 10 + bob, 11, torsoEnd, shirt2);
-  rect(3, 11 + bob, 3, torsoEnd - 1, shirt3);
-  rect(12, 11 + bob, 12, torsoEnd - 1, shirt1);
-  const apron = pal.apron ?? C.cream1;
-  if (pal.role === 'waiter')
-    rect(5, 11 + bob, 10, torsoEnd, apron); // dark vest (both sides)
-  else if (front) rect(6, 13 + bob, 10, torsoEnd, apron);
-  if (anim === 'eat' && frame === 1) {
-    // Hand with food raised to the mouth.
-    rect(9, 10 + bob, 11, 11 + bob, C.wood4);
-    rect(10, 9 + bob, 11, 9 + bob, C.cheese2);
-  } else if (anim === 'carry') {
-    // Arms held out in front, carrying a dish (drawn as an overlay by the view).
-    rect(2, 13 + bob, 3, 14 + bob, C.wood4);
-    rect(12, 13 + bob, 13, 14 + bob, C.wood4);
-  } else if (anim === 'cook') {
-    // Stirring / tending the oven: one hand moves up and down in front.
-    rect(11, 12 + bob - frame, 12, 13 + bob - frame, C.wood4);
-  } else if (sitting) {
-    // Hands resting on the table edge.
-    rect(3, 19, 4, 19, C.wood4);
-    rect(11, 19, 12, 19, C.wood4);
-  }
-  // Head and hair.
-  rect(4, 2 + bob, 11, 9 + bob, C.wood4);
-  if (front) {
-    rect(4, 2 + bob, 11, 4 + bob, pal.hair);
-    rect(4, 5 + bob, 4, 6 + bob, pal.hair);
-    fill.set(7, 6 + bob, C.outline);
-    fill.set(10, 6 + bob, C.outline);
-  } else {
-    rect(4, 2 + bob, 11, 8 + bob, pal.hair);
-    rect(5, 9 + bob, 10, 9 + bob, C.wood2);
-  }
-  if (pal.accessory === 'bun_shawl') {
-    // Grey bun on top of the head and a shawl over the shoulders with a fringe.
-    rect(6, 0 + bob, 9, 1 + bob, pal.hair);
-    rect(3, 10 + bob, 12, 12 + bob, C.brick2);
-    rect(4, 13 + bob, 11, 13 + bob, C.brick2);
-    for (const x of [4, 6, 8, 10]) fill.set(x, 14 + bob, C.brick3);
-    fill.set(7, 11 + bob, C.cheese2);
-  } else if (pal.accessory === 'cap') {
-    // Red cap with a visor on the front.
-    rect(4, 1 + bob, 11, 3 + bob, C.tomato2);
-    if (front) rect(5, 4 + bob, 11, 4 + bob, C.tomato1);
-    fill.set(7, 1 + bob, C.cream1);
-  } else if (pal.accessory === 'ponytail') {
-    // Ponytail swinging out of the back with a red bow.
-    rect(12, 4 + bob, 13, 8 + bob, pal.hair);
-    fill.set(12, 4 + bob, C.tomato2);
-    if (!front) rect(6, 3 + bob, 9, 3 + bob, pal.hair);
-  }
-  if (pal.role === 'chef') {
-    // Tall chef hat: puffy top plus a band over the forehead.
-    rect(5, 0 + bob, 10, 2 + bob, C.cream1);
-    rect(4, 3 + bob, 11, 3 + bob, C.cream1);
-  }
-  // Outline: every filled pixel touching transparency.
-  const r = new Raster(CHAR_W, CHAR_H);
-  for (let y = 0; y < CHAR_H; y++) {
-    for (let x = 0; x < CHAR_W; x++) {
-      const c = fill.get(x, y);
-      if (!c) continue;
-      const edge =
-        !fill.get(x - 1, y) || !fill.get(x + 1, y) || !fill.get(x, y - 1) || !fill.get(x, y + 1);
-      r.set(x, y, edge ? C.outline : c);
-    }
-  }
-  return r;
-}
 
 /** 16x16 speech bubble with a tail, pixel face inside. */
 type EmoteKind = keyof typeof EMOTE_TEX;
@@ -1674,15 +1488,6 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, TEX.wallFrontL, lowWall('l'));
   upload(textures, TEX.wallFrontR, lowWall('r'));
   upload(textures, TEX.tileHighlight, drawHighlight());
-  for (let v = 0; v < CHAR_VARIANT_COUNT; v++) {
-    for (const facing of ['front', 'back'] as const) {
-      for (const anim of CHAR_ANIMS) {
-        for (let f = 0; f < CHAR_FRAME_COUNT[anim]; f++) {
-          upload(textures, charTexKey(v, facing, anim, f), characterFrame(v, facing, anim, f));
-        }
-      }
-    }
-  }
   upload(textures, EMOTE_TEX.angry, emoteBubble('angry'));
   upload(textures, EMOTE_TEX.hand, emoteBubble('hand'));
   upload(textures, EMOTE_TEX.tasty, emoteBubble('tasty'));

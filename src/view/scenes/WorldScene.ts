@@ -4,6 +4,7 @@ import type { Game } from '../../sim/game';
 import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
 import { screenToTile, tileToScreen } from '../iso';
+import { installArtAliases, preloadArt } from '../art';
 import { generatePlaceholderTextures } from '../placeholderTextures';
 import { SurroundingsRenderer } from '../SurroundingsRenderer';
 import { GROUND_BG_COLOR, generateSurroundingsTextures } from '../surroundingsTextures';
@@ -38,8 +39,13 @@ export class WorldScene extends Phaser.Scene {
     this.sim = data.sim;
   }
 
+  preload(): void {
+    preloadArt(this);
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor(GROUND_BG_COLOR);
+    installArtAliases(this.textures);
     generatePlaceholderTextures(this.textures);
     generateSurroundingsTextures(this.textures);
     new SurroundingsRenderer(this);

@@ -21,7 +21,7 @@ export const GUEST_TYPES = {
     seatPatienceSec: 30,
     browseSec: [2, 5],
     eatSec: [6, 11],
-    variants: 3,
+    variants: 4,
   },
 } satisfies Record<string, GuestTypeDef>;
 
