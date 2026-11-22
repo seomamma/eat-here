@@ -51,6 +51,7 @@
 - A* pathfinding (unit tested).
 - Debug: tap a tile → a test character walks there with 4-direction placeholder animation.
 - Fixed-timestep sim loop + interpolated rendering.
+- Portrait default zoom: one integer step closer than "fit whole room" when the fit leaves the room small (player pans around), found in M1b review.
 
 **Acceptance criteria**
 - [ ] Character walks around furniture, never through walls/furniture.
