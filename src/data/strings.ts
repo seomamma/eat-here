@@ -30,6 +30,16 @@ export const STRINGS = {
     stats: 'Stats',
     settings: 'Settings',
   },
+  settings: {
+    title: 'Settings',
+    close: 'Close',
+    sfx: 'Sound effects',
+    music: 'Music',
+    on: 'On',
+    off: 'Off',
+    backToTitle: 'Back to title',
+    backHint: 'Your game is saved first.',
+  },
   today: {
     open: 'Show today\u2019s money',
     title: 'Today',

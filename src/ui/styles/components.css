@@ -590,7 +590,9 @@
   border-radius: 50%;
   background: var(--saffron);
   box-shadow: 5px 5px 0 0 var(--tomato);
-  animation: badge-pop 0.6s steps(8, end);
+  animation:
+    badge-pop 0.6s steps(8, end),
+    badge-bounce 1.8s ease-in-out 0.7s infinite;
 }
 .rank-badge-num {
   font-family: var(--font-heading);
@@ -632,6 +634,18 @@
   box-shadow: 3px 3px 0 0 var(--basil);
   font-weight: 800;
   font-size: 15px;
+}
+@keyframes badge-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-8px) scale(1.04, 0.97);
+  }
+  55% {
+    transform: translateY(0) scale(0.98, 1.03);
+  }
 }
 @keyframes badge-pop {
   0% {
@@ -1675,5 +1689,95 @@
   }
   .done-btn {
     left: calc(50% + 44px);
+  }
+}
+
+/* ---- Settings panel (M10) ---- */
+.settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--card-radius);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle-row:active {
+  box-shadow: 1px 1px 0 0 var(--ink);
+  transform: translate(2px, 2px);
+}
+.toggle-row:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+.toggle-label {
+  flex: 1;
+}
+.toggle-state {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--crust);
+}
+.toggle-switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #cfcac2;
+}
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  box-sizing: content-box;
+  background: var(--paper);
+  transform: translateX(0);
+  transition: transform 0.12s steps(3, end);
+}
+.toggle-row--on .toggle-switch {
+  background: var(--basil);
+}
+.toggle-row--on .toggle-knob {
+  transform: translateX(20px);
+}
+.settings-back {
+  flex: none;
+  width: 100%;
+  --accent: var(--paper);
+}
+.settings-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: rgba(17, 17, 17, 0.6);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toggle-knob {
+    transition: none;
   }
 }

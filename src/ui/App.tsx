@@ -5,6 +5,7 @@ import { ActionBar } from './components/ActionBar';
 import { GuestCard } from './components/GuestCard';
 import { NightOverlay } from './components/NightOverlay';
 import { Hud } from './components/Hud';
+import { SettingsPanel } from './components/SettingsPanel';
 import { RecipePanel } from './components/RecipePanel';
 import { ShopPanel } from './components/ShopPanel';
 import { Toasts } from './components/Toasts';
@@ -23,6 +24,7 @@ export function App() {
       <ActionBar />
       <BuildControls />
       <MenuPanel />
+      <SettingsPanel />
       <TodayPanel />
       <ShopPanel />
       <RecipePanel />

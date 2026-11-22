@@ -11,12 +11,12 @@ const ACTIVE: { id: MenuTarget; label: string; icon: MenuIconId }[] = [
   { id: 'market', label: M.market, icon: 'market' },
   { id: 'recipes', label: M.recipes, icon: 'recipes' },
   { id: 'build', label: M.build, icon: 'build' },
+  { id: 'settings', label: M.settings, icon: 'settings' },
 ];
 
 const SOON: { label: string; icon: MenuIconId }[] = [
   { label: M.staff, icon: 'staff' },
   { label: M.stats, icon: 'stats' },
-  { label: M.settings, icon: 'settings' },
 ];
 
 /** The Menu hub: a grid of shortcut cards; opening one closes the hub and opens that panel. */

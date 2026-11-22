@@ -10,6 +10,7 @@ import {
 } from '../sim/systems/build';
 import type { BuyResult, MoveResult } from '../sim/systems/build';
 import { dispatch } from './store';
+import { settingsOpen } from './settings';
 
 /** What the player is currently placing: a new purchase or an existing piece being moved. */
 export type Placing =
@@ -47,12 +48,13 @@ export interface ScreenRect {
 export const ghostRect = signal<ScreenRect | null>(null);
 
 /** Opens a panel from the Menu: closes the hub first. */
-export type MenuTarget = 'shop' | 'market' | 'recipes' | 'build';
+export type MenuTarget = 'shop' | 'market' | 'recipes' | 'build' | 'settings';
 export function openFromMenu(target: MenuTarget): void {
   menuOpen.value = false;
   if (target === 'shop') openShop('furniture');
   else if (target === 'market') openShop('market');
   else if (target === 'recipes') openRecipes();
+  else if (target === 'settings') settingsOpen.value = true;
   else enterBuild();
 }
 
@@ -81,6 +83,7 @@ export function bindBuild(sim: Game): void {
       exitBuild();
       menuOpen.value = false;
       todayOpen.value = false;
+      settingsOpen.value = false;
     }
   });
   buildMode.subscribe((on) => {
