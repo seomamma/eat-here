@@ -1,6 +1,7 @@
 import { INGREDIENTS } from '../../data/ingredients';
 import { RANKS } from '../../data/ranks';
 import { RECIPES } from '../../data/recipes';
+import { unlocksAtRank } from '../../data/shop';
 import { regularDef } from '../../data/regulars';
 import { STRINGS } from '../../data/strings';
 import type { Goal } from '../../sim/systems/goals';
@@ -22,11 +23,15 @@ function GoalRow(props: { goal: Goal }) {
   switch (g.kind) {
     case 'rank': {
       const span = g.target - g.base;
+      const unlocks = unlocksAtRank(g.rank);
       return (
         <li class="goal">
           <span class="goal-text">{G.rank(RANKS[g.rank - 1]?.name ?? '')}</span>
           <span class="goal-sub">{G.progress(g.fame, g.target)}</span>
           <Bar value={g.fame - g.base} max={span} />
+          {unlocks.length > 0 && (
+            <span class="goal-sub">{G.unlocksAt(g.rank, unlocks.join(', '))}</span>
+          )}
         </li>
       );
     }

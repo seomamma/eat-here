@@ -1,5 +1,6 @@
 import { MAX_RANK, RANKS, rankDef } from '../../data/ranks';
 import { RECIPES } from '../../data/recipes';
+import { unlocksAtRank } from '../../data/shop';
 import { addIngredient } from './market';
 import type { Emitter, GameEvents } from '../events';
 import type { GameState } from '../state';
@@ -7,7 +8,7 @@ import type { GameState } from '../state';
 /** Names of what a rank unlocks (recipes first, then perks), for the RANK UP modal. */
 export function unlockNames(rank: number): string[] {
   const def = rankDef(rank);
-  return [...def.recipes.map((id) => RECIPES[id].name), ...def.perks];
+  return [...def.recipes.map((id) => RECIPES[id].name), ...unlocksAtRank(rank), ...def.perks];
 }
 
 /**

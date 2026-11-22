@@ -80,10 +80,10 @@ describe('furniture catalog', () => {
   it('locked items cannot be bought', () => {
     const s = createInitialState(1);
     s.money = 10_000;
-    expect(unlockRank('statue')).toBe(3);
+    expect(unlockRank('statue')).toBe(4);
     const r = validateBuy(s, 'statue', 7, 5, 0);
     expect(r).toEqual({ ok: false, reason: 'locked' });
-    s.rank = 3;
+    s.rank = 4;
     expect(validateBuy(s, 'statue', 7, 5, 0)).toEqual({ ok: true });
   });
 });
@@ -373,6 +373,11 @@ describe('floors and walls', () => {
       ok: false,
       reason: 'locked',
     });
+    expect(g.dispatch({ type: 'paintFloor', tiles, style: 'terracotta' })).toEqual({
+      ok: false,
+      reason: 'locked',
+    });
+    g.state.rank = 2;
     expect(
       g.dispatch({ type: 'paintFloor', tiles: [{ x: 0, y: 5 }], style: 'terracotta' }),
     ).toEqual({

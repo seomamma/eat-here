@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { furnitureAt, inBounds } from '../../sim/grid';
+import { furnitureAt, inBounds, tileAt } from '../../sim/grid';
 import type { Game } from '../../sim/game';
 import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
@@ -7,7 +7,20 @@ import { screenToTile, tileToScreen } from '../iso';
 import { generatePlaceholderTextures } from '../placeholderTextures';
 import { SurroundingsRenderer } from '../SurroundingsRenderer';
 import { GROUND_BG_COLOR, generateSurroundingsTextures } from '../surroundingsTextures';
-import { buildMode, ghost, ghostRect, moveGhostTo, startMoving } from '../../ui/build';
+import {
+  buildMode,
+  endPaintStroke,
+  ghost,
+  ghostRect,
+  moveGhostTo,
+  paintAt,
+  paintStroke,
+  paintStyle,
+  selectPiece,
+  selectedPiece,
+  type PaintHit,
+} from '../../ui/build';
+import { wallSegmentAt } from '../wallHit';
 import { selectGuest, selectedGuestId } from '../../ui/selection';
 import type { ObjectDrag } from '../CameraController';
 import { WorldRenderer } from '../WorldRenderer';
@@ -42,6 +55,7 @@ export class WorldScene extends Phaser.Scene {
       this.sim.events.on('giftReceived', (e) => this.world.sparklesAtGuest(e.guestId)),
       this.sim.events.on('heartGained', (e) => this.world.sparklesAtGuest(e.guestId)),
       this.sim.events.on('recipeLeveledUp', () => this.world.sparklesAtOven(state)),
+      this.sim.events.on('furnitureLeveledUp', (e) => this.world.sparklesAtFurniture(state, e.id)),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubs.forEach((u) => u()));
     if (new URLSearchParams(location.search).has('debug')) this.exposeDebugHook();
@@ -77,16 +91,35 @@ export class WorldScene extends Phaser.Scene {
       moveGhostTo(tile.x, tile.y);
       return;
     }
-    const id = furnitureAt(state, tile.x, tile.y);
-    if (id) startMoving(id);
+    // Tapping a piece opens its item card; tapping bare floor closes it.
+    selectPiece(furnitureAt(state, tile.x, tile.y) ?? null);
+  }
+
+  /** What a paint stroke would touch at a world point: a floor tile or a wall segment. */
+  private paintHit(world: { x: number; y: number }): PaintHit | null {
+    const style = paintStyle.value;
+    const state = this.sim.state;
+    if (style?.kind === 'wall') {
+      const segment = wallSegmentAt(world.x, world.y, state.grid);
+      return segment ? { segment } : null;
+    }
+    const tile = screenToTile(world.x, world.y);
+    const t = tileAt(state.grid, tile.x, tile.y);
+    return t === 'floor_wood' || t === 'floor_tile' ? { tile } : null;
   }
 
   /** Build mode: a one-finger drag that starts on the ghost moves it instead of panning. */
   private objectDrag(): ObjectDrag {
     const state = this.sim.state;
     let grab = { x: 0, y: 0 };
+    let painting = false;
     return {
       begin: (world) => {
+        if (buildMode.value && paintStyle.value) {
+          // A drag that starts on paintable ground paints; elsewhere it pans as usual.
+          painting = paintAt(this.paintHit(world));
+          return painting;
+        }
         const g = ghost.value;
         if (!buildMode.value || !g) return false;
         const tile = screenToTile(world.x, world.y);
@@ -95,6 +128,10 @@ export class WorldScene extends Phaser.Scene {
         return true;
       },
       move: (world) => {
+        if (painting) {
+          paintAt(this.paintHit(world));
+          return;
+        }
         const tile = screenToTile(world.x, world.y);
         const { width, height } = state.grid;
         moveGhostTo(
@@ -102,7 +139,10 @@ export class WorldScene extends Phaser.Scene {
           Math.min(height - 1, Math.max(0, tile.y + grab.y)),
         );
       },
-      end: () => {},
+      end: () => {
+        if (painting) endPaintStroke();
+        painting = false;
+      },
     };
   }
 
@@ -128,7 +168,8 @@ export class WorldScene extends Phaser.Scene {
     this.world.sync(this.sim.state);
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
     this.world.syncSelection(selectedGuestId.value);
-    this.build.sync(this.sim.state, buildMode.value, g);
+    const selected = this.sim.state.furniture.find((f) => f.id === selectedPiece.value) ?? null;
+    this.build.sync(this.sim.state, buildMode.value, g, selected, paintStroke.value);
     this.publishGhostRect(g);
   }
 
@@ -137,7 +178,10 @@ export class WorldScene extends Phaser.Scene {
    * jitter); the signal is only written when the rounded rectangle changes.
    */
   private publishGhostRect(g: typeof ghost.value): void {
-    const box = this.build.ghostBounds(buildMode.value ? g : null);
+    const picked = buildMode.value && !g ? selectedPiece.value : null;
+    const box = picked
+      ? this.world.furnitureBounds(picked)
+      : this.build.ghostBounds(buildMode.value ? g : null);
     let next: { left: number; top: number; right: number; bottom: number } | null = null;
     if (box) {
       const cam = this.cameras.main;

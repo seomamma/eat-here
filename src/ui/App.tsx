@@ -1,4 +1,5 @@
 import { BuildControls } from './components/BuildControls';
+import { PaintBar } from './components/PaintBar';
 import { MenuPanel } from './components/MenuPanel';
 import { TodayPanel } from './components/TodayPanel';
 import { ActionBar } from './components/ActionBar';
@@ -25,6 +26,7 @@ export function App() {
       <GuestCard />
       <ActionBar />
       <BuildControls />
+      <PaintBar />
       <MenuPanel />
       <SettingsPanel />
       <TodayPanel />

@@ -20,6 +20,12 @@ export function bindAudioEvents(game: Game, audio: AudioEngine): () => void {
     events.on('furniturePlaced', () => audio.play('place')),
     events.on('furnitureMoved', () => audio.play('place')),
     events.on('recipeLeveledUp', () => audio.play('levelUp')),
+    events.on('furnitureLeveledUp', () => audio.play('levelUp')),
+    events.on('furnitureSold', () => audio.play('coin')),
+    events.on('surfacePainted', () => audio.play('place')),
+    events.on('errandDone', (e) => {
+      if (e.coins > 0) audio.play('coin');
+    }),
     events.on('rankUp', () => audio.play('rankUp')),
     events.on('giftReceived', () => audio.play('gift')),
     // A new regular gets the warm jingle; story beats reuse the gift chime.

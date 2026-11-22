@@ -1,3 +1,9 @@
+/** "Bakes 10% faster \u2192 20% faster" (Lv.1 is the normal speed). */
+function speedLine(verb: string, pct: number, next: number | null): string {
+  const now = pct === 0 ? `${verb} at normal speed` : `${verb} ${pct}% faster`;
+  return next === null ? now : `${now} \u2192 ${next}% faster`;
+}
+
 /** All player-facing UI strings (English). */
 export const STRINGS = {
   gameTitle: 'EAT HERE!',
@@ -16,6 +22,8 @@ export const STRINGS = {
     restoredBackup: 'We restored your last good save.',
     saveFailed: "Couldn't save your game. Free some browser storage.",
     regularArrived: (name: string) => `${name} is here for a visit!`,
+    furnitureLevel: (name: string, level: number) => `${name} reached Lv.${level}!`,
+    newInShop: (items: string) => `New in shop: ${items}`,
   },
   moneyLabel: 'Money',
   menu: {
@@ -104,10 +112,8 @@ export const STRINGS = {
         to === null ? `Appeal ${from}` : `Appeal ${from} \u2192 ${to}`,
       comfort: (from: number, to: number | null) =>
         to === null ? `Comfort +${from}` : `Comfort +${from} \u2192 +${to}`,
-      bakes: (pct: number, next: number | null) =>
-        next === null ? `Bakes ${pct}% faster` : `Bakes ${pct}% faster \u2192 ${next}% faster`,
-      plates: (pct: number, next: number | null) =>
-        next === null ? `Plates ${pct}% faster` : `Plates ${pct}% faster \u2192 ${next}% faster`,
+      bakes: (pct: number, next: number | null) => speedLine('Bakes', pct, next),
+      plates: (pct: number, next: number | null) => speedLine('Plates move', pct, next),
       music: (from: number, to: number | null, radius: number) =>
         (to === null ? `Music +${from}` : `Music +${from} \u2192 +${to}`) +
         ` within ${radius} tiles`,
@@ -263,6 +269,7 @@ export const STRINGS = {
     title: 'Next goals',
     rank: (name: string) => `Reach ${name}`,
     rankMax: 'Top rank reached!',
+    unlocksAt: (rank: number, items: string) => `Unlocks at Rank ${rank}: ${items}`,
     upgrade: (dish: string, level: number) => `Upgrade ${dish} to Lv.${level}`,
     haveIngredient: (name: string) => `Have ${name}`,
     coins: (have: number, need: number) => `${Math.min(have, need)} / ${need} coins`,

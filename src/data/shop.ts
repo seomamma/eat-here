@@ -1,3 +1,4 @@
+import { FLOOR_STYLES, WALL_STYLES } from './surfaces';
 import { FURNITURE, type FurnitureCategory, type FurnitureDefId } from './furniture';
 
 /**
@@ -33,4 +34,13 @@ export function shopItemsOf(category: FurnitureCategory): FurnitureDefId[] {
 export function unlockRank(defId: FurnitureDefId): number {
   const u = FURNITURE[defId].unlock;
   return u === 'start' ? 1 : u.rank;
+}
+
+/** Names of the shop items, floors and walls that become available at a rank. */
+export function unlocksAtRank(rank: number): string[] {
+  const out: string[] = [];
+  for (const id of SHOP_ITEMS) if (unlockRank(id) === rank) out.push(FURNITURE[id].name);
+  for (const s of Object.values(FLOOR_STYLES)) if (s.rank === rank) out.push(`${s.name} floor`);
+  for (const s of Object.values(WALL_STYLES)) if (s.rank === rank) out.push(`${s.name} wall`);
+  return out;
 }

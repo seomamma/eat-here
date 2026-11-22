@@ -1004,6 +1004,69 @@ function ovenArt(ox: number, oy: number, glow: OvenGlow, back = false): Raster {
   ]);
 }
 
+/** Oven level visuals (M12 addendum): Lv.3+ a woodpile next to it, Lv.5 a copper collar. */
+export const OVEN_EXTRA_TEX = {
+  woodpile: 'oven_woodpile',
+  copper: 'oven_copper',
+} as const;
+export const WOODPILE_W = 10;
+export const WOODPILE_H = 9;
+
+/** Three stacked logs with pale ends, outlined. */
+function woodpile(): Raster {
+  const fill = new Raster(WOODPILE_W, WOODPILE_H);
+  const log = (x0: number, y0: number) => {
+    for (let y = y0; y < y0 + 4; y++) {
+      for (let x = x0; x < x0 + 5; x++)
+        fill.set(x, y, x < x0 + 2 ? C.wood4 : y === y0 ? C.wood3 : C.wood2);
+    }
+    fill.set(x0, y0 + 1, C.wood3); // growth ring
+    fill.set(x0 + 1, y0 + 2, C.wood3);
+  };
+  log(0, 5);
+  log(5, 5);
+  log(2, 1);
+  const r = new Raster(WOODPILE_W, WOODPILE_H);
+  for (let y = 0; y < WOODPILE_H; y++) {
+    for (let x = 0; x < WOODPILE_W; x++) {
+      const c = fill.get(x, y);
+      if (!c) continue;
+      const edge =
+        !fill.get(x - 1, y) || !fill.get(x + 1, y) || !fill.get(x, y - 1) || !fill.get(x, y + 1);
+      r.set(x, y, edge ? C.outline : c);
+    }
+  }
+  return r;
+}
+
+/** Copper collar around the chimney: same sprite size as the oven, only the accent is drawn. */
+function ovenCopper(ox: number, oy: number): Raster {
+  return boxes(2, 1, ox, oy, [
+    part({
+      i0: 0.68,
+      j0: 0.23,
+      i1: 1.32,
+      j1: 0.77,
+      z0: 16,
+      z1: 19,
+      top: C.cheese3,
+      left: '#C77B3C',
+      right: '#9A5A2B',
+    }),
+    part({
+      i0: 0.7,
+      j0: 0.25,
+      i1: 1.3,
+      j1: 0.75,
+      z0: 22,
+      z1: 23,
+      top: C.cheese3,
+      left: '#C77B3C',
+      right: '#9A5A2B',
+    }),
+  ]);
+}
+
 /** `back` draws the back view (rot 2/3); pieces that look the same from behind ignore it. */
 type FurnitureArt = (ox: number, oy: number, back: boolean) => Raster;
 
@@ -1635,6 +1698,8 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
     upload(textures, ORDER_BUBBLE_TEX[id], orderBubble(id));
   }
   const [ovx, ovy] = FURNITURE.oven_pizza.spriteOrigin;
+  upload(textures, OVEN_EXTRA_TEX.woodpile, woodpile());
+  upload(textures, OVEN_EXTRA_TEX.copper, ovenCopper(ovx, ovy));
   upload(textures, OVEN_TEX.bake[0], ovenArt(ovx, ovy, 0));
   upload(textures, OVEN_TEX.bake[1], ovenArt(ovx, ovy, 1));
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {

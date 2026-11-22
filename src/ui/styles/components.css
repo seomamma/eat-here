@@ -2140,3 +2140,239 @@
     height: 15px;
   }
 }
+
+/* ---- M12: shop categories, item card, paint bar ---- */
+.cat-chips {
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin: 8px 0 2px;
+  overflow-x: auto;
+}
+.cat-chip {
+  flex: 1 0 auto;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cat-chip--on {
+  background: var(--saffron);
+  box-shadow: 2px 2px 0 0 var(--ink);
+}
+.shop-sprite {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: pixelated;
+  background: var(--canvas);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  padding: 2px;
+  box-sizing: border-box;
+}
+.shop-item--locked .shop-sprite,
+.shop-item--locked .shop-name,
+.shop-item--locked .shop-appeal {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.rank-lock {
+  flex: none;
+  padding: 4px 10px;
+  border: 3px solid rgba(17, 17, 17, 0.45);
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(17, 17, 17, 0.6);
+}
+.paint-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background: var(--saffron);
+  box-shadow: 3px 3px 0 0 var(--ink);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.paint-entry-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  text-transform: uppercase;
+}
+.paint-entry-sub {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.item-card-wrap {
+  align-items: stretch;
+}
+.item-card {
+  box-sizing: border-box;
+  width: min(300px, calc(100vw - 16px));
+  padding: 8px 10px 6px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 0 var(--ink);
+}
+.item-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.item-card-name {
+  flex: 1;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  text-transform: uppercase;
+}
+.item-card-close {
+  flex: none;
+}
+.pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.pip {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  background: var(--canvas);
+}
+.pip--on {
+  background: var(--saffron);
+}
+.pip--max.pip--on {
+  background: var(--basil);
+}
+.item-card-lines {
+  margin: 6px 0 4px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+.item-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.item-card-actions .ctl-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 13px;
+}
+.item-card-note {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tomato);
+}
+
+.paint-bar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 12px);
+  transform: translateX(-50%);
+  z-index: 4;
+  box-sizing: border-box;
+  width: min(calc(100% - 24px), 400px);
+  padding: 8px 10px 6px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 0 var(--ink);
+}
+.paint-tabs {
+  margin-top: 0;
+}
+.paint-chips {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin: 6px 0;
+}
+.paint-chip {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.paint-chip--on {
+  background: var(--saffron);
+  box-shadow: 2px 2px 0 0 var(--ink);
+}
+.paint-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.paint-swatch {
+  grid-row: 1 / 3;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--ink);
+}
+.paint-chip-name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.paint-chip-price {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.paint-hint {
+  min-height: 20px;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+.paint-hint--bad {
+  color: var(--tomato);
+}
+.paint-done {
+  display: block;
+  margin: 4px auto 2px;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .paint-bar {
+    left: auto;
+    right: 12px;
+    bottom: 50%;
+    transform: translateY(50%);
+    width: 300px;
+  }
+  .paint-chips {
+    margin: 4px 0;
+  }
+}

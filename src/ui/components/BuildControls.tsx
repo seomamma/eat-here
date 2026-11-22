@@ -1,9 +1,26 @@
+import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { FURNITURE } from '../../data/furniture';
 import { STRINGS } from '../../data/strings';
-import { cancelPlacing, confirmPlacing, ghost, ghostRect, rotateGhost } from '../build';
+import {
+  cancelPlacing,
+  confirmPlacing,
+  ghost,
+  ghostRect,
+  pieceRev,
+  rotateGhost,
+  selectedPiece,
+  sellSelected,
+  startMoving,
+  upgradeSelected,
+  type ScreenRect,
+} from '../build';
+import { pieceInfo } from '../pieceInfo';
+import { getSim } from '../store';
+import { money } from '../store';
 
 const B = STRINGS.build;
+const C = STRINGS.build.card;
 /** Space between the controls and the item, and the minimum margin to the screen edge (CSS px). */
 const GAP = 10;
 const EDGE = 8;
@@ -67,10 +84,8 @@ export function placeControls(
   return { left, top: Math.round(top) };
 }
 
-/** Rotate / confirm / cancel floating next to the ghost (anchored via the view's screen rect). */
-export function BuildControls() {
-  const g = ghost.value;
-  const rect = ghostRect.value;
+/** Keeps its children next to a screen rectangle: above it, flipped below when there is no room. */
+function Floating(props: { rect: ScreenRect; class: string; children: ComponentChildren }) {
   const ref = useRef<HTMLDivElement>(null);
   const [resized, setResized] = useState(0);
   useEffect(() => {
@@ -78,15 +93,15 @@ export function BuildControls() {
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
   }, []);
-  // Measured after render so the real size decides the clamping (the hint text varies).
+  // Measured after render so the real size decides the clamping (the content varies).
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || !rect) return;
+    if (!el) return;
     const topBar = document.querySelector('.top-bar')?.getBoundingClientRect();
     const topMin = Math.max(EDGE, topBar ? topBar.bottom : 0);
     const bottomMax = window.innerHeight - EDGE;
     const pos = placeControls(
-      rect,
+      props.rect,
       { w: el.offsetWidth, h: el.offsetHeight },
       { w: window.innerWidth, h: window.innerHeight },
       topMin,
@@ -97,9 +112,102 @@ export function BuildControls() {
     el.style.visibility = 'visible';
   });
   void resized;
-  if (!g || !rect) return null;
   return (
-    <div class="build-controls interactive" ref={ref} style={{ visibility: 'hidden' }}>
+    <div
+      class={`build-controls interactive ${props.class}`}
+      ref={ref}
+      style={{ visibility: 'hidden' }}
+    >
+      {props.children}
+    </div>
+  );
+}
+
+function Pips(props: { level: number }) {
+  return (
+    <span class="pips" role="img" aria-label={C.level(props.level)}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          class={`pip${n <= props.level ? ' pip--on' : ''}${props.level >= 5 ? ' pip--max' : ''}`}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Small card next to a tapped piece: name, level pips, effect, Upgrade / Move / Sell. */
+function ItemCard(props: { id: string; rect: ScreenRect }) {
+  void pieceRev.value;
+  void money.value;
+  const sim = getSim();
+  const info = sim ? pieceInfo(sim.state, props.id) : null;
+  const [confirmSell, setConfirmSell] = useState(false);
+  useEffect(() => setConfirmSell(false), [props.id]);
+  if (!info) return null;
+  const sellBlocked = info.sellBlocked;
+  return (
+    <Floating rect={props.rect} class="item-card-wrap">
+      <div class="item-card" role="dialog" aria-label={info.name}>
+        <div class="item-card-head">
+          <span class="item-card-name">{info.name}</span>
+          <Pips level={info.level} />
+          <button
+            type="button"
+            class="close-btn item-card-close"
+            aria-label={C.close}
+            onClick={() => {
+              selectedPiece.value = null;
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <ul class="item-card-lines">
+          {info.lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+        <div class="item-card-actions">
+          <button
+            type="button"
+            class="ctl-btn ctl-btn--basil"
+            disabled={!info.canUpgrade}
+            onClick={upgradeSelected}
+          >
+            {info.upgradeCost === null ? C.maxed : `${C.upgrade} ${info.upgradeCost}`}
+          </button>
+          <button type="button" class="ctl-btn ctl-btn--crust" onClick={() => startMoving(info.id)}>
+            {C.move}
+          </button>
+          <button
+            type="button"
+            class="ctl-btn ctl-btn--paper"
+            disabled={sellBlocked !== null}
+            title={sellBlocked ? (B.reasons[sellBlocked] ?? sellBlocked) : undefined}
+            onClick={() => {
+              if (confirmSell) sellSelected();
+              else setConfirmSell(true);
+            }}
+          >
+            {confirmSell ? `${C.sellSure} +${info.refund}` : `${C.sell} +${info.refund}`}
+          </button>
+        </div>
+        {sellBlocked && <div class="item-card-note">{B.reasons[sellBlocked] ?? sellBlocked}</div>}
+      </div>
+    </Floating>
+  );
+}
+
+/** Rotate / confirm / cancel floating next to the ghost, or the item card next to a tapped piece. */
+export function BuildControls() {
+  const g = ghost.value;
+  const rect = ghostRect.value;
+  const picked = selectedPiece.value;
+  if (!rect) return null;
+  if (!g) return picked ? <ItemCard id={picked} rect={rect} /> : null;
+  return (
+    <Floating rect={rect} class="">
       <PlacementHint />
       <div class="build-ctl-row">
         <button type="button" class="ctl-btn ctl-btn--crust" onClick={rotateGhost}>
@@ -141,6 +249,6 @@ export function BuildControls() {
           </svg>
         </button>
       </div>
-    </div>
+    </Floating>
   );
 }

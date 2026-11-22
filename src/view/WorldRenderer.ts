@@ -3,7 +3,7 @@ import { DOOR_X } from '../data/layout';
 import { FURNITURE } from '../data/furniture';
 import { isGuest, isStaff, type Character, type IsoDir } from '../sim/characters';
 import type { GuestEmote } from '../sim/events';
-import { footprintTiles, furnitureAt, rotatedFootprint, type Furniture } from '../sim/grid';
+import { footprintTiles, furnitureAt, rotatedFootprint, tileAt, type Furniture } from '../sim/grid';
 import type { GameState } from '../sim/state';
 import { prefersReducedMotion } from '../platform/motion';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
@@ -19,6 +19,8 @@ import {
   DISH_TEX,
   EMOTE_TEX,
   MARKER_TEX,
+  OVEN_EXTRA_TEX,
+  WOODPILE_H,
   CHAR_H,
   CHAR_W,
   ORDER_BUBBLE_TEX,
@@ -56,6 +58,11 @@ const PASS_TOP_PX = 8;
 const TABLE_TOP_PX = 9;
 /** Carried dish: bottom of the icon this far above the character's feet. */
 const CARRY_LIFT_PX = 4;
+/** Oven level visuals: woodpile from this level, copper collar from this one. */
+const OVEN_WOOD_FROM_LEVEL = 3;
+const OVEN_COPPER_FROM_LEVEL = 5;
+/** The woodpile's feet sit this far below the tile centre (px). */
+const WOODPILE_DROP_PX = Math.floor(WOODPILE_H / 3);
 /** Lv.5 sparkle: time between its two positions. */
 const SPARKLE_BLINK_MS = 650;
 /** Oven flicker period while baking. */
@@ -176,6 +183,11 @@ export class WorldRenderer {
   /** Persistent state-driven overlays: status bubbles above guests and dish icons. */
   private readonly bubbles = new Map<string, Phaser.GameObjects.Image>();
   private readonly dishes = new Map<string, Phaser.GameObjects.Image>();
+  /** Oven level extras: woodpile (Lv.3+) and copper collar (Lv.5), keyed by oven id. */
+  private readonly ovenExtras = new Map<
+    string,
+    { wood: Phaser.GameObjects.Image; copper: Phaser.GameObjects.Image }
+  >();
 
   constructor(private readonly scene: Phaser.Scene) {
     this.createAnimations();
@@ -229,6 +241,59 @@ export class WorldRenderer {
     }
     this.syncSurfaces(state);
     this.syncFurniture(state);
+    this.syncOvenExtras(state);
+  }
+
+  /**
+   * Oven level visuals: from Lv.3 a small woodpile stands on the free floor tile beyond the
+   * oven's long end (hidden when that tile is taken); at Lv.5 a copper collar sits on the chimney.
+   */
+  private syncOvenExtras(state: GameState): void {
+    const live = new Set<string>();
+    for (const f of state.furniture) {
+      if (FURNITURE[f.defId].kind !== 'oven' || f.level < OVEN_WOOD_FROM_LEVEL) continue;
+      live.add(f.id);
+      let extras = this.ovenExtras.get(f.id);
+      if (!extras) {
+        extras = {
+          wood: this.scene.add.image(0, 0, OVEN_EXTRA_TEX.woodpile).setOrigin(0.5, 1),
+          copper: this.scene.add.image(0, 0, OVEN_EXTRA_TEX.copper),
+        };
+        this.ovenExtras.set(f.id, extras);
+      }
+      const [w, h] = rotatedFootprint(f.defId, f.rot);
+      // The tile just past the long end, on the side the piece's rotation points to.
+      const step = [
+        { x: w, y: 0 },
+        { x: 0, y: h },
+        { x: -1, y: 0 },
+        { x: 0, y: -1 },
+      ][f.rot] as { x: number; y: number };
+      const tx = f.x + step.x;
+      const ty = f.y + step.y;
+      const t = tileAt(state.grid, tx, ty);
+      const free =
+        (t === 'floor_wood' || t === 'floor_tile') && furnitureAt(state, tx, ty) === undefined;
+      const o = tileToScreen(tx + 0.5, ty + 0.5);
+      extras.wood
+        .setPosition(Math.round(o.x), Math.round(o.y) + WOODPILE_DROP_PX)
+        .setDepth(depthKey(tx, ty) + DEPTH_FURNITURE_BIAS)
+        .setVisible(free && f.id !== this.hiddenFurnitureId);
+      const base = this.furniture.get(f.id);
+      extras.copper
+        .setVisible(f.level >= OVEN_COPPER_FROM_LEVEL && f.rot < 2 && !!base && base.visible)
+        .setOrigin(base?.originX ?? 0, base?.originY ?? 0)
+        .setFlipX(isMirroredRot(f.rot))
+        .setPosition(base?.x ?? 0, base?.y ?? 0)
+        .setDepth((base?.depth ?? 0) + 0.01);
+    }
+    for (const [id, e] of this.ovenExtras) {
+      if (!live.has(id)) {
+        e.wood.destroy();
+        e.copper.destroy();
+        this.ovenExtras.delete(id);
+      }
+    }
   }
 
   /** Re-skins floors and back walls that were painted (cheap: one texture key compare each). */

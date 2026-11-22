@@ -1,6 +1,7 @@
 import { FURNITURE, type FurnitureDefId } from '../../data/furniture';
 import { INGREDIENTS, type IngredientId } from '../../data/ingredients';
 import { RECIPES, type RecipeId } from '../../data/recipes';
+import { FLOOR_STYLES, WALL_STYLES } from '../../data/surfaces';
 import { STRINGS } from '../../data/strings';
 import { ledgerTotal, type LedgerEntry, type LedgerKind } from '../../sim/dayStats';
 import { todayOpen } from '../build';
@@ -23,12 +24,25 @@ function tone(n: number): string {
 /** Display text of a single notable ledger entry. */
 export function highlightText(e: LedgerEntry): string {
   switch (e.kind) {
-    case 'furniture':
+    case 'furniture': {
+      // Paint strokes are labelled "floor:<style>" / "wall:<style>".
+      const [kind, style] = e.label.split(':');
+      if (kind === 'floor' || kind === 'wall') {
+        const table: Record<string, { name: string }> =
+          kind === 'floor' ? FLOOR_STYLES : WALL_STYLES;
+        const def = table[style ?? ''];
+        return T.painted(def?.name ?? e.label, e.count);
+      }
       return FURNITURE[e.label as FurnitureDefId]?.name ?? e.label;
+    }
+    case 'sale':
+      return T.sold(FURNITURE[e.label as FurnitureDefId]?.name ?? e.label);
     case 'market':
       return INGREDIENTS[e.label as IngredientId]?.name ?? e.label;
     case 'upgrade': {
       const [id, level] = e.label.split(':');
+      const piece = FURNITURE[id as FurnitureDefId];
+      if (piece) return T.dishLevel(piece.name, Number(level));
       return T.dishLevel(RECIPES[id as RecipeId]?.name ?? id ?? '', Number(level));
     }
     case 'tip':
@@ -83,6 +97,8 @@ export function TodayPanel() {
               <ul class="today-list">
                 <Row label={T.dishes} value={sum('dish')} />
                 <Row label={T.tips} value={sum('tip')} />
+                <Row label={T.vending} value={sum('vending')} />
+                <Row label={T.sales} value={sum('sale')} />
               </ul>
             </section>
             <section>

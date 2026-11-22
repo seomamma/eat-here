@@ -11,7 +11,9 @@ import { isGuest } from '../sim/characters';
 import type { HappinessEntry } from '../sim/systems/happiness';
 import type { MomentCard, MomentReward } from '../data/moments';
 import { REGULAR_IDS, regularDef, type RegularId } from '../data/regulars';
+import { FURNITURE } from '../data/furniture';
 import { STRINGS } from '../data/strings';
+import { unlocksAtRank } from '../data/shop';
 import { computeGoals, type Goal } from '../sim/systems/goals';
 import { nextVisitDay } from '../sim/systems/regulars';
 import { selectGuest, selectedGuestId } from './selection';
@@ -120,6 +122,11 @@ const MOMENT_PAUSE = 'moment';
 const GUEST_CARD_REFRESH_MS = 150;
 let simRef: Game | null = null;
 
+/** Read-only handle on the sim for UI queries (validation previews); never use it to mutate. */
+export function getSim(): Game | null {
+  return simRef;
+}
+
 let sink: ((cmd: Command) => CommandResult) | null = null;
 
 /** The UI's only way to act on the game: send a command. */
@@ -154,6 +161,12 @@ export function bindStore(sim: Game): void {
     sim.events.on(ev, syncPantry);
   }
   sim.events.on('recipeLeveledUp', (e) => pushToast({ kind: 'level', ...e }));
+  sim.events.on('furnitureLeveledUp', (e) =>
+    pushToast({
+      kind: 'notice',
+      text: STRINGS.notice.furnitureLevel(FURNITURE[e.defId].name, e.level),
+    }),
+  );
   sim.events.on('giftReceived', (e) =>
     pushToast({ kind: 'gift', guestName: e.guestName, ingredient: e.ingredient }),
   );
@@ -177,6 +190,9 @@ export function bindStore(sim: Game): void {
     rank.value = e.rank;
   });
   sim.events.on('rankUp', (e) => {
+    const fresh = unlocksAtRank(e.rank);
+    if (fresh.length > 0)
+      pushToast({ kind: 'notice', text: STRINGS.notice.newInShop(fresh.join(', ')) });
     rankUps.value = [
       ...rankUps.value,
       { rank: e.rank, name: e.name, unlocks: e.unlocks, reward: e.reward },

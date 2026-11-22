@@ -1,5 +1,10 @@
 import { signal } from '@preact/signals';
-import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
+import {
+  FURNITURE,
+  type FurnitureCategory,
+  type FurnitureDefId,
+  type Rot,
+} from '../data/furniture';
 import type { Game } from '../sim/game';
 import {
   autoFaceRot,
@@ -9,7 +14,9 @@ import {
   validateMove,
 } from '../sim/systems/build';
 import type { BuyResult, MoveResult } from '../sim/systems/build';
-import { dispatch } from './store';
+import { dispatch, pushToast } from './store';
+import { STRINGS } from '../data/strings';
+import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { settingsOpen } from './settings';
 
 /** What the player is currently placing: a new purchase or an existing piece being moved. */
@@ -33,6 +40,20 @@ export const buildMode = signal(false);
 export const ghost = signal<Ghost | null>(null);
 export const shopOpen = signal(false);
 export const shopTab = signal<'furniture' | 'market'>('furniture');
+/** Category chip of the shop's Furniture tab. */
+export const shopCategory = signal<FurnitureCategory>('seating');
+/** Placed piece whose item card is open in build mode, and a counter that refreshes the card. */
+export const selectedPiece = signal<string | null>(null);
+export const pieceRev = signal(0);
+
+/** Paint mode (build mode with a style in hand): the style being painted and the current stroke. */
+export type PaintTarget = { kind: 'floor'; id: FloorStyleId } | { kind: 'wall'; id: WallStyleId };
+export interface PaintStroke {
+  tiles: { x: number; y: number }[];
+  segments: string[];
+}
+export const paintStyle = signal<PaintTarget | null>(null);
+export const paintStroke = signal<PaintStroke | null>(null);
 export const recipesOpen = signal(false);
 export const guestsOpen = signal(false);
 /** The Menu hub (grid of shortcut cards) and the money breakdown popover. */
@@ -103,6 +124,15 @@ export function bindBuild(sim: Game): void {
   });
   // Money changes the validity of a new purchase (e.g. debug top-up).
   sim.events.on('moneyChanged', () => refresh());
+  for (const ev of ['furnitureLeveledUp', 'furnitureMoved', 'furniturePlaced'] as const) {
+    sim.events.on(ev, () => {
+      pieceRev.value++;
+    });
+  }
+  sim.events.on('furnitureSold', (e) => {
+    if (selectedPiece.peek() === e.id) selectedPiece.value = null;
+    pieceRev.value++;
+  });
 }
 
 function evaluate(sim: Game, g: Omit<Ghost, 'result' | 'orphanChair'>): Ghost {
@@ -140,6 +170,9 @@ export function enterBuild(): void {
 export function exitBuild(): void {
   buildMode.value = false;
   ghost.value = null;
+  selectedPiece.value = null;
+  paintStyle.value = null;
+  paintStroke.value = null;
   ghostRect.value = null;
   shopOpen.value = false;
   recipesOpen.value = false;
@@ -150,6 +183,8 @@ export function exitBuild(): void {
 export function startPlacingNew(defId: FurnitureDefId): void {
   if (!simRef) return;
   const spot = findFreeSpot(simRef.state, defId) ?? { x: 4, y: 5 };
+  selectedPiece.value = null;
+  paintStyle.value = null;
   shopOpen.value = false;
   recipesOpen.value = false;
   buildMode.value = true;
@@ -161,7 +196,85 @@ export function startPlacingNew(defId: FurnitureDefId): void {
 export function startMoving(id: string): void {
   const f = simRef?.state.furniture.find((o) => o.id === id);
   if (!f) return;
+  selectedPiece.value = null;
   setGhost({ kind: 'move', id, defId: f.defId }, f.x, f.y, f.rot);
+}
+
+/** Build mode tap on a placed piece (or empty floor = null): opens or closes its item card. */
+export function selectPiece(id: string | null): void {
+  if (ghost.peek() || paintStyle.peek()) return;
+  selectedPiece.value = id;
+}
+
+export function upgradeSelected(): void {
+  const id = selectedPiece.peek();
+  if (!id) return;
+  const res = dispatch({ type: 'upgradeFurniture', id });
+  if (!res.ok) pushToast({ kind: 'notice', text: STRINGS.build.reasons[res.reason] ?? res.reason });
+}
+
+/** Sells the selected piece; the refusal reason (e.g. in use) shows as a notice. */
+export function sellSelected(): void {
+  const id = selectedPiece.peek();
+  if (!id) return;
+  const res = dispatch({ type: 'sellFurniture', id });
+  if (res.ok) selectedPiece.value = null;
+  else pushToast({ kind: 'notice', text: STRINGS.build.reasons[res.reason] ?? res.reason });
+}
+
+/** Floors & Walls entry of the shop: build mode with a style in hand (time stands still). */
+export function startPaintMode(): void {
+  ghost.value = null;
+  selectedPiece.value = null;
+  shopOpen.value = false;
+  recipesOpen.value = false;
+  buildMode.value = true;
+  paintStyle.value = paintStyle.peek() ?? { kind: 'floor', id: 'wood' };
+}
+
+export function setPaintStyle(target: PaintTarget): void {
+  paintStyle.value = target;
+  paintStroke.value = null;
+}
+
+/** A paint target under the finger: a floor tile or a wall segment. */
+export type PaintHit = { tile: { x: number; y: number } } | { segment: string };
+
+/** Adds the hit to the stroke if it matches the style kind; true when it did. */
+export function paintAt(hit: PaintHit | null): boolean {
+  const style = paintStyle.peek();
+  if (!style || !hit) return false;
+  const cur = paintStroke.peek() ?? { tiles: [], segments: [] };
+  if (style.kind === 'floor' && 'tile' in hit) {
+    if (cur.tiles.some((t) => t.x === hit.tile.x && t.y === hit.tile.y)) return true;
+    paintStroke.value = { ...cur, tiles: [...cur.tiles, hit.tile] };
+    return true;
+  }
+  if (style.kind === 'wall' && 'segment' in hit) {
+    if (cur.segments.includes(hit.segment)) return true;
+    paintStroke.value = { ...cur, segments: [...cur.segments, hit.segment] };
+    return true;
+  }
+  return false;
+}
+
+/** The finger lifted: one paint command for the whole stroke; a refusal shows as a notice. */
+export function endPaintStroke(): void {
+  const stroke = paintStroke.peek();
+  const style = paintStyle.peek();
+  paintStroke.value = null;
+  if (!stroke || !style) return;
+  const res =
+    style.kind === 'floor'
+      ? dispatch({ type: 'paintFloor', tiles: stroke.tiles, style: style.id })
+      : dispatch({ type: 'paintWall', segments: stroke.segments, style: style.id });
+  if (!res.ok) {
+    pushToast({
+      kind: 'notice',
+      text:
+        STRINGS.build.paint.reasons[res.reason] ?? STRINGS.build.reasons[res.reason] ?? res.reason,
+    });
+  }
 }
 
 export function moveGhostTo(x: number, y: number): void {

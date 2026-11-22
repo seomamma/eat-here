@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { FURNITURE } from '../data/furniture';
-import { footprintTiles, tileAt } from '../sim/grid';
+import { footprintTiles, tileAt, type Furniture } from '../sim/grid';
+import type { PaintStroke } from '../ui/build';
+import { wallQuad } from './wallHit';
 import type { GameState } from '../sim/state';
 import type { Ghost } from '../ui/build';
 import { furnitureTexKey, isMirroredRot } from './placeholderTextures';
@@ -17,18 +19,23 @@ const TOMATO = 0xe2483d;
 const TINT_ALPHA = 0.5;
 const GHOST_ALPHA = 0.8;
 const GHOST_INVALID_TINT = 0xff8c80;
+const SAFFRON = 0xf5b82e;
+const PAINT_ALPHA = 0.45;
 
 /** Floor grid overlay, ghost sprite and valid/invalid footprint tint. Read-only view code. */
 export class BuildOverlay {
   private readonly grid: Phaser.GameObjects.Graphics;
   private readonly tint: Phaser.GameObjects.Graphics;
   private ghostImage: Phaser.GameObjects.Image | null = null;
+  private readonly paint: Phaser.GameObjects.Graphics;
+  private paintKey = '';
   private tintKey = '';
   private gridBuilt = false;
 
   constructor(private readonly scene: Phaser.Scene) {
     this.grid = scene.add.graphics().setDepth(DEPTH_GRID).setVisible(false);
     this.tint = scene.add.graphics().setDepth(DEPTH_TINT).setVisible(false);
+    this.paint = scene.add.graphics().setDepth(DEPTH_TINT).setVisible(false);
   }
 
   private diamond(g: Phaser.GameObjects.Graphics, x: number, y: number, fill: boolean): void {
@@ -56,13 +63,32 @@ export class BuildOverlay {
   }
 
   /** `ghost` null = browsing (grid only); `active` false hides everything. */
-  sync(state: GameState, active: boolean, ghost: Ghost | null): void {
+  sync(
+    state: GameState,
+    active: boolean,
+    ghost: Ghost | null,
+    selected: Furniture | null = null,
+    stroke: PaintStroke | null = null,
+  ): void {
     this.grid.setVisible(active);
     if (active && !this.gridBuilt) this.buildGrid(state);
+    this.syncPaint(active ? stroke : null);
     if (!active || !ghost) {
-      this.tint.setVisible(false);
       this.ghostImage?.setVisible(false);
-      this.tintKey = '';
+      // The selected piece (item card open) gets a saffron footprint.
+      const sel = active ? selected : null;
+      const key = sel ? `sel:${sel.id}:${sel.x},${sel.y},${sel.rot}` : '';
+      if (key !== this.tintKey) {
+        this.tintKey = key;
+        this.tint.clear();
+        if (sel) {
+          this.tint.fillStyle(SAFFRON, TINT_ALPHA);
+          for (const t of footprintTiles(sel.defId, sel.x, sel.y, sel.rot)) {
+            this.diamond(this.tint, t.x, t.y, true);
+          }
+        }
+      }
+      this.tint.setVisible(sel !== null);
       return;
     }
     const { defId } = ghost.placing;
@@ -90,6 +116,23 @@ export class BuildOverlay {
       .setVisible(true);
     if (ok) img.clearTint();
     else img.setTint(GHOST_INVALID_TINT);
+  }
+
+  /** Tint over the tiles and wall segments of the current paint stroke. */
+  private syncPaint(stroke: PaintStroke | null): void {
+    const key = stroke
+      ? `${stroke.tiles.map((t) => `${t.x},${t.y}`).join(';')}|${stroke.segments.join(';')}`
+      : '';
+    if (key === this.paintKey) return;
+    this.paintKey = key;
+    this.paint.clear().setVisible(stroke !== null);
+    if (!stroke) return;
+    this.paint.fillStyle(BASIL, PAINT_ALPHA);
+    for (const t of stroke.tiles) this.diamond(this.paint, t.x, t.y, true);
+    for (const id of stroke.segments) {
+      const q = wallQuad(id).map((p) => new Phaser.Math.Vector2(p.x, p.y));
+      if (q.length > 0) this.paint.fillPoints(q, true);
+    }
   }
 
   /** World-space box around the visible ghost (sprite plus footprint), or null without one. */

@@ -1,57 +1,14 @@
-import { FURNITURE, type FurnitureDefId } from '../../data/furniture';
+import { FURNITURE } from '../../data/furniture';
 import { INGREDIENTS, INGREDIENT_IDS, type IngredientId } from '../../data/ingredients';
 import { RECIPES, RECIPE_IDS } from '../../data/recipes';
-import { SHOP_ITEMS } from '../../data/shop';
+import { SHOP_CATEGORIES, shopItemsOf, unlockRank } from '../../data/shop';
 import { STRINGS } from '../../data/strings';
-import { shopOpen, shopTab, startPlacingNew } from '../build';
-import { dispatch, inventory, market, money } from '../store';
+import { shopCategory, shopOpen, shopTab, startPaintMode, startPlacingNew } from '../build';
+import { furnitureIconUrl } from '../../view/furnitureIcons';
+import { effectLines } from '../pieceInfo';
+import { dispatch, inventory, market, money, rank } from '../store';
 import { Card } from './Card';
 import { IngredientIcon, RarityBadge } from './Icons';
-
-/** Simple vector preview per item; unknown items fall back to a plain box. */
-function ShopIcon(props: { defId: FurnitureDefId }) {
-  if (props.defId === 'plant_potted') {
-    return (
-      <svg class="shop-icon" viewBox="0 0 32 32" aria-hidden="true">
-        <path
-          d="M16 18C8 16 6 8 7 4c7 0 10 5 9 14z"
-          fill="var(--basil)"
-          stroke="var(--ink)"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M16 18c1-8 5-12 10-12 1 5-2 11-10 12z"
-          fill="var(--basil)"
-          stroke="var(--ink)"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M8 19h16l-2 10H10z"
-          fill="var(--crust)"
-          stroke="var(--ink)"
-          stroke-width="2"
-          stroke-linejoin="round"
-        />
-      </svg>
-    );
-  }
-  return (
-    <svg class="shop-icon" viewBox="0 0 32 32" aria-hidden="true">
-      <rect
-        x="6"
-        y="6"
-        width="20"
-        height="20"
-        rx="3"
-        fill="var(--crust)"
-        stroke="var(--ink)"
-        stroke-width="2"
-      />
-    </svg>
-  );
-}
 
 /** "For Margherita Lv.2" lines: which dish levels the ingredient is used for. */
 function usedFor(ingredient: IngredientId): string {
@@ -132,30 +89,64 @@ function MarketTab() {
 function FurnitureTab() {
   const S = STRINGS.shop;
   const have = money.value;
+  const cat = shopCategory.value;
+  const items = shopItemsOf(cat);
   return (
-    <ul class="shop-list">
-      {SHOP_ITEMS.length === 0 && <li class="guest-reason guest-reason--none">{S.empty}</li>}
-      {SHOP_ITEMS.map((defId) => {
-        const def = FURNITURE[defId];
-        return (
-          <li class="shop-item" key={defId}>
-            <ShopIcon defId={defId} />
-            <div class="shop-info">
-              <span class="shop-name">{def.name}</span>
-              <span class="shop-appeal">{S.appeal(def.appeal[0] ?? 0)}</span>
-            </div>
-            <button
-              type="button"
-              class="btn btn--small btn--basil shop-buy"
-              disabled={have < def.price}
-              onClick={() => startPlacingNew(defId)}
-            >
-              {S.buy} {def.price}
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      <div class="chips cat-chips" role="tablist">
+        {SHOP_CATEGORIES.map((c) => (
+          <button
+            type="button"
+            role="tab"
+            key={c}
+            aria-selected={cat === c}
+            class={`cat-chip${cat === c ? ' cat-chip--on' : ''}`}
+            onClick={() => {
+              shopCategory.value = c;
+            }}
+          >
+            {S.categories[c]}
+          </button>
+        ))}
+      </div>
+      <ul class="shop-list">
+        {items.length === 0 && <li class="guest-reason guest-reason--none">{S.kitchenNote}</li>}
+        {items.map((defId) => {
+          const def = FURNITURE[defId];
+          const need = unlockRank(defId);
+          const locked = rank.value < need;
+          return (
+            <li class={`shop-item${locked ? ' shop-item--locked' : ''}`} key={defId}>
+              <img class="shop-sprite" src={furnitureIconUrl(defId)} alt="" aria-hidden="true" />
+              <div class="shop-info">
+                <span class="shop-name">{def.name}</span>
+                {effectLines(defId, 1, false).map((l) => (
+                  <span class="shop-appeal" key={l}>
+                    {l}
+                  </span>
+                ))}
+              </div>
+              {locked ? (
+                <span class="rank-lock">{S.rank(need)}</span>
+              ) : (
+                <button
+                  type="button"
+                  class="btn btn--small btn--basil shop-buy"
+                  disabled={have < def.price}
+                  onClick={() => startPlacingNew(defId)}
+                >
+                  {S.buy} {def.price}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" class="paint-entry" onClick={startPaintMode}>
+        <span class="paint-entry-title">{S.floorsWalls}</span>
+        <span class="paint-entry-sub">{S.floorsWallsInfo}</span>
+      </button>
+    </>
   );
 }
 
