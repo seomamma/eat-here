@@ -1,4 +1,5 @@
 import { DEFAULT_SEED } from '../data/balance';
+import type { IngredientId } from '../data/ingredients';
 import { RECIPE_IDS, RECIPES, type RecipeId } from '../data/recipes';
 import { DOOR_X, START_STAFF } from '../data/layout';
 import type { Character, Staff } from './characters';
@@ -7,6 +8,7 @@ import { createGrid, createStartFurniture, type Furniture, type GridState } from
 import { createDayStats, type DayStats } from './dayStats';
 import { createClock, type Clock } from './time';
 import { buildWalkGrid, isWalkable } from './pathfinding';
+import { createInventory, rollMarket, type MarketState } from './systems/market';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 
 export interface GameState {
@@ -34,6 +36,10 @@ export interface GameState {
   /** Orders in flight (removed once served or discarded). */
   orders: Order[];
   recipes: Record<RecipeId, { unlocked: boolean; level: number }>;
+  /** Special upgrade ingredients owned (D-031). */
+  inventory: Record<IngredientId, number>;
+  /** Today's market offers. */
+  market: MarketState;
   guestSpawn: {
     /** True while the restaurant admits guests (open phase). */
     enabled: boolean;
@@ -83,7 +89,7 @@ export function createInitialState(
   const grid = createGrid();
   const furniture = createStartFurniture();
   const s = spawnTile(grid, furniture);
-  return {
+  const state: GameState = {
     version: 1,
     seed,
     rng: seed >>> 0,
@@ -105,7 +111,11 @@ export function createInitialState(
     nextFurnitureId: furniture.length + 1,
     nextJobId: 1,
     nextOrderId: 1,
+    inventory: createInventory(),
+    market: { day: 1, offers: [] },
   };
+  state.market = rollMarket(state, 1);
+  return state;
 }
 
 function createStaff(): Staff[] {

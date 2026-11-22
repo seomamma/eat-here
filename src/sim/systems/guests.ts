@@ -3,7 +3,7 @@ import { LOVE_AT } from '../../data/happiness';
 import { FURNITURE } from '../../data/furniture';
 import { GUEST_TYPES } from '../../data/guests';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
-import { RECIPE_IDS, RECIPES } from '../../data/recipes';
+import { RECIPE_IDS } from '../../data/recipes';
 import { FACING_DIR, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
 import type { Emitter, GameEvents, GuestLeaveReason } from '../events';
 import { chairFacing, type Furniture } from '../grid';
@@ -14,6 +14,8 @@ import { addFame } from './fame';
 import { beginStep, checkSlow, fameFor, onSeated, onServed, tipFor } from './happiness';
 import { isChairUsable } from './build';
 import { requestOrder } from './jobs';
+import { rollGift } from './market';
+import { priceAtLevel } from './recipes';
 import { secToTicks, spawnGuest } from './spawner';
 
 export interface GuestContext {
@@ -183,7 +185,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
       if (--g.timer <= 0) {
         g.phase = 'paying';
         g.timer = secToTicks(GUEST_PAY_SEC);
-        const price = g.recipeId ? RECIPES[g.recipeId].price : 0;
+        const price = g.recipeId ? priceAtLevel(g.recipeId, state.recipes[g.recipeId].level) : 0;
         const tip = tipFor(price, g.happiness);
         const fame = fameFor(g.happiness);
         state.money += price + tip;
@@ -199,6 +201,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         events.emit('moneyChanged', { money: state.money });
         addFame(state, events, fame);
         if (g.happiness >= LOVE_AT) events.emit('guestEmote', { guestId: g.id, emote: 'love' });
+        rollGift(state, events, g);
       }
       break;
 

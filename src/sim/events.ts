@@ -28,6 +28,8 @@ export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
 import type { FurnitureDefId, Rot } from '../data/furniture';
+import type { IngredientId } from '../data/ingredients';
+import type { RecipeId } from '../data/recipes';
 import type { DayStats } from './dayStats';
 import type { DayPhase } from './time';
 
@@ -48,7 +50,14 @@ export interface GameEvents {
     y: number;
   };
   fameChanged: { fame: number; gained: number; rank: number };
-  rankUp: { rank: number; name: string; unlocks: string[] };
+  rankUp: { rank: number; name: string; unlocks: string[]; reward: IngredientId | null };
+  /** The ingredient inventory changed (market buy, gift, reward, upgrade). */
+  inventoryChanged: { ingredient: IngredientId; count: number };
+  /** New market offers were rolled (start of a day). */
+  marketRefreshed: { day: number };
+  recipeLeveledUp: { recipeId: RecipeId; level: number };
+  /** A very happy guest left an ingredient. */
+  giftReceived: { guestId: string; guestName: string; ingredient: IngredientId };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
   moneyChanged: { money: number };
   /** A new piece was bought and placed. */

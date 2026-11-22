@@ -3,6 +3,7 @@
  * Thresholds are 7x the GAME_DESIGN draft (D-028): happiness scale was raised, so fame per
  * guest is higher; 350 puts rank 2 around day 3 (measured in M6).
  */
+import type { IngredientId } from './ingredients';
 import type { RecipeId } from './recipes';
 
 export interface RankDef {
@@ -17,10 +18,20 @@ export interface RankDef {
   perks: readonly string[];
   /** Guest arrival rate multiplier (1 = base curve). */
   spawnRate: number;
+  /** Special ingredient handed out on reaching the rank (D-031). */
+  reward: IngredientId | null;
 }
 
 export const RANKS: readonly RankDef[] = [
-  { rank: 1, name: 'Hole in the Wall', fame: 0, recipes: [], perks: [], spawnRate: 1 },
+  {
+    rank: 1,
+    name: 'Hole in the Wall',
+    fame: 0,
+    recipes: [],
+    perks: [],
+    spawnRate: 1,
+    reward: null,
+  },
   {
     rank: 2,
     name: 'Neighborhood Spot',
@@ -28,6 +39,7 @@ export const RANKS: readonly RankDef[] = [
     recipes: ['pepperoni'],
     perks: ['More guests per day'],
     spawnRate: 1.15,
+    reward: 'buffalo_mozzarella',
   },
   {
     rank: 3,
@@ -36,6 +48,7 @@ export const RANKS: readonly RankDef[] = [
     recipes: [],
     perks: ['New decor', 'More guests per day'],
     spawnRate: 1.3,
+    reward: 'hot_honey',
   },
   {
     rank: 4,
@@ -44,6 +57,7 @@ export const RANKS: readonly RankDef[] = [
     recipes: [],
     perks: ['Expansion', 'New guest type', 'More guests per day'],
     spawnRate: 1.5,
+    reward: 'aged_parmesan',
   },
   {
     rank: 5,
@@ -52,6 +66,7 @@ export const RANKS: readonly RankDef[] = [
     recipes: [],
     perks: ['Regulars', 'More ovens', 'More guests per day'],
     spawnRate: 1.7,
+    reward: 'san_marzano',
   },
   {
     rank: 6,
@@ -60,6 +75,7 @@ export const RANKS: readonly RankDef[] = [
     recipes: [],
     perks: ['Ending celebration'],
     spawnRate: 2,
+    reward: 'buffalo_mozzarella',
   },
 ];
 

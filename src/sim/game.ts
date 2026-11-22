@@ -6,6 +6,9 @@ import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
 import type { GameState } from './state';
 import { validateBuy, validateMove } from './systems/build';
+import { addIngredient, rollMarket, validateBuyOffer } from './systems/market';
+import { nextUpgrade, validateUpgrade } from './systems/recipes';
+import type { RecipeId } from '../data/recipes';
 import { replanAfterBuild } from './systems/replan';
 import { tickGuests } from './systems/guests';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
@@ -16,7 +19,9 @@ export type Command =
   | { type: 'debugWalkTo'; x: number; y: number }
   | { type: 'continueAfterReport' }
   | { type: 'buyAndPlace'; defId: FurnitureDefId; x: number; y: number; rot: Rot }
-  | { type: 'moveFurniture'; id: string; x: number; y: number; rot: Rot };
+  | { type: 'moveFurniture'; id: string; x: number; y: number; rot: Rot }
+  | { type: 'buyMarketOffer'; index: number }
+  | { type: 'upgradeRecipe'; recipeId: RecipeId };
 
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
@@ -47,6 +52,9 @@ export class Game {
     });
     this.events.on('ingredientsBought', (e) => {
       this.state.dayStats.ingredientCosts += e.amount;
+    });
+    this.events.on('giftReceived', () => {
+      this.state.dayStats.gifts++;
     });
     this.events.on('guestLeft', (e) => {
       if (e.reason === 'noSeat') this.state.dayStats.guestsLeftNoSeat++;
@@ -152,9 +160,11 @@ export class Game {
     const { clock, guestSpawn } = this.state;
     resetClockForDay(clock, day);
     this.state.dayStats = createDayStats();
+    this.state.market = rollMarket(this.state, day);
     guestSpawn.enabled = true;
     guestSpawn.nextInTicks = FIRST_GUEST_TICKS;
     this.setPhase('open');
+    this.events.emit('marketRefreshed', { day });
     this.events.emit('dayStarted', { day });
   }
 
@@ -179,6 +189,10 @@ export class Game {
         return this.buyAndPlace(cmd.defId, cmd.x, cmd.y, cmd.rot);
       case 'moveFurniture':
         return this.moveFurniture(cmd.id, cmd.x, cmd.y, cmd.rot);
+      case 'buyMarketOffer':
+        return this.buyMarketOffer(cmd.index);
+      case 'upgradeRecipe':
+        return this.upgradeRecipe(cmd.recipeId);
     }
   }
 
@@ -214,6 +228,38 @@ export class Game {
     piece.rot = rot;
     this.afterFurnitureChange();
     this.events.emit('furnitureMoved', { id, x, y, rot });
+    return { ok: true };
+  }
+
+  private buyMarketOffer(index: number): CommandResult {
+    const { state } = this;
+    const check = validateBuyOffer({ phase: state.clock.phase, ...state }, index);
+    if (!check.ok) return check;
+    const offer = state.market.offers[index];
+    if (!offer) return { ok: false, reason: 'unknownOffer' };
+    offer.bought = true;
+    state.money -= offer.price;
+    this.events.emit('moneyChanged', { money: state.money });
+    addIngredient(state, this.events, offer.ingredient);
+    return { ok: true };
+  }
+
+  private upgradeRecipe(recipeId: RecipeId): CommandResult {
+    const { state } = this;
+    const check = validateUpgrade({ phase: state.clock.phase, ...state }, recipeId);
+    if (!check.ok) return check;
+    const recipe = state.recipes[recipeId];
+    const up = nextUpgrade(recipeId, recipe.level);
+    if (!up) return { ok: false, reason: 'maxLevel' };
+    state.money -= up.coins;
+    state.inventory[up.ingredient]--;
+    recipe.level = up.level;
+    this.events.emit('moneyChanged', { money: state.money });
+    this.events.emit('inventoryChanged', {
+      ingredient: up.ingredient,
+      count: state.inventory[up.ingredient],
+    });
+    this.events.emit('recipeLeveledUp', { recipeId, level: recipe.level });
     return { ok: true };
   }
 

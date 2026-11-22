@@ -8,6 +8,8 @@ export interface DayStats {
   ingredientCosts: number;
   guestsServed: number;
   guestsLeftNoSeat: number;
+  /** Ingredient gifts received from guests today. */
+  gifts: number;
   /** Dishes sold (paid) today, per recipe. */
   ordersByRecipe: Partial<Record<RecipeId, number>>;
 }
@@ -20,6 +22,7 @@ export function createDayStats(): DayStats {
     ingredientCosts: 0,
     guestsServed: 0,
     guestsLeftNoSeat: 0,
+    gifts: 0,
     ordersByRecipe: {},
   };
 }

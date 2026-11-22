@@ -1,5 +1,6 @@
 import { MAX_RANK, RANKS, rankDef } from '../../data/ranks';
 import { RECIPES } from '../../data/recipes';
+import { addIngredient } from './market';
 import type { Emitter, GameEvents } from '../events';
 import type { GameState } from '../state';
 
@@ -19,7 +20,13 @@ export function checkRankUp(state: GameState, events: Emitter<GameEvents>): void
     if (!next || state.fame < next.fame) return;
     state.rank = next.rank;
     for (const id of next.recipes) state.recipes[id].unlocked = true;
-    events.emit('rankUp', { rank: next.rank, name: next.name, unlocks: unlockNames(next.rank) });
+    if (next.reward) addIngredient(state, events, next.reward);
+    events.emit('rankUp', {
+      rank: next.rank,
+      name: next.name,
+      unlocks: unlockNames(next.rank),
+      reward: next.reward,
+    });
   }
 }
 
