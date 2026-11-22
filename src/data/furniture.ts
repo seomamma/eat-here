@@ -17,9 +17,16 @@ export interface FurnitureDef {
   /** Appeal contributed per furniture level (index 0 = level 1). */
   appeal: readonly number[];
   useSpots: readonly UseSpot[];
-  /** Placeholder sprite color (main body), used until the art milestone. */
-  color: number;
+  /**
+   * Pixel position of the footprint's top corner (the projected tile origin) inside the
+   * rot-0 sprite. The sprite is drawn with this point at the tile origin; rot 1 is the
+   * same sprite mirrored around that point (ART_DIRECTION §2/§3).
+   */
+  spriteOrigin: readonly [number, number];
 }
+
+/** Orientation: 0 = as drawn, 1 = mirrored (footprint and use spots transposed). */
+export type Rot = 0 | 1;
 
 export const FURNITURE = {
   table_small: {
@@ -29,7 +36,7 @@ export const FURNITURE = {
     price: 60,
     appeal: [2, 3, 5, 7, 10],
     useSpots: [],
-    color: 0xb9824f,
+    spriteOrigin: [16, 15],
   },
   chair_wood: {
     name: 'Wooden Chair',
@@ -40,7 +47,7 @@ export const FURNITURE = {
     // The guest sits on the chair itself. Real facing (towards the table) is
     // derived from the neighbouring table when guests are added (M3).
     useSpots: [{ dx: 0, dy: 0, facing: 'down' }],
-    color: 0x8a5a34,
+    spriteOrigin: [16, 19],
   },
   oven_pizza: {
     name: 'Pizza Oven',
@@ -50,7 +57,7 @@ export const FURNITURE = {
     appeal: [4, 6, 9, 13, 18],
     // Chef stands in front (below) the oven, facing it.
     useSpots: [{ dx: 0, dy: 1, facing: 'up' }],
-    color: 0xb5473a,
+    spriteOrigin: [16, 23],
   },
   counter_pass: {
     name: 'Pass Counter',
@@ -63,7 +70,7 @@ export const FURNITURE = {
       { dx: 0, dy: -1, facing: 'down' },
       { dx: 0, dy: 1, facing: 'up' },
     ],
-    color: 0xe3d0ae,
+    spriteOrigin: [16, 15],
   },
   plant_potted: {
     name: 'Potted Plant',
@@ -72,7 +79,7 @@ export const FURNITURE = {
     price: 150,
     appeal: [5, 8, 12, 17, 25],
     useSpots: [],
-    color: 0x3e7a3a,
+    spriteOrigin: [16, 23],
   },
 } satisfies Record<string, FurnitureDef>;
 

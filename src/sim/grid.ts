@@ -1,4 +1,10 @@
-import { FURNITURE, type FurnitureDefId } from '../data/furniture';
+import {
+  FURNITURE,
+  type Facing,
+  type FurnitureDefId,
+  type Rot,
+  type UseSpot,
+} from '../data/furniture';
 import { GRID_HEIGHT, GRID_WIDTH, START_FURNITURE, startTile, type TileType } from '../data/layout';
 
 export type { TileType };
@@ -15,7 +21,7 @@ export interface Furniture {
   defId: FurnitureDefId;
   x: number;
   y: number;
-  rot: 0;
+  rot: Rot;
   level: number;
 }
 
@@ -33,7 +39,7 @@ export function createStartFurniture(): Furniture[] {
     defId: f.defId,
     x: f.x,
     y: f.y,
-    rot: 0,
+    rot: f.rot ?? 0,
     level: 1,
   }));
 }
@@ -53,13 +59,35 @@ export function tileAt(grid: GridState, x: number, y: number): TileType | undefi
   return inBounds(grid, x, y) ? grid.tiles[y * grid.width + x] : undefined;
 }
 
-/** Tiles covered by a footprint placed at (x, y). */
+/** Rot 1 mirrors the piece across the x = y diagonal, so axes swap. */
+const MIRRORED_FACING: Record<Facing, Facing> = {
+  up: 'left',
+  left: 'up',
+  down: 'right',
+  right: 'down',
+};
+
+/** Footprint [width, height] after rotation (swapped for rot 1). */
+export function rotatedFootprint(defId: FurnitureDefId, rot: Rot = 0): readonly [number, number] {
+  const [w, h] = FURNITURE[defId].footprint;
+  return rot === 1 ? [h, w] : [w, h];
+}
+
+/** Use spots (relative to the furniture origin) after rotation. */
+export function rotatedUseSpots(defId: FurnitureDefId, rot: Rot = 0): UseSpot[] {
+  return FURNITURE[defId].useSpots.map((s) =>
+    rot === 1 ? { dx: s.dy, dy: s.dx, facing: MIRRORED_FACING[s.facing] } : { ...s },
+  );
+}
+
+/** Tiles covered by a footprint placed at (x, y) with the given rotation. */
 export function footprintTiles(
   defId: FurnitureDefId,
   x: number,
   y: number,
+  rot: Rot = 0,
 ): { x: number; y: number }[] {
-  const [w, h] = FURNITURE[defId].footprint;
+  const [w, h] = rotatedFootprint(defId, rot);
   const out: { x: number; y: number }[] = [];
   for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push({ x: x + dx, y: y + dy });
   return out;
@@ -69,7 +97,7 @@ export function footprintTiles(
 export function buildOccupancy(furniture: readonly Furniture[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const f of furniture) {
-    for (const t of footprintTiles(f.defId, f.x, f.y)) map.set(`${t.x},${t.y}`, f.id);
+    for (const t of footprintTiles(f.defId, f.x, f.y, f.rot)) map.set(`${t.x},${t.y}`, f.id);
   }
   return map;
 }
@@ -81,7 +109,7 @@ export function furnitureAt(
   y: number,
 ): string | undefined {
   for (const f of state.furniture) {
-    for (const t of footprintTiles(f.defId, f.x, f.y)) {
+    for (const t of footprintTiles(f.defId, f.x, f.y, f.rot)) {
       if (t.x === x && t.y === y) return f.id;
     }
   }
@@ -98,9 +126,10 @@ export function canPlace(
   defId: FurnitureDefId,
   x: number,
   y: number,
+  rot: Rot = 0,
 ): boolean {
   const occupied = buildOccupancy(state.furniture);
-  return footprintTiles(defId, x, y).every(
+  return footprintTiles(defId, x, y, rot).every(
     (t) => isFloor(tileAt(state.grid, t.x, t.y)) && !occupied.has(`${t.x},${t.y}`),
   );
 }

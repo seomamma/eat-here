@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE } from '../../src/data/furniture';
-import { buildOccupancy, canPlace, furnitureAt, footprintTiles, tileAt } from '../../src/sim/grid';
+import {
+  buildOccupancy,
+  canPlace,
+  furnitureAt,
+  footprintTiles,
+  rotatedFootprint,
+  rotatedUseSpots,
+  tileAt,
+} from '../../src/sim/grid';
 import { createInitialState } from '../../src/sim/state';
 
 describe('occupancy', () => {
@@ -54,6 +62,55 @@ describe('canPlace', () => {
   });
 });
 
+describe('rotation', () => {
+  const s = createInitialState();
+
+  it('swaps the footprint for rot 1', () => {
+    expect(rotatedFootprint('oven_pizza', 0)).toEqual([2, 1]);
+    expect(rotatedFootprint('oven_pizza', 1)).toEqual([1, 2]);
+    expect(rotatedFootprint('table_small', 1)).toEqual([1, 1]);
+  });
+
+  it('covers a 2x1 oven horizontally at rot 0 and vertically at rot 1', () => {
+    expect(footprintTiles('oven_pizza', 5, 5, 0)).toEqual([
+      { x: 5, y: 5 },
+      { x: 6, y: 5 },
+    ]);
+    expect(footprintTiles('oven_pizza', 5, 5, 1)).toEqual([
+      { x: 5, y: 5 },
+      { x: 5, y: 6 },
+    ]);
+  });
+
+  it('uses the rotated footprint for occupancy', () => {
+    const f = [{ id: 'o', defId: 'oven_pizza', x: 5, y: 5, rot: 1, level: 1 }] as const;
+    expect(furnitureAt({ furniture: f }, 5, 6)).toBe('o');
+    expect(furnitureAt({ furniture: f }, 6, 5)).toBeUndefined();
+    expect([...buildOccupancy(f).keys()].sort()).toEqual(['5,5', '5,6']);
+  });
+
+  it('checks canPlace against the rotated footprint', () => {
+    // x = 8 is the last floor column: a horizontal 2x1 sticks into the wall, a vertical one fits.
+    expect(canPlace(s, 'oven_pizza', 8, 5, 0)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 8, 5, 1)).toBe(true);
+    // A vertical oven at (4, 10) would cover the door tile (4, 11).
+    expect(canPlace(s, 'oven_pizza', 4, 10, 1)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 6, 10, 1)).toBe(true);
+    // Overlap with the existing table at (3, 6) only when the rotated tiles touch it.
+    expect(canPlace(s, 'oven_pizza', 3, 5, 1)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 3, 5, 0)).toBe(true);
+  });
+
+  it('rotates use spots and facings', () => {
+    expect(rotatedUseSpots('oven_pizza', 0)).toEqual([{ dx: 0, dy: 1, facing: 'up' }]);
+    expect(rotatedUseSpots('oven_pizza', 1)).toEqual([{ dx: 1, dy: 0, facing: 'left' }]);
+    expect(rotatedUseSpots('counter_pass', 1)).toEqual([
+      { dx: -1, dy: 0, facing: 'right' },
+      { dx: 1, dy: 0, facing: 'left' },
+    ]);
+  });
+});
+
 describe('initial layout', () => {
   const s = createInitialState();
   const count = (kind: string) =>
@@ -72,7 +129,7 @@ describe('initial layout', () => {
     expect(new Set(s.furniture.map((f) => f.id)).size).toBe(s.furniture.length);
     const seen = new Set<string>();
     for (const f of s.furniture) {
-      for (const t of footprintTiles(f.defId, f.x, f.y)) {
+      for (const t of footprintTiles(f.defId, f.x, f.y, f.rot)) {
         const tile = tileAt(s.grid, t.x, t.y);
         expect(['floor_wood', 'floor_tile']).toContain(tile);
         const key = `${t.x},${t.y}`;

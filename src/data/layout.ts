@@ -1,4 +1,4 @@
-import type { FurnitureDefId } from './furniture';
+import type { FurnitureDefId, Rot } from './furniture';
 
 export type TileType = 'floor_wood' | 'floor_tile' | 'wall' | 'door';
 
@@ -14,6 +14,7 @@ export interface LayoutFurniture {
   defId: FurnitureDefId;
   x: number;
   y: number;
+  rot?: Rot;
 }
 
 /** Starting restaurant: oven + pass in the kitchen, 2 tables with 2 chairs each. */
@@ -22,10 +23,10 @@ export const START_FURNITURE: readonly LayoutFurniture[] = [
   { defId: 'counter_pass', x: 5, y: 3 },
   { defId: 'table_small', x: 3, y: 6 },
   { defId: 'chair_wood', x: 2, y: 6 },
-  { defId: 'chair_wood', x: 4, y: 6 },
+  { defId: 'chair_wood', x: 4, y: 6, rot: 1 },
   { defId: 'table_small', x: 6, y: 8 },
   { defId: 'chair_wood', x: 5, y: 8 },
-  { defId: 'chair_wood', x: 7, y: 8 },
+  { defId: 'chair_wood', x: 7, y: 8, rot: 1 },
 ];
 
 export function startTile(x: number, y: number): TileType {
