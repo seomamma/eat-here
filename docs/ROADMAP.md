@@ -102,9 +102,9 @@
 - Fame from happiness, fame bar in HUD; Rank 1 → 2 with RANK UP modal and fanfare; Rank 2 unlocks Pepperoni.
 
 **Acceptance criteria**
-- [ ] Each guest visibly fills their bar; values follow GAME_DESIGN table (unit tested).
+- [x] Each guest visibly fills their bar; values follow GAME_DESIGN table (unit tested).
 - [ ] Reaching 50 fame triggers RANK UP once (not again on reload).
-- [ ] Pepperoni appears on the menu after rank up and guests order it.
+- [x] Pepperoni appears on the menu after rank up and guests order it.
 
 ### M7 — Build mode & first purchase
 **Goal:** buy and place furniture on a free grid.

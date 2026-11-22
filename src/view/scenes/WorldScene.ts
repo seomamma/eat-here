@@ -4,6 +4,7 @@ import type { Game } from '../../sim/game';
 import { CameraController } from '../CameraController';
 import { screenToTile, tileToScreen } from '../iso';
 import { generatePlaceholderTextures } from '../placeholderTextures';
+import { selectGuest, selectedGuestId } from '../../ui/selection';
 import { WorldRenderer } from '../WorldRenderer';
 
 const CANVAS_COLOR = 0xf6f3ee;
@@ -36,6 +37,10 @@ export class WorldScene extends Phaser.Scene {
     const camera = new CameraController(this, WorldRenderer.roomBounds(state));
     // Debug aid: tap a tile to outline it and send the debug walker there.
     camera.onTap((world) => {
+      // A guest under the finger wins; otherwise the tap clears the selection and acts on the tile.
+      const guestId = this.world.guestAt(state, world.x, world.y);
+      selectGuest(guestId);
+      if (guestId) return;
       const tile = screenToTile(world.x, world.y);
       const inside = inBounds(state.grid, tile.x, tile.y);
       this.world.showHighlight(inside ? tile : null);
@@ -62,5 +67,6 @@ export class WorldScene extends Phaser.Scene {
     this.sim.update(delta);
     this.world.sync(this.sim.state);
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
+    this.world.syncSelection(selectedGuestId.value);
   }
 }

@@ -14,6 +14,9 @@ import {
   COIN_TEX,
   DISH_TEX,
   EMOTE_TEX,
+  MARKER_TEX,
+  CHAR_H,
+  CHAR_W,
   ORDER_BUBBLE_TEX,
   OVEN_TEX,
   TEX,
@@ -102,6 +105,13 @@ const EMOTE_POP_MS = 180;
 const EMOTE_HOLD_MS = 1100;
 const EMOTE_FADE_MS = 400;
 const EMOTE_ABOVE_PX = 30;
+/** The zzz bubble sits beside the persistent hand/dish bubble instead of covering it. */
+const EMOTE_SLOW_SIDE_PX = 18;
+/** Selection marker: gap above the head and bob period. */
+const MARKER_ABOVE_PX = 25;
+const MARKER_BOB_MS = 300;
+/** Extra touch margin (art px) around a guest sprite for tap selection. */
+const TAP_PAD_PX = 3;
 const COIN_RISE_PX = 16;
 const COIN_MS = 1100;
 const COIN_FADE_MS = 400;
@@ -123,6 +133,7 @@ export class WorldRenderer {
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
   private highlight: Phaser.GameObjects.Image | null = null;
+  private marker: Phaser.GameObjects.Image | null = null;
   private effects: Effect[] = [];
   /** Persistent state-driven overlays: status bubbles above guests and dish icons. */
   private readonly bubbles = new Map<string, Phaser.GameObjects.Image>();
@@ -219,6 +230,37 @@ export class WorldRenderer {
       if (!alive) e.destroy();
       return alive;
     });
+  }
+
+  /** Shows a bobbing arrow above the selected guest; null (or a missing guest) hides it. */
+  syncSelection(guestId: string | null): void {
+    const sprite = guestId ? this.characters.get(guestId) : undefined;
+    if (!sprite) {
+      this.marker?.setVisible(false);
+      return;
+    }
+    this.marker ??= this.scene.add.image(0, 0, MARKER_TEX).setOrigin(0.5, 1);
+    const bob = Math.floor(this.scene.time.now / MARKER_BOB_MS) % 2;
+    this.marker
+      .setPosition(Math.round(sprite.x), Math.round(sprite.y) - MARKER_ABOVE_PX - bob)
+      .setDepth(DEPTH_OVERLAY + 1)
+      .setVisible(true);
+  }
+
+  /** Frontmost guest under a world point (sprite box plus a touch margin), or null. */
+  guestAt(state: GameState, wx: number, wy: number): string | null {
+    let best: { id: string; depth: number } | null = null;
+    for (const c of state.characters) {
+      if (!isGuest(c)) continue;
+      const sprite = this.characters.get(c.id);
+      if (!sprite) continue;
+      const inX = Math.abs(wx - sprite.x) <= CHAR_W / 2 + TAP_PAD_PX;
+      const inY = wy >= sprite.y - CHAR_H - TAP_PAD_PX && wy <= sprite.y + TAP_PAD_PX;
+      if (inX && inY && (!best || sprite.depth > best.depth)) {
+        best = { id: c.id, depth: sprite.depth };
+      }
+    }
+    return best?.id ?? null;
   }
 
   /**
@@ -327,6 +369,7 @@ export class WorldRenderer {
     const target = this.characters.get(guestId);
     if (!target) return;
     const img = this.scene.add.image(0, 0, EMOTE_TEX[emote]).setOrigin(0.5, 1);
+    const side = emote === 'slow' ? EMOTE_SLOW_SIDE_PX : 0;
     const born = this.scene.time.now;
     let lastX = target.x;
     let lastY = target.y;
@@ -350,7 +393,7 @@ export class WorldRenderer {
           alpha = 1 - k;
         }
         img
-          .setPosition(Math.round(lastX), Math.round(lastY) - EMOTE_ABOVE_PX + dy)
+          .setPosition(Math.round(lastX) + side, Math.round(lastY) - EMOTE_ABOVE_PX + dy)
           .setAlpha(Math.max(0, alpha))
           .setDepth(DEPTH_OVERLAY);
         return t < EMOTE_POP_MS + EMOTE_HOLD_MS + EMOTE_FADE_MS;

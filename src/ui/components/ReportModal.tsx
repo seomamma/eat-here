@@ -28,6 +28,7 @@ export function ReportModal() {
           <h2 class="modal-title">{S.title(r.day)}</h2>
           <div class="report-rows">
             <Row label={S.income} value={`+${stats.income}`} />
+            <Row label={S.tips} value={`+${stats.tips}`} />
             <Row label={S.ingredients} value={`-${stats.ingredientCosts}`} />
             <Row
               label={S.profit}
@@ -35,6 +36,7 @@ export function ReportModal() {
               tone={profit >= 0 ? 'good' : 'bad'}
             />
             <Row label={S.served} value={String(stats.guestsServed)} />
+            <Row label={S.fame} value={`+${stats.fameGained}`} />
             <Row label={S.leftNoSeat} value={String(stats.guestsLeftNoSeat)} />
             <Row
               label={S.bestSeller}

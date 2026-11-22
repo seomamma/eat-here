@@ -122,9 +122,13 @@ export function charTexKey(
 /** Emote bubbles and coin (16x16 / 7x7). */
 export const EMOTE_TEX = {
   angry: 'emote_angry',
-  happy: 'emote_happy',
   hand: 'emote_hand',
+  tasty: 'emote_tasty',
+  love: 'emote_love',
+  slow: 'emote_slow',
 } as const;
+/** Bouncing arrow above the selected guest (11x7). */
+export const MARKER_TEX = 'select_marker';
 export const COIN_TEX = 'coin';
 export const EMOTE_SIZE = 16;
 export const COIN_SIZE = 7;
@@ -430,9 +434,17 @@ function characterFrame(
 }
 
 /** 16x16 speech bubble with a tail, pixel face inside. */
-function emoteBubble(kind: 'angry' | 'happy' | 'hand'): Raster {
-  const bg = kind === 'angry' ? C.tomato2 : C.cheese3;
-  const fg = kind === 'angry' ? C.cream1 : C.outline;
+type EmoteKind = keyof typeof EMOTE_TEX;
+const EMOTE_COLORS: Record<EmoteKind, { bg: string; fg: string }> = {
+  angry: { bg: C.tomato2, fg: C.cream1 },
+  hand: { bg: C.cheese3, fg: C.outline },
+  tasty: { bg: C.cheese3, fg: C.outline },
+  love: { bg: C.cream1, fg: C.tomato2 },
+  slow: { bg: C.cool3, fg: C.cool1 },
+};
+
+function emoteBubble(kind: EmoteKind): Raster {
+  const { bg, fg } = EMOTE_COLORS[kind];
   const r = new Raster(EMOTE_SIZE, EMOTE_SIZE);
   // Rounded body 14x11 at (1,1), tail below.
   for (let y = 1; y <= 11; y++) {
@@ -489,8 +501,34 @@ function emoteBubble(kind: 'angry' | 'happy' | 'hand'): Raster {
       r.set(x, y, fg);
     for (const x of [5, 6, 7, 8, 9, 10]) r.set(x, 9, fg);
     r.set(4, 10, bg);
+  } else if (kind === 'love') {
+    // Heart.
+    for (const [y, x0, x1] of [
+      [3, 5, 6],
+      [3, 9, 10],
+      [4, 4, 11],
+      [5, 4, 11],
+      [6, 5, 10],
+      [7, 6, 9],
+      [8, 7, 8],
+    ] as const)
+      for (let x = x0; x <= x1; x++) r.set(x, y, fg);
+  } else if (kind === 'slow') {
+    // "zz": a big and a small z.
+    for (const [y, x0, x1] of [
+      [3, 4, 8],
+      [4, 7, 7],
+      [5, 6, 6],
+      [6, 5, 5],
+      [7, 4, 8],
+      [6, 9, 12],
+      [7, 11, 11],
+      [8, 10, 10],
+      [9, 9, 12],
+    ] as const)
+      for (let x = x0; x <= x1; x++) r.set(x, y, fg);
   } else {
-    // Happy closed eyes and a smile.
+    // Tasty: happy closed eyes and a smile.
     for (const [x, y] of [
       [4, 5],
       [5, 4],
@@ -511,6 +549,23 @@ function emoteBubble(kind: 'angry' | 'happy' | 'hand'): Raster {
       [11, 8],
     ] as const)
       r.set(x, y, fg);
+  }
+  return r;
+}
+
+/** Downward arrow with outline, 11x7. */
+function selectMarker(): Raster {
+  const fill = new Raster(11, 7);
+  for (let row = 0; row < 5; row++)
+    for (let x = 1 + row; x <= 9 - row; x++) fill.set(x, row + 1, C.cheese2);
+  const r = new Raster(11, 7);
+  for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < 11; x++) {
+      const c = fill.get(x, y);
+      if (c) r.set(x, y, c);
+      else if (fill.get(x - 1, y) || fill.get(x + 1, y) || fill.get(x, y - 1) || fill.get(x, y + 1))
+        r.set(x, y, C.outline);
+    }
   }
   return r;
 }
@@ -962,8 +1017,11 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
     }
   }
   upload(textures, EMOTE_TEX.angry, emoteBubble('angry'));
-  upload(textures, EMOTE_TEX.happy, emoteBubble('happy'));
   upload(textures, EMOTE_TEX.hand, emoteBubble('hand'));
+  upload(textures, EMOTE_TEX.tasty, emoteBubble('tasty'));
+  upload(textures, EMOTE_TEX.love, emoteBubble('love'));
+  upload(textures, EMOTE_TEX.slow, emoteBubble('slow'));
+  upload(textures, MARKER_TEX, selectMarker());
   upload(textures, COIN_TEX, coin());
   for (const id of RECIPE_IDS) {
     upload(textures, DISH_TEX[id], dishIcon(id));

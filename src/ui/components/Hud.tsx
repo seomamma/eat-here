@@ -1,6 +1,7 @@
 import { STRINGS } from '../../data/strings';
 import { formatClock, weekdayIndex } from '../../sim/time';
-import { day, minuteOfDay, money } from '../store';
+import { RANKS, rankDef } from '../../data/ranks';
+import { day, fame, minuteOfDay, money, rank } from '../store';
 import { Card } from './Card';
 
 function CoinIcon() {
@@ -15,6 +16,32 @@ function CoinIcon() {
         stroke-linecap="round"
       />
     </svg>
+  );
+}
+
+/** Rank name and progress to the next rank (full bar at the top rank). */
+function FameBar() {
+  const current = rankDef(rank.value);
+  const next = RANKS[rank.value];
+  const total = next ? next.fame - current.fame : 1;
+  const done = next ? Math.max(0, fame.value - current.fame) : 1;
+  const pct = Math.min(100, Math.round((done / total) * 100));
+  return (
+    <div class="fame" role="status" aria-label={STRINGS.fame.label}>
+      <div class="fame-name">
+        <span class="fame-rank">{STRINGS.fame.rank(current.rank)}</span>
+        <span class="fame-title">{current.name}</span>
+      </div>
+      <div class="fame-bar">
+        <div
+          class={`fame-fill${pct === 0 ? ' fame-fill--empty' : ''}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span class="fame-text">
+        {next ? STRINGS.fame.progress(fame.value, next.fame) : STRINGS.fame.max}
+      </span>
+    </div>
   );
 }
 
@@ -41,6 +68,9 @@ export function Hud() {
             {amount}
           </span>
         </div>
+      </Card>
+      <Card accent="saffron" class="fame-card">
+        <FameBar />
       </Card>
     </div>
   );
