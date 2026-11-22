@@ -107,8 +107,11 @@ Every guest arrives with an **empty bar** (0–100, shown as 5 stars filling up 
 | Order taken quickly (≤ 10 s) | +10 |
 | Food arrived quickly (≤ 25 s) | +15 |
 | Dish quality (10 + recipe level × 5, + favorite bonus) | +15 … +35 |
-| Decor appeal near their seat (sum of appeal in radius) | +0 … +20 |
-| Used toilet (post-MVP) | +10 |
+| Decor appeal near their seat (sum of appeal in radius 2, plus painted floors/walls up to +4; capped together) | +0 … +20 |
+| Comfy seat (chair + table comfort, by level; M12) | +0 … +14 |
+| Lovely music (piano aura, radius 3, best piano only; M12) | +4 … +12 |
+| Clean toilet (visited after eating, by level; M12) | +6 … +14 |
+| Snack while waiting (vending machine; M12) | +5 … +7 |
 | Looked at special decor while walking (post-MVP) | +5 each |
 | Long waits | 0 for that step (no negative points in MVP) |
 
@@ -221,11 +224,32 @@ This is a discovery system with a recipe book that fills up.
 
 ## 7. Facilities (furniture & equipment)
 
-All furniture is data-driven: size (footprint), price, **appeal**, function (seat, table, oven, pass, decor, toilet…), and **level (1–5)**.
+All furniture is data-driven (`src/data/furniture.ts`): size (footprint), category, price, unlock rank, **appeal**, optional comfort / aura / interaction / speed, five **levels** and the coins for each level-up.
 
-- **Leveling up facilities** is a core joy: Oven Lv.2 cooks faster; Plant Lv.2 gives more appeal; Table Lv.2 makes guests more comfortable.
-- **MVP:** furniture can be placed on a free grid in prep phase. One purchasable item: **Potted Plant** (decor, +appeal). Facility levels come in the first post-MVP milestone.
-- Placement rules: must fit on floor, must not block paths (validated by pathfinding), tables need adjacent chairs.
+**Levels (M12).** Every placed piece goes Lv.1 → Lv.5 with the *Upgrade* button of its item card (build mode; any phase except night). Level-up cost per step is in the def (`levelUpCost`, 4 values). Effects read the level everywhere: decor appeal, comfort, aura, toilet/vending points and coins, oven and pass speed. Lv.3+ shows a gold trim on the sprite, Lv.5 a blinking sparkle; the oven also gets a woodpile (Lv.3+) and a copper collar (Lv.5). **Selling** refunds 50 % of the price plus 50 % of the coins spent on upgrades (not while in use, never the last oven or pass, only where the room stays walkable).
+
+| Piece | Category | Size | Price | Unlock | Effect (Lv.1 → Lv.5) |
+|---|---|---|---|---|---|
+| Wooden Chair | Seating | 1×1 | 25 | start | comfort 0 → 4 |
+| Cushioned Chair | Seating | 1×1 | 80 | Rank 2 | comfort 3 → 8 |
+| Small Table | Seating | 1×1 | 60 | start | comfort 0 → 4 |
+| Long Table | Seating | 2×1 | 140 | Rank 3 | comfort 1 → 6; chairs on both long sides |
+| Toilet | Fun | 1×1 | 260 | Rank 2 | after eating 35 % visit it (one at a time): "Clean toilet" +6 → +14 |
+| Vending Machine | Fun | 1×1 | 320 | Rank 3 | guests waiting for a seat snack (70 %, one at a time): 3 → 9 coins + "Snack" +5 → +7 |
+| Piano | Fun | 2×1 | 650 | Rank 4 | decor appeal 3 → 10 and music aura radius 3: +4 → +12 |
+| Potted Plant | Decor | 1×1 | 150 | start | appeal 5 → 25 |
+| Flower Box | Decor | 1×1 | 70 | Rank 2 | appeal 2 → 10 |
+| Floor Lamp | Decor | 1×1 | 110 | Rank 2 | appeal 3 → 14 |
+| Painting on Easel | Decor | 1×1 | 180 | Rank 3 | appeal 4 → 18 |
+| Low Divider | Decor | 1×1 | 40 | Rank 3 | appeal 1 → 5 (blocks walking, rotatable) |
+| Pillar | Decor | 1×1 | 90 | Rank 4 | appeal 2 → 8 |
+| Marble Statue | Decor | 1×1 | 420 | Rank 4 | appeal 8 → 30 |
+| Pizza Oven | Kitchen | 2×1 | (start) | – | cook time ×1, 0.9, 0.8, 0.7, 0.6 |
+| Pass Counter | Kitchen | 2×1 | (start) | – | placing/picking up dishes ×1 … ×0.68 |
+
+**Floors & walls.** Floor tiles (wood, checker; terracotta at Rank 2, herringbone at Rank 3) and the back-wall segments (cream; brick at Rank 2, green stripes at Rank 3, blue tiles at Rank 4) are painted in Paint mode (shop: *Floors & Walls*): drag over tiles or along the walls; one command per stroke, price per changed tile/segment (4-22 coins), refused when the money is short. Painted surfaces carry a tiny appeal counted as decor (see D-039).
+
+- Placement rules: must fit on floor, must not block paths (validated by pathfinding; use spots of the oven, pass, vending machine and toilet stay reachable), a chair is used only if it faces a table.
 
 ## 8. Economy (MVP draft)
 

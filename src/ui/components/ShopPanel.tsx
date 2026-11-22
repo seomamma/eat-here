@@ -1,4 +1,4 @@
-import { FURNITURE } from '../../data/furniture';
+import { FURNITURE, type FurnitureDefId } from '../../data/furniture';
 import { INGREDIENTS, INGREDIENT_IDS, type IngredientId } from '../../data/ingredients';
 import { RECIPES, RECIPE_IDS } from '../../data/recipes';
 import { SHOP_CATEGORIES, shopItemsOf, unlockRank } from '../../data/shop';
@@ -86,6 +86,14 @@ function MarketTab() {
   );
 }
 
+/** Effect lines of a shop item at Lv.1; plain seats and tables get a short description. */
+function shopLines(defId: FurnitureDefId): string[] {
+  const lines = effectLines(defId, 1, false);
+  if (lines.length > 0) return lines;
+  const kind = FURNITURE[defId].kind;
+  return [kind === 'chair' ? STRINGS.shop.seats : STRINGS.shop.table];
+}
+
 function FurnitureTab() {
   const S = STRINGS.shop;
   const have = money.value;
@@ -120,7 +128,7 @@ function FurnitureTab() {
               <img class="shop-sprite" src={furnitureIconUrl(defId)} alt="" aria-hidden="true" />
               <div class="shop-info">
                 <span class="shop-name">{def.name}</span>
-                {effectLines(defId, 1, false).map((l) => (
+                {shopLines(defId).map((l) => (
                   <span class="shop-appeal" key={l}>
                     {l}
                   </span>

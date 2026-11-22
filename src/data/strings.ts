@@ -130,7 +130,7 @@ export const STRINGS = {
       hint: 'Drag over tiles to paint',
       hintWall: 'Drag along the back walls to paint',
       each: (price: number) => `${price} each`,
-      cost: (count: number, total: number) => `${count} \u00d7 \u2192 ${total}`,
+      cost: (count: number, total: number) => `Paint ${count} for ${total} coins`,
       rank: (rank: number) => `Rank ${rank}`,
       reasons: {
         notEnoughMoney: 'Not enough money',

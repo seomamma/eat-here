@@ -27,7 +27,7 @@ export const FLOOR_STYLES: Record<FloorStyleId, SurfaceStyle> = {
 };
 
 export const WALL_STYLES: Record<WallStyleId, SurfaceStyle> = {
-  cream: { name: 'Cream & brick', price: 6, appeal: 0, rank: 1, swatch: '#E3D0AE' },
+  cream: { name: 'Cream', price: 6, appeal: 0, rank: 1, swatch: '#E3D0AE' },
   brick: { name: 'Red brick', price: 12, appeal: 1, rank: 2, swatch: '#B5473A' },
   green_stripes: { name: 'Green stripes', price: 16, appeal: 1, rank: 3, swatch: '#3E7A3A' },
   blue_tiles: { name: 'Blue tiles', price: 22, appeal: 1, rank: 4, swatch: '#4A6A8F' },

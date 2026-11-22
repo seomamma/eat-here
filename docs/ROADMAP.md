@@ -230,3 +230,15 @@ Verified (tests, `npm run balance` and Playwright at 390×844 and 844×390, DSF 
 
 Toilet & wandering (old M15) folds into M12/M16 as furniture + happiness sources.
 
+
+### M12 — Facility levels & more furniture
+
+- [x] Catalog (`src/data/furniture.ts`, `shop.ts`): 16 pieces in four categories with unlock ranks 1-4 (D-039); long table (chairs on both sides), cushioned chair (comfort), vending machine, piano (music aura), toilet, flower box, lamp, easel, statue, pillar, low divider; oven and pass are upgraded, not bought.
+- [x] Levels Lv.1-5 for every piece: `upgradeFurniture` (coins by level, `furnitureLeveledUp`, ledger `upgrade`) and `sellFurniture` (50 % of price + 50 % of upgrade coins, ledger `sale`; refused in use, for the last oven/pass, at night). Oven cook time ×1 … ×0.6, pass ×1 … ×0.68.
+- [x] Floors and walls: `paintFloor` / `paintWall` (one command per stroke, total cost, refused when short or locked), `state.styles`, 4 floor and 4 wall styles with rank unlocks and a tiny appeal (cap 4 inside the decor cap of 20).
+- [x] Happiness: Comfy seat, Lovely music (best aura per reason), Clean toilet, Snack while waiting; guest card shows them. Vending income and sales in the Today breakdown.
+- [x] Interactions: one user at a time, seat beats snack, busy toilet skipped, use spots must stay reachable; seeded multi-day tests: everyone leaves by every report, no double claims.
+- [x] UI: shop category chips with locked items greyed ("Rank N"), Floors & Walls entry and paint bar, item card (name, Lv pips, effect "a → b", Upgrade / Move / Sell with confirm), "New in shop" notice on rank-up, "Unlocks at Rank N: …" in Next Goals.
+- [x] View: placeholder sprites (front and back), gold trim at Lv.3+, sparkle at Lv.5, oven woodpile (Lv.3+) and copper collar (Lv.5), floor and wall textures, LEVEL UP sparkles and sound.
+- [x] Save version 5 with a v4 → v5 migration (fixture `tests/fixtures/save-v4.json`).
+- [x] `npm run balance` (24 days) reports stars, pieces, level sum, vending income and spend; the scripted player builds, upgrades and paints within caps.

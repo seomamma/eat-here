@@ -3,15 +3,17 @@
  * and reports money / fame / rank curves. Pure sim, no DOM. Run with `npm run balance`.
  */
 import { DECOR_RADIUS } from '../src/data/happiness';
-import { FURNITURE } from '../src/data/furniture';
+import { FURNITURE, type FurnitureDefId } from '../src/data/furniture';
 import type { IngredientId } from '../src/data/ingredients';
 import { RECIPE_IDS, RECIPES } from '../src/data/recipes';
 import { REGULAR_IDS, regularDef } from '../src/data/regulars';
 import { isGuest } from '../src/sim/characters';
-import { profitOf } from '../src/sim/dayStats';
+import { ledgerTotal, profitOf } from '../src/sim/dayStats';
 import { Game } from '../src/sim/game';
 import { createInitialState } from '../src/sim/state';
-import { validateBuy } from '../src/sim/systems/build';
+import { autoFaceRot, validateBuy, validatePlacement } from '../src/sim/systems/build';
+import { upgradeCostOf } from '../src/sim/systems/facilities';
+import type { Rot } from '../src/data/furniture';
 import { nextUpgrade } from '../src/sim/systems/recipes';
 import { DAY_TICKS } from '../src/sim/time';
 
@@ -29,6 +31,14 @@ export interface DayRow {
   bigTip: number;
   served: number;
   plants: number;
+  /** Furniture pieces placed (the start layout counts) and the sum of their levels. */
+  pieces: number;
+  levels: number;
+  /** Today's vending income and total income (dishes + tips + vending). */
+  vending: number;
+  income: number;
+  /** Coins spent today on furniture, furniture upgrades and floors/walls. */
+  buildSpend: number;
 }
 
 export interface RunResult {
@@ -36,6 +46,8 @@ export interface RunResult {
   days: DayRow[];
   /** Day on which rank 2 was reached (null if not within the run). */
   rank2Day: number | null;
+  /** Day each rank 2..6 was reached (null = not within the run). */
+  rankDay: Record<number, number | null>;
   /** Day on which the first plant was bought (null if never). */
   plantDay: number | null;
   /** First day (at its end) any dish had reached Lv.2..5 (null = not within the run). */
@@ -46,26 +58,124 @@ export interface RunResult {
 
 /** Coins the player keeps back for ingredients before spending on anything. */
 const RESERVE = 30;
-/** Plants are worth 5 appeal each and decor caps at 20 per chair, so 4 are plenty. */
-const MAX_PLANTS = 4;
 /** How often (ticks) the scripted player looks around while the day runs. */
 const THINK_EVERY_TICKS = 50;
 
-/** Plant spot: the free tile with the most chairs within decor range. */
-function bestPlantSpot(game: Game): { x: number; y: number } | null {
+/** Decor spot: the free tile with the most chairs within `radius` (chairs near a wall win ties). */
+function bestDecorSpot(
+  game: Game,
+  defId: FurnitureDefId,
+  radius = DECOR_RADIUS,
+): { x: number; y: number } | null {
   const { state } = game;
   const chairs = state.furniture.filter((f) => FURNITURE[f.defId].kind === 'chair');
   let best: { x: number; y: number; score: number } | null = null;
   for (let y = 0; y < state.grid.height; y++) {
     for (let x = 0; x < state.grid.width; x++) {
-      if (!validateBuy({ ...state, money: 1e9 }, 'plant_potted', x, y, 0).ok) continue;
+      if (!validateBuy({ ...state, money: 1e9, rank: 9 }, defId, x, y, 0).ok) continue;
       const score = chairs.filter(
-        (c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) <= DECOR_RADIUS,
+        (c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) <= radius,
       ).length;
       if (!best || score > best.score) best = { x, y, score };
     }
   }
   return best;
+}
+
+/** Free-standing spot for an item with a use spot (vending, toilet): nearest to the door. */
+function doorSpot(game: Game, defId: FurnitureDefId): { x: number; y: number } | null {
+  const { state } = game;
+  let best: { x: number; y: number; d: number } | null = null;
+  for (let y = 1; y < state.grid.height - 2; y++) {
+    for (let x = 1; x < state.grid.width - 1; x++) {
+      if (!validateBuy({ ...state, money: 1e9, rank: 9 }, defId, x, y, 0).ok) continue;
+      const d = Math.abs(x - 4) + Math.abs(y - (state.grid.height - 3));
+      if (!best || d < best.d) best = { x, y, d };
+    }
+  }
+  return best;
+}
+
+const SIDES: readonly [number, number][] = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+];
+
+/** Tiles around a table footprint where a chair can go (valid, not blocking), with its rotation. */
+function chairSpots(game: Game, tableId: string): { x: number; y: number; rot: Rot }[] {
+  const { state } = game;
+  const table = state.furniture.find((f) => f.id === tableId);
+  if (!table) return [];
+  const tiles = new Set<string>();
+  const own = state.furniture.filter((f) => f.id === tableId);
+  const out: { x: number; y: number; rot: Rot }[] = [];
+  for (const f of own) {
+    const fp = FURNITURE[f.defId].footprint;
+    const [fw, fh] = f.rot % 2 === 1 ? [fp[1], fp[0]] : fp;
+    for (let dy = 0; dy < fh; dy++) {
+      for (let dx = 0; dx < fw; dx++) {
+        for (const [sx, sy] of SIDES) {
+          const x = f.x + dx + sx;
+          const y = f.y + dy + sy;
+          if (tiles.has(`${x},${y}`)) continue;
+          tiles.add(`${x},${y}`);
+          const rot = autoFaceRot(state.furniture, x, y);
+          if (validatePlacement(state, 'chair_wood', x, y, rot).ok) out.push({ x, y, rot });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Buys a table and `chairs` chairs around it at the spot with the most room for chairs. Spends
+ * nothing and returns false when the money does not cover the whole set.
+ */
+function buySet(
+  game: Game,
+  tableDef: FurnitureDefId,
+  chairDef: FurnitureDefId,
+  chairs: number,
+  reserve: number,
+): boolean {
+  const { state } = game;
+  const total = FURNITURE[tableDef].price + chairs * FURNITURE[chairDef].price;
+  if (state.money < total + reserve) return false;
+  let best: { x: number; y: number; rot: Rot; n: number } | null = null;
+  for (let y = 2; y < state.grid.height - 2; y++) {
+    for (let x = 1; x < state.grid.width - 1; x++) {
+      for (const rot of tableDef === 'table_long' ? ([0, 1] as const) : ([0] as const)) {
+        if (!validateBuy({ ...state, money: 1e9, rank: 9 }, tableDef, x, y, rot).ok) continue;
+        state.furniture.push({ id: '__probe', defId: tableDef, x, y, rot, level: 1 });
+        const n = chairSpots(game, '__probe').length;
+        state.furniture.pop();
+        if (n >= chairs && (!best || n > best.n)) best = { x, y, rot, n };
+      }
+    }
+  }
+  if (!best) return false;
+  if (
+    !game.dispatch({ type: 'buyAndPlace', defId: tableDef, x: best.x, y: best.y, rot: best.rot }).ok
+  )
+    return false;
+  const table = state.furniture[state.furniture.length - 1];
+  if (!table) return false;
+  let placed = 0;
+  for (const spot of chairSpots(game, table.id)) {
+    if (placed >= chairs) break;
+    const res = game.dispatch({
+      type: 'buyAndPlace',
+      defId: chairDef,
+      x: spot.x,
+      y: spot.y,
+      rot: spot.rot,
+    });
+    if (res.ok) placed++;
+  }
+  return true;
 }
 
 /** Ingredients the next upgrades of every unlocked recipe still need and the player lacks. */
@@ -80,6 +190,73 @@ function neededIngredients(game: Game): IngredientId[] {
   return out;
 }
 
+/** `BALANCE_SKIP=toilet,table_long npm run balance` leaves those pieces out (for experiments). */
+const SKIP_ITEMS = new Set(
+  (
+    (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env
+      .BALANCE_SKIP ?? ''
+  )
+    .split(',')
+    .filter(Boolean),
+);
+
+/** What the scripted player builds, in order, with caps (so the room does not become clutter). */
+const BUILD_PLAN: readonly {
+  defId: FurnitureDefId;
+  /** Total pieces of this kind wanted (the start layout counts). */
+  cap: number;
+  /** `set` buys a table with `chairs` chairs; `decor` buys at the best decor spot; `door` near the door. */
+  how: 'set' | 'decor' | 'door';
+  chairDef?: FurnitureDefId;
+  chairs?: number;
+}[] = [
+  { defId: 'table_small', cap: 3, how: 'set', chairDef: 'chair_wood', chairs: 2 },
+  { defId: 'plant_potted', cap: 4, how: 'decor' },
+  { defId: 'flower_box', cap: 2, how: 'decor' },
+  { defId: 'toilet', cap: 1, how: 'door' },
+  { defId: 'vending_machine', cap: 1, how: 'door' },
+  { defId: 'floor_lamp', cap: 1, how: 'decor' },
+  { defId: 'painting_easel', cap: 1, how: 'decor' },
+  { defId: 'piano', cap: 1, how: 'decor' },
+  { defId: 'statue', cap: 1, how: 'decor' },
+];
+/** Extra tables and chairs are only bought once the oven is at least this level. */
+const SEATS_FROM_OVEN_LEVEL = 3;
+/** Level the scripted player takes each kind of piece to (capped: a few upgrades, not all). */
+const UPGRADE_TARGET: Partial<Record<FurnitureDefId, number>> = {
+  oven_pizza: 5,
+  counter_pass: 2,
+  chair_wood: 2,
+  chair_cushion: 3,
+  table_small: 2,
+  table_long: 3,
+  plant_potted: 3,
+  flower_box: 2,
+  floor_lamp: 2,
+  painting_easel: 3,
+  piano: 3,
+  statue: 3,
+  vending_machine: 3,
+  toilet: 3,
+};
+/** Coins kept back before furniture upgrades (more than for dishes: they are optional). */
+const UPGRADE_RESERVE = 120;
+
+/**
+ * Coins the player holds back for the next dish upgrades before spending on furniture: dishes
+ * come first (they raise happiness and price), the room is built with what is left.
+ */
+function recipeReserve(game: Game): number {
+  let need = 0;
+  for (const id of RECIPE_IDS) {
+    const r = game.state.recipes[id];
+    const up = r.unlocked ? nextUpgrade(id, r.level) : null;
+    if (!up) continue;
+    need = need === 0 ? up.coins : Math.min(need, up.coins);
+  }
+  return need;
+}
+
 /** One round of the scripted player's decisions. */
 function think(game: Game, log: { plantDay: number | null }): void {
   const { state } = game;
@@ -91,14 +268,68 @@ function think(game: Game, log: { plantDay: number | null }): void {
     if (up && state.money - up.coins >= RESERVE)
       game.dispatch({ type: 'upgradeRecipe', recipeId: id });
   }
-  // Buy a plant when affordable (a few; more only clutter the room).
+  // The oven first: the chef is the bottleneck of the whole restaurant (extra seats only make
+  // the queue longer until the kitchen is faster).
+  const oven = state.furniture.find((f) => f.defId === 'oven_pizza');
+  const ovenCost = oven ? upgradeCostOf(oven) : null;
   const plants = state.furniture.filter((f) => f.defId === 'plant_potted').length;
-  if (plants < MAX_PLANTS && state.money >= FURNITURE.plant_potted.price + RESERVE) {
-    const spot = bestPlantSpot(game);
-    if (spot) {
-      const res = game.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', ...spot, rot: 0 });
-      if (res.ok && log.plantDay === null) log.plantDay = state.clock.day;
+  if (
+    oven &&
+    ovenCost !== null &&
+    oven.level < 5 &&
+    plants >= 2 &&
+    state.money - ovenCost >= RESERVE
+  ) {
+    game.dispatch({ type: 'upgradeFurniture', id: oven.id });
+  }
+  // Build: the first wanted piece that is unlocked and affordable (one per round), always
+  // leaving the coins for the next dish upgrade.
+  const keep = RESERVE + recipeReserve(game);
+  for (const item of BUILD_PLAN) {
+    if (SKIP_ITEMS.has(item.defId)) continue;
+    const have = state.furniture.filter((f) => f.defId === item.defId).length;
+    if (have >= item.cap) continue;
+    if (
+      state.rank <
+      (FURNITURE[item.defId].unlock === 'start'
+        ? 1
+        : (FURNITURE[item.defId].unlock as { rank: number }).rank)
+    )
+      continue;
+    if (item.how === 'set') {
+      if ((oven?.level ?? 1) < SEATS_FROM_OVEN_LEVEL) continue;
+      if (buySet(game, item.defId, item.chairDef ?? 'chair_wood', item.chairs ?? 2, keep)) break;
+      continue;
     }
+    // The first plants are cheap and lift happiness at once: they only keep the plain reserve.
+    const hold = item.defId === 'plant_potted' ? RESERVE : keep;
+    if (state.money < FURNITURE[item.defId].price + hold) continue;
+    const spot =
+      item.how === 'decor'
+        ? bestDecorSpot(game, item.defId, item.defId === 'piano' ? 3 : DECOR_RADIUS)
+        : doorSpot(game, item.defId);
+    if (!spot) continue;
+    const res = game.dispatch({ type: 'buyAndPlace', defId: item.defId, ...spot, rot: 0 });
+    if (res.ok) {
+      if (item.defId === 'plant_potted' && log.plantDay === null) log.plantDay = state.clock.day;
+      break;
+    }
+  }
+  // Furniture upgrades: the cheapest next level first, up to the targets above.
+  const candidates = state.furniture
+    .map((f) => ({ f, cost: upgradeCostOf(f) }))
+    .filter(
+      (e): e is { f: (typeof state.furniture)[number]; cost: number } =>
+        e.cost !== null && e.f.level < (UPGRADE_TARGET[e.f.defId] ?? 1),
+    )
+    // The oven comes first: the chef is the bottleneck of the whole restaurant.
+    .sort(
+      (a, b) =>
+        Number(b.f.defId === 'oven_pizza') - Number(a.f.defId === 'oven_pizza') || a.cost - b.cost,
+    );
+  const next = candidates[0];
+  if (next && state.money - next.cost >= UPGRADE_RESERVE + recipeReserve(game)) {
+    game.dispatch({ type: 'upgradeFurniture', id: next.f.id });
   }
   // Buy market ingredients that unlock an upgrade (cheapest first), keeping the reserve.
   const wanted = neededIngredients(game);
@@ -118,6 +349,7 @@ export function runSeed(seed: number, days: number): RunResult {
     seed,
     days: [],
     rank2Day: null,
+    rankDay: { 2: null, 3: null, 4: null, 5: null, 6: null },
     plantDay: null,
     levelDay: { 2: null, 3: null, 4: null, 5: null },
     regulars: {},
@@ -140,6 +372,7 @@ export function runSeed(seed: number, days: number): RunResult {
   });
   game.events.on('rankUp', (e) => {
     if (e.rank === 2 && result.rank2Day === null) result.rank2Day = game.state.clock.day;
+    if (result.rankDay[e.rank] === null) result.rankDay[e.rank] = game.state.clock.day;
   });
   const maxTicks = DAY_TICKS * 3;
   for (let d = 1; d <= days; d++) {
@@ -164,6 +397,15 @@ export function runSeed(seed: number, days: number): RunResult {
       bigTip,
       served: stats.guestsServed,
       plants: game.state.furniture.filter((f) => f.defId === 'plant_potted').length,
+      pieces: game.state.furniture.length,
+      levels: game.state.furniture.reduce((n, f) => n + f.level, 0),
+      vending: ledgerTotal(stats.ledger, 'vending'),
+      income: stats.income,
+      buildSpend:
+        -ledgerTotal(stats.ledger, 'furniture') -
+        stats.ledger.entries
+          .filter((e) => e.kind === 'upgrade' && (e.label.split(':')[0] ?? '') in FURNITURE)
+          .reduce((n, e) => n + e.amount, 0),
     });
     const top = Math.max(...RECIPE_IDS.map((id) => game.state.recipes[id].level));
     for (let lv = 2; lv <= 5; lv++)
@@ -201,6 +443,11 @@ export function formatReport(results: RunResult[]): string {
     'gifts',
     'noSeat%',
     'bigTip',
+    'stars',
+    'pieces',
+    'lvSum',
+    'vend',
+    'build',
   ];
   lines.push(head.map((h) => h.padStart(8)).join(''));
   for (let i = 0; i < days; i++) {
@@ -216,6 +463,11 @@ export function formatReport(results: RunResult[]): string {
       mean(rows.map((r) => r.gifts)).toFixed(1),
       (mean(rows.map((r) => r.noSeat)) * 100).toFixed(0),
       mean(rows.map((r) => r.bigTip)).toFixed(1),
+      (mean(rows.map((r) => r.avgHappiness)) / 20).toFixed(1),
+      mean(rows.map((r) => r.pieces)).toFixed(0),
+      mean(rows.map((r) => r.levels)).toFixed(0),
+      mean(rows.map((r) => r.vending)).toFixed(0),
+      mean(rows.map((r) => r.buildSpend)).toFixed(0),
     ];
     lines.push(cells.map((c) => c.padStart(8)).join(''));
   }
@@ -235,6 +487,22 @@ export function formatReport(results: RunResult[]): string {
     );
   }
   lines.push('');
+  for (let rk = 2; rk <= 4; rk++) {
+    const found = results.flatMap((r) => (r.rankDay[rk] == null ? [] : [r.rankDay[rk] as number]));
+    lines.push(
+      `Rank ${rk} reached: ${found.length}/${results.length} seeds, ` +
+        `mean day ${found.length ? mean(found).toFixed(1) : '-'} ` +
+        `(per seed: ${fmt(results.map((r) => r.rankDay[rk] ?? null))})`,
+    );
+  }
+  const totalVend = results.flatMap((r) => r.days).reduce((n, d) => n + d.vending, 0);
+  const totalIncome = results.flatMap((r) => r.days).reduce((n, d) => n + d.income, 0);
+  const totalBuild = results.flatMap((r) => r.days).reduce((n, d) => n + d.buildSpend, 0);
+  lines.push(
+    `Vending income share: ${((totalVend / Math.max(1, totalIncome)) * 100).toFixed(1)}% of income ` +
+      `(${(totalVend / results.length).toFixed(0)} coins per run); ` +
+      `spent on furniture, upgrades and paint: ${(totalBuild / results.length).toFixed(0)} per run`,
+  );
   lines.push(`Rank 2 day per seed:     ${fmt(r2)}`);
   lines.push(`First plant day per seed: ${fmt(plant)}`);
   lines.push(`Lowest daily profit: ${minProfit}   Lowest daily big tip: ${minBigTip}`);

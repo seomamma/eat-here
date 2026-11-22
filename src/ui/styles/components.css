@@ -2365,6 +2365,11 @@
   margin: 4px auto 2px;
 }
 @media (orientation: landscape) and (max-height: 500px) {
+  .cat-chip {
+    min-height: 32px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
   .paint-bar {
     left: auto;
     right: 12px;

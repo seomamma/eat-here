@@ -27,7 +27,8 @@ export function effectLines(defId: FurnitureDefId, level: number, withNext = tru
     [at(arr, level), next ? at(arr, next) : null] as const;
   const lines: string[] = [];
   if (def.kind === 'decor') lines.push(C.appeal(...pair(def.appeal)));
-  if (def.comfort) lines.push(C.comfort(...pair(def.comfort)));
+  if (def.comfort && (withNext || at(def.comfort, level) > 0))
+    lines.push(C.comfort(...pair(def.comfort)));
   if (def.aura) lines.push(C.music(...pair(def.aura.points), def.aura.radius));
   if (def.kind === 'toilet' && def.interaction)
     lines.push(C.toilet(...pair(def.interaction.points)));
