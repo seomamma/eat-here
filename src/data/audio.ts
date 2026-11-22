@@ -5,7 +5,16 @@
  */
 
 export type SfxId =
-  'coin' | 'doorBell' | 'ovenDing' | 'pop' | 'place' | 'levelUp' | 'rankUp' | 'gift' | 'aww';
+  | 'coin'
+  | 'doorBell'
+  | 'ovenDing'
+  | 'pop'
+  | 'place'
+  | 'levelUp'
+  | 'rankUp'
+  | 'gift'
+  | 'aww'
+  | 'newRegular';
 
 export type ToneWave = 'sine' | 'triangle' | 'square' | 'sawtooth' | 'noise';
 
@@ -140,6 +149,19 @@ export const SFX: Record<SfxId, SfxDef> = {
       { wave: 'sine', freq: hz('E6'), at: 0, dur: 0.35, gain: 0.7 },
       { wave: 'sine', freq: hz('B6'), at: 0.12, dur: 0.6, gain: 0.7 },
       { wave: 'sine', freq: hz('E7'), at: 0.12, dur: 0.4, gain: 0.15 },
+    ],
+  },
+  // A warm welcome: a soft rising phrase (G-C-E-G) ending on a mellow chord.
+  newRegular: {
+    volume: 0.4,
+    minGapMs: 800,
+    tones: [
+      { wave: 'sine', freq: hz('G4'), at: 0, dur: 0.22, gain: 0.7, attack: 0.02 },
+      { wave: 'sine', freq: hz('C5'), at: 0.16, dur: 0.22, gain: 0.7, attack: 0.02 },
+      { wave: 'sine', freq: hz('E5'), at: 0.32, dur: 0.22, gain: 0.7, attack: 0.02 },
+      { wave: 'triangle', freq: hz('G5'), at: 0.48, dur: 0.8, gain: 0.7, attack: 0.02 },
+      { wave: 'sine', freq: hz('C5'), at: 0.48, dur: 0.8, gain: 0.35, attack: 0.02 },
+      { wave: 'sine', freq: hz('E5'), at: 0.48, dur: 0.8, gain: 0.3, attack: 0.02 },
     ],
   },
   // A gentle two-note sigh, falling. Not a punishment.

@@ -22,6 +22,10 @@ export function bindAudioEvents(game: Game, audio: AudioEngine): () => void {
     events.on('recipeLeveledUp', () => audio.play('levelUp')),
     events.on('rankUp', () => audio.play('rankUp')),
     events.on('giftReceived', () => audio.play('gift')),
+    // A new regular gets the warm jingle; story beats reuse the gift chime.
+    events.on('momentTriggered', (e) =>
+      audio.play(e.reward?.unlockRegular ? 'newRegular' : 'gift'),
+    ),
     events.on('phaseChanged', (e) => audio.setMood(mood(e.phase))),
   ];
   return () => offs.forEach((off) => off());

@@ -38,6 +38,7 @@ export class WorldScene extends Phaser.Scene {
       this.sim.events.on('paid', (e) => this.world.showCoinPopup(e.x, e.y, e.amount)),
       this.sim.events.on('dishServed', (e) => this.world.hopOnServe(state, e.guestId)),
       this.sim.events.on('giftReceived', (e) => this.world.sparklesAtGuest(e.guestId)),
+      this.sim.events.on('heartGained', (e) => this.world.sparklesAtGuest(e.guestId)),
       this.sim.events.on('recipeLeveledUp', () => this.world.sparklesAtOven(state)),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubs.forEach((u) => u()));

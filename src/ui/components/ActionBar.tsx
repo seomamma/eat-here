@@ -1,6 +1,6 @@
 import { STRINGS } from '../../data/strings';
 import { buildMode, exitBuild, ghost, menuOpen } from '../build';
-import { phase, report } from '../store';
+import { goalsDot, phase, report } from '../store';
 import { PizzaSliceIcon } from './MenuIcons';
 
 /**
@@ -22,10 +22,16 @@ export function ActionBar() {
             aria-expanded={menuOpen.value}
             onClick={() => {
               menuOpen.value = !menuOpen.value;
+              if (menuOpen.value) goalsDot.value = false;
             }}
           >
             <PizzaSliceIcon />
             <span class="menu-btn-label">{STRINGS.menu.button}</span>
+            {goalsDot.value && !menuOpen.value && (
+              <span class="menu-dot" role="status" aria-label={STRINGS.goals.newDot}>
+                !
+              </span>
+            )}
           </button>
           {buildMode.value && (
             <button type="button" class="btn btn--small btn--basil done-btn" onClick={exitBuild}>

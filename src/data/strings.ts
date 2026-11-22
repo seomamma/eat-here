@@ -15,6 +15,7 @@ export const STRINGS = {
   notice: {
     restoredBackup: 'We restored your last good save.',
     saveFailed: "Couldn't save your game. Free some browser storage.",
+    regularArrived: (name: string) => `${name} is here for a visit!`,
   },
   moneyLabel: 'Money',
   menu: {
@@ -27,7 +28,7 @@ export const STRINGS = {
     recipes: 'Recipes',
     build: 'Build',
     staff: 'Staff',
-    stats: 'Stats',
+    guests: 'Guests',
     settings: 'Settings',
   },
   settings: {
@@ -166,6 +167,39 @@ export const STRINGS = {
     reward: 'Reward',
     button: 'Yay!',
   },
+  moment: {
+    button: 'Lovely!',
+    coins: (n: number) => `+${n} coins`,
+    fame: (n: number) => `+${n} fame`,
+    regularJoined: 'New regular',
+  },
+  guestsBook: {
+    title: 'Guests',
+    close: 'Close',
+    favorite: 'Favorite',
+    visits: (n: number) => (n === 1 ? '1 visit' : `${n} visits`),
+    nextVisit: (weekday: string, day: number) => `Next visit: ${weekday} (day ${day})`,
+    today: (weekday: string) => `Visiting today (${weekday})`,
+    locked: 'Not met yet',
+    empty: 'Regulars you win over will show up here.',
+  },
+  goals: {
+    title: 'Next goals',
+    rank: (name: string) => `Reach ${name}`,
+    rankMax: 'Top rank reached!',
+    upgrade: (dish: string, level: number) => `Upgrade ${dish} to Lv.${level}`,
+    haveIngredient: (name: string) => `Have ${name}`,
+    coins: (have: number, need: number) => `${Math.min(have, need)} / ${need} coins`,
+    allUpgraded: 'Every dish is at the top level!',
+    hearts: (name: string, target: number) => `Win ${name}'s friendship: ${target} hearts`,
+    allRegularsDone: 'All regulars adore you!',
+    served: (dish: string, have: number, need: number) =>
+      `${dish} served: ${Math.min(have, need)} / ${need}`,
+    servedAtLevel: (dish: string, level: number, done: boolean) =>
+      done ? `${dish} Lv.${level} served` : `Serve a ${dish} at Lv.${level}`,
+    progress: (have: number, need: number) => `${Math.min(have, need)} / ${need}`,
+    newDot: 'New goal reached',
+  },
   guestCard: {
     close: 'Close',
     happiness: (value: number) => `Happiness ${value}/100`,
@@ -178,7 +212,10 @@ export const STRINGS = {
       food: 'Food came quickly',
       quality: 'Tasty dish',
       decor: 'Lovely decor',
+      usual: 'Their usual!',
     },
+    regular: 'Regular',
+    hearts: (n: number) => `${n} of 5 hearts`,
     phases: {
       arriving: 'Just arrived',
       waitingForSeat: 'Waiting for a table',

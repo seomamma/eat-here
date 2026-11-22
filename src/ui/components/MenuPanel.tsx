@@ -1,6 +1,7 @@
 import { STRINGS } from '../../data/strings';
 import { menuOpen, openFromMenu, type MenuTarget } from '../build';
 import { phase, report } from '../store';
+import { GoalsCard } from './GoalsCard';
 import { Card } from './Card';
 import { MenuCardIcon, type MenuIconId } from './MenuIcons';
 
@@ -11,13 +12,11 @@ const ACTIVE: { id: MenuTarget; label: string; icon: MenuIconId }[] = [
   { id: 'market', label: M.market, icon: 'market' },
   { id: 'recipes', label: M.recipes, icon: 'recipes' },
   { id: 'build', label: M.build, icon: 'build' },
+  { id: 'guests', label: M.guests, icon: 'guests' },
   { id: 'settings', label: M.settings, icon: 'settings' },
 ];
 
-const SOON: { label: string; icon: MenuIconId }[] = [
-  { label: M.staff, icon: 'staff' },
-  { label: M.stats, icon: 'stats' },
-];
+const SOON: { label: string; icon: MenuIconId }[] = [{ label: M.staff, icon: 'staff' }];
 
 /** The Menu hub: a grid of shortcut cards; opening one closes the hub and opens that panel. */
 export function MenuPanel() {
@@ -41,6 +40,7 @@ export function MenuPanel() {
               ×
             </button>
           </div>
+          <GoalsCard />
           <div class="menu-grid">
             {ACTIVE.map((c) => (
               <button type="button" class="menu-card" key={c.id} onClick={() => openFromMenu(c.id)}>

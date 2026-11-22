@@ -26,7 +26,7 @@ export function PizzaSliceIcon() {
   );
 }
 
-export type MenuIconId = 'shop' | 'market' | 'recipes' | 'build' | 'staff' | 'stats' | 'settings';
+export type MenuIconId = 'shop' | 'market' | 'recipes' | 'build' | 'staff' | 'guests' | 'settings';
 
 /** Simple 32x32 icons for the hub cards. */
 export function MenuCardIcon(props: { id: MenuIconId }) {
@@ -75,10 +75,17 @@ function shape(id: MenuIconId) {
           <path d="M5 28c0-7 5-10 11-10s11 3 11 10z" fill="var(--paper)" {...S} />
         </>
       );
-    case 'stats':
+    case 'guests':
       return (
         <>
-          <path d="M5 28V16h6v12zM13 28V6h6v22zM21 28V12h6v16z" fill="var(--paper)" {...S} />
+          <circle cx="11" cy="11" r="5" fill="var(--paper)" {...S} />
+          <path d="M2 27c0-6 4-9 9-9s9 3 9 9z" fill="var(--paper)" {...S} />
+          <path
+            d="M24 24c-5-3-6-6-4-8 1.500-1.300 3.200-.5 4 1 .8-1.500 2.500-2.300 4-1 2 2 1 5-4 8z"
+            fill="var(--tomato)"
+            {...S}
+            stroke-width="2"
+          />
         </>
       );
     case 'settings':

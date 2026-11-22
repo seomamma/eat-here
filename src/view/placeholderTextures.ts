@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
+import type { LookId } from '../data/regulars';
 import { STAFF, type StaffRole } from '../data/staff';
 import { TILE_H, TILE_W } from './iso';
 
@@ -91,6 +92,8 @@ interface CharPalette {
   /** Front apron / vest colour (default cream). */
   apron?: string;
   role?: StaffRole;
+  /** Small pixel detail that makes a named guest recognisable. */
+  accessory?: 'bun_shawl' | 'cap' | 'ponytail';
 }
 const CHAR_PALETTES: readonly CharPalette[] = [
   { shirt: [C.tomato1, C.tomato2, C.tomato3], hair: C.wood1 },
@@ -98,16 +101,35 @@ const CHAR_PALETTES: readonly CharPalette[] = [
   { shirt: [C.basil1, C.basil2, C.basil3], hair: C.cheese1 },
   { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.outline },
 ];
+/** Looks of named guests (regulars and companions), placeholder art for Phase B. */
+const GREY_HAIR = '#B9B4B0';
+const LOOK_PALETTES: Record<LookId, CharPalette> = {
+  nonna_rosa: {
+    shirt: [C.cool1, C.cool2, C.cool3],
+    hair: GREY_HAIR,
+    apron: C.cool2,
+    accessory: 'bun_shawl',
+  },
+  oliver: { shirt: [C.basil1, C.basil2, C.basil3], hair: C.outline, accessory: 'cap' },
+  mia: { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.wood2, accessory: 'ponytail' },
+};
+const LOOK_IDS = Object.keys(LOOK_PALETTES) as LookId[];
 const STAFF_ROLES = Object.keys(STAFF) as StaffRole[];
 const GUEST_AND_DEBUG_COUNT = CHAR_PALETTES.length;
 /** Staff palettes follow the debug walker and guests, in the order of the STAFF data. */
 const ALL_PALETTES: readonly CharPalette[] = [
   ...CHAR_PALETTES,
   ...STAFF_ROLES.map((role) => ({ ...STAFF[role].palette, role })),
+  ...LOOK_IDS.map((id) => LOOK_PALETTES[id]),
 ];
 export const CHAR_VARIANT_COUNT = ALL_PALETTES.length;
 export function staffVariant(role: StaffRole): number {
   return GUEST_AND_DEBUG_COUNT + STAFF_ROLES.indexOf(role);
+}
+
+/** Palette index of a named guest's look. */
+export function lookVariant(look: LookId): number {
+  return GUEST_AND_DEBUG_COUNT + STAFF_ROLES.length + LOOK_IDS.indexOf(look);
 }
 
 export function charTexKey(
@@ -126,6 +148,7 @@ export const EMOTE_TEX = {
   tasty: 'emote_tasty',
   love: 'emote_love',
   slow: 'emote_slow',
+  heart: 'emote_heart',
 } as const;
 /** Bouncing arrow above the selected guest (11x7). */
 export const MARKER_TEX = 'select_marker';
@@ -416,6 +439,24 @@ function characterFrame(
     rect(4, 2 + bob, 11, 8 + bob, pal.hair);
     rect(5, 9 + bob, 10, 9 + bob, C.wood2);
   }
+  if (pal.accessory === 'bun_shawl') {
+    // Grey bun on top of the head and a shawl over the shoulders with a fringe.
+    rect(6, 0 + bob, 9, 1 + bob, pal.hair);
+    rect(3, 10 + bob, 12, 12 + bob, C.brick2);
+    rect(4, 13 + bob, 11, 13 + bob, C.brick2);
+    for (const x of [4, 6, 8, 10]) fill.set(x, 14 + bob, C.brick3);
+    fill.set(7, 11 + bob, C.cheese2);
+  } else if (pal.accessory === 'cap') {
+    // Red cap with a visor on the front.
+    rect(4, 1 + bob, 11, 3 + bob, C.tomato2);
+    if (front) rect(5, 4 + bob, 11, 4 + bob, C.tomato1);
+    fill.set(7, 1 + bob, C.cream1);
+  } else if (pal.accessory === 'ponytail') {
+    // Ponytail swinging out of the back with a red bow.
+    rect(12, 4 + bob, 13, 8 + bob, pal.hair);
+    fill.set(12, 4 + bob, C.tomato2);
+    if (!front) rect(6, 3 + bob, 9, 3 + bob, pal.hair);
+  }
   if (pal.role === 'chef') {
     // Tall chef hat: puffy top plus a band over the forehead.
     rect(5, 0 + bob, 10, 2 + bob, C.cream1);
@@ -442,6 +483,7 @@ const EMOTE_COLORS: Record<EmoteKind, { bg: string; fg: string }> = {
   hand: { bg: C.cheese3, fg: C.outline },
   tasty: { bg: C.cheese3, fg: C.outline },
   love: { bg: C.cream1, fg: C.tomato2 },
+  heart: { bg: C.tomato2, fg: C.cream1 },
   slow: { bg: C.cool3, fg: C.cool1 },
 };
 
@@ -503,7 +545,7 @@ function emoteBubble(kind: EmoteKind): Raster {
       r.set(x, y, fg);
     for (const x of [5, 6, 7, 8, 9, 10]) r.set(x, 9, fg);
     r.set(4, 10, bg);
-  } else if (kind === 'love') {
+  } else if (kind === 'love' || kind === 'heart') {
     // Heart.
     for (const [y, x0, x1] of [
       [3, 5, 6],
@@ -1056,6 +1098,7 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, EMOTE_TEX.tasty, emoteBubble('tasty'));
   upload(textures, EMOTE_TEX.love, emoteBubble('love'));
   upload(textures, EMOTE_TEX.slow, emoteBubble('slow'));
+  upload(textures, EMOTE_TEX.heart, emoteBubble('heart'));
   upload(textures, MARKER_TEX, selectMarker());
   upload(textures, COIN_TEX, coin());
   upload(textures, SPARKLE_TEX.large, sparkle(5));

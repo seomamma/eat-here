@@ -9,6 +9,11 @@ import type { DayPhase } from '../sim/time';
 import type { GuestPhase } from '../sim/characters';
 import { isGuest } from '../sim/characters';
 import type { HappinessEntry } from '../sim/systems/happiness';
+import type { MomentCard, MomentReward } from '../data/moments';
+import { REGULAR_IDS, regularDef, type RegularId } from '../data/regulars';
+import { STRINGS } from '../data/strings';
+import { computeGoals, type Goal } from '../sim/systems/goals';
+import { nextVisitDay } from '../sim/systems/regulars';
 import { selectGuest, selectedGuestId } from './selection';
 
 /** UI-facing mirror of sim state. Written only from sim events; the UI never mutates the sim. */
@@ -32,6 +37,31 @@ export interface RankUpInfo {
 }
 /** Rank-ups waiting to be shown (the first one is on screen); the sim is paused while any is. */
 export const rankUps = signal<RankUpInfo[]>([]);
+
+export interface MomentInfo {
+  id: string;
+  card: MomentCard;
+  reward: MomentReward | null;
+}
+/** Moments waiting to be shown (the first one is on screen); the sim is paused while any is. */
+export const moments = signal<MomentInfo[]>([]);
+
+/** One regular as the Guests book shows them. */
+export interface RegularView {
+  id: RegularId;
+  unlocked: boolean;
+  hearts: number;
+  visits: number;
+  /** Day of the next visit (0 while locked). */
+  nextVisit: number;
+  /** True when the regular is due today. */
+  today: boolean;
+}
+export const regularViews = signal<RegularView[]>([]);
+
+/** The three goals of the Menu, and the "!" dot for a goal reached since the Menu was opened. */
+export const goals = signal<Goal[]>([]);
+export const goalsDot = signal(false);
 
 /** Copies of sim state the panels render (refreshed from sim events; read-only for the UI). */
 export const inventory = signal<Record<IngredientId, number>>({} as Record<IngredientId, number>);
@@ -75,6 +105,9 @@ export const titleMenu = signal<TitleMenu | null>(null);
 export interface GuestCardInfo {
   id: string;
   name: string;
+  /** Set for a regular; `hearts` is their friendship level. */
+  regularId: RegularId | null;
+  hearts: number;
   happiness: number;
   log: HappinessEntry[];
   phase: GuestPhase;
@@ -82,6 +115,7 @@ export interface GuestCardInfo {
 export const guestCard = signal<GuestCardInfo | null>(null);
 
 const RANK_UP_PAUSE = 'rankUp';
+const MOMENT_PAUSE = 'moment';
 /** How often the open info card re-reads its guest (ms). */
 const GUEST_CARD_REFRESH_MS = 150;
 let simRef: Game | null = null;
@@ -149,11 +183,66 @@ export function bindStore(sim: Game): void {
     ];
     sim.pause(RANK_UP_PAUSE);
   });
+  sim.events.on('momentTriggered', (e) => {
+    moments.value = [...moments.value, { id: e.id, card: e.card, reward: e.reward }];
+    sim.pause(MOMENT_PAUSE);
+  });
+  sim.events.on('regularArrived', (e) =>
+    pushToast({
+      kind: 'notice',
+      text: STRINGS.notice.regularArrived(regularDef(e.regularId).name),
+    }),
+  );
+  const syncRegulars = () => {
+    const { day: today } = sim.state.clock;
+    regularViews.value = REGULAR_IDS.map((id) => {
+      const r = sim.state.regulars[id];
+      const nextVisit = r.unlocked ? nextVisitDay(id, today, r.lastVisitDay) : 0;
+      return {
+        id,
+        unlocked: r.unlocked,
+        hearts: r.hearts,
+        visits: r.visits,
+        nextVisit,
+        today: r.unlocked && nextVisit === today && r.lastVisitDay !== today,
+      };
+    });
+  };
+  syncRegulars();
+  const syncGoals = (flag: boolean) => {
+    const next = computeGoals(sim.state);
+    const prev = goals.peek();
+    // A slot whose goal changed (and was not already "done") means the old goal was reached.
+    if (flag && prev.some((g, i) => next[i] && g.id !== next[i].id && g.kind !== 'done'))
+      goalsDot.value = true;
+    if (JSON.stringify(prev) !== JSON.stringify(next)) goals.value = next;
+  };
+  syncGoals(false);
+  for (const ev of ['fameChanged', 'recipeLeveledUp', 'inventoryChanged', 'moneyChanged'] as const)
+    sim.events.on(ev, () => syncGoals(true));
+  for (const ev of [
+    'momentTriggered',
+    'heartGained',
+    'regularArrived',
+    'rankUp',
+    'dayStarted',
+  ] as const) {
+    sim.events.on(ev, () => {
+      syncRegulars();
+      syncGoals(true);
+    });
+  }
   sim.events.on('guestLeft', (e) => {
     if (selectedGuestId.value === e.guestId) selectGuest(null);
   });
   selectedGuestId.subscribe(() => refreshGuestCard(sim));
   setInterval(() => refreshGuestCard(sim), GUEST_CARD_REFRESH_MS);
+}
+
+/** Closes the moment card; the sim resumes once the last one is dismissed. */
+export function dismissMoment(): void {
+  moments.value = moments.value.slice(1);
+  if (moments.value.length === 0) simRef?.resume(MOMENT_PAUSE);
 }
 
 /** Closes the RANK UP modal; the sim resumes once the last one is dismissed. */
@@ -172,6 +261,8 @@ function refreshGuestCard(sim: Game): void {
   const next: GuestCardInfo = {
     id: guest.id,
     name: guest.name,
+    regularId: guest.regularId,
+    hearts: guest.regularId ? sim.state.regulars[guest.regularId].hearts : 0,
     happiness: guest.happiness,
     log: guest.happinessLog.map((e) => ({ ...e })),
     phase: guest.phase,

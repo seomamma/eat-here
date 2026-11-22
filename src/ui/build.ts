@@ -34,6 +34,7 @@ export const ghost = signal<Ghost | null>(null);
 export const shopOpen = signal(false);
 export const shopTab = signal<'furniture' | 'market'>('furniture');
 export const recipesOpen = signal(false);
+export const guestsOpen = signal(false);
 /** The Menu hub (grid of shortcut cards) and the money breakdown popover. */
 export const menuOpen = signal(false);
 export const todayOpen = signal(false);
@@ -48,12 +49,13 @@ export interface ScreenRect {
 export const ghostRect = signal<ScreenRect | null>(null);
 
 /** Opens a panel from the Menu: closes the hub first. */
-export type MenuTarget = 'shop' | 'market' | 'recipes' | 'build' | 'settings';
+export type MenuTarget = 'shop' | 'market' | 'recipes' | 'guests' | 'build' | 'settings';
 export function openFromMenu(target: MenuTarget): void {
   menuOpen.value = false;
   if (target === 'shop') openShop('furniture');
   else if (target === 'market') openShop('market');
   else if (target === 'recipes') openRecipes();
+  else if (target === 'guests') openGuests();
   else if (target === 'settings') settingsOpen.value = true;
   else enterBuild();
 }
@@ -62,12 +64,20 @@ export function openFromMenu(target: MenuTarget): void {
 export function openShop(tab: 'furniture' | 'market' = shopTab.peek()): void {
   shopTab.value = tab;
   recipesOpen.value = false;
+  guestsOpen.value = false;
   shopOpen.value = true;
 }
 
 export function openRecipes(): void {
   shopOpen.value = false;
+  guestsOpen.value = false;
   recipesOpen.value = true;
+}
+
+export function openGuests(): void {
+  shopOpen.value = false;
+  recipesOpen.value = false;
+  guestsOpen.value = true;
 }
 
 /** Pause reason held while build mode is on (placing or moving): time stands still. */
@@ -82,6 +92,7 @@ export function bindBuild(sim: Game): void {
     if (e.phase === 'night' || e.phase === 'report') {
       exitBuild();
       menuOpen.value = false;
+      guestsOpen.value = false;
       todayOpen.value = false;
       settingsOpen.value = false;
     }
@@ -132,6 +143,7 @@ export function exitBuild(): void {
   ghostRect.value = null;
   shopOpen.value = false;
   recipesOpen.value = false;
+  guestsOpen.value = false;
 }
 
 /** Starts placing a new purchase at a free tile near the room centre. Money is spent on confirm. */

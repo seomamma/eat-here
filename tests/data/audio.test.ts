@@ -11,6 +11,7 @@ const IDS: SfxId[] = [
   'rankUp',
   'gift',
   'aww',
+  'newRegular',
 ];
 
 describe('audio data', () => {

@@ -27,6 +27,7 @@ import {
   charTexKey,
   furnitureTexKey,
   isMirroredRot,
+  lookVariant,
   staffVariant,
   type CharAnim,
   type CharFacing,
@@ -87,6 +88,7 @@ const COOK_FPS = 3;
 /** Palette index of a character: 0 = debug walker, guest variants follow. */
 function paletteOf(c: Character): number {
   if (isStaff(c)) return staffVariant(c.role);
+  if (isGuest(c) && c.look) return lookVariant(c.look);
   return isGuest(c) ? (c.variant % GUEST_VARIANTS) + 1 : 0;
 }
 /** Guest palettes are variants 1..3 (0 = debug walker, then staff). */

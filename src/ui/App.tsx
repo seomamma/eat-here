@@ -10,6 +10,8 @@ import { RecipePanel } from './components/RecipePanel';
 import { ShopPanel } from './components/ShopPanel';
 import { Toasts } from './components/Toasts';
 import { RankUpModal } from './components/RankUpModal';
+import { MomentModal } from './components/MomentModal';
+import { GuestsPanel } from './components/GuestsPanel';
 import { ReportModal } from './components/ReportModal';
 import { TitleScreen } from './components/TitleScreen';
 import { screen } from './store';
@@ -28,9 +30,11 @@ export function App() {
       <TodayPanel />
       <ShopPanel />
       <RecipePanel />
+      <GuestsPanel />
       <Toasts />
       <ReportModal />
       <RankUpModal />
+      <MomentModal />
     </>
   );
 }

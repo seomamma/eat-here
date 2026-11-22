@@ -3,6 +3,7 @@ import { STRINGS } from '../../data/strings';
 import { selectGuest } from '../selection';
 import { guestCard } from '../store';
 import { Card } from './Card';
+import { Hearts } from './GuestsPanel';
 
 const STAR_PATH = 'M10 1l2.6 5.8 6.4.7-4.8 4.3 1.4 6.2L10 14.8 4.4 18l1.4-6.2L1 7.5l6.4-.7z';
 
@@ -38,7 +39,10 @@ export function GuestCard() {
     <div class="guest-card interactive">
       <Card accent="sky">
         <div class="guest-head">
-          <h2 class="guest-name">{g.name}</h2>
+          <h2 class="guest-name">
+            {g.name}
+            {g.regularId && <span class="badge badge--regular">{S.regular}</span>}
+          </h2>
           <button
             type="button"
             class="close-btn"
@@ -48,7 +52,10 @@ export function GuestCard() {
             ×
           </button>
         </div>
-        <Stars count={stars} />
+        <div class="guest-rating">
+          <Stars count={stars} />
+          {g.regularId && <Hearts count={g.hearts} />}
+        </div>
         <p class="guest-meta">
           {S.happiness(Math.round(Math.min(HAPPINESS_MAX, g.happiness)))} · {S.phases[g.phase]}
         </p>
