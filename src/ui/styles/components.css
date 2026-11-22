@@ -1,0 +1,68 @@
+#ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--ink);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#ui > * {
+  pointer-events: none;
+}
+
+.interactive,
+#ui button {
+  pointer-events: auto;
+}
+
+.top-center {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+}
+
+.card {
+  background: var(--paper);
+  border: var(--card-border) solid var(--ink);
+  border-radius: var(--card-radius);
+  padding: 10px 18px;
+  box-shadow: var(--card-shadow) var(--card-shadow) 0 0 var(--accent, var(--tomato));
+  margin-right: var(--card-shadow);
+  margin-bottom: var(--card-shadow);
+}
+.card--tomato {
+  --accent: var(--tomato);
+}
+.card--basil {
+  --accent: var(--basil);
+}
+.card--saffron {
+  --accent: var(--saffron);
+}
+.card--sky {
+  --accent: var(--sky);
+}
+.card--crust {
+  --accent: var(--crust);
+}
+
+.card-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 24px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.card-subtitle {
+  margin: 4px 0 0;
+  font-weight: 800;
+  font-size: 14px;
+}

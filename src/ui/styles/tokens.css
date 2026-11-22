@@ -1,0 +1,22 @@
+:root {
+  --ink: #111111;
+  --paper: #ffffff;
+  --canvas: #f6f3ee;
+  --tomato: #e2483d;
+  --basil: #3fa25b;
+  --saffron: #f2b630;
+  --crust: #c8783a;
+  --sky: #4e86c7;
+
+  --font-heading: 'Archivo Black', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --card-border: 3px;
+  --card-radius: 12px;
+  --card-shadow: 6px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
