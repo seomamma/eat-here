@@ -157,7 +157,11 @@ Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left 
 - A dish at Lv.5 plus a special **topping item** becomes **"super delicious"** (e.g. Kebab Pizza + Feta) and attracts a matching **special guest** (a named VIP who only comes for that dish).
 - Regulars sometimes bring **exclusive ingredients**.
 
-**Guardrails (Kairosoft-likeness check).** Genre mechanics are free to use, but a game that *feels* like a clone loses the comparison to the masters of that formula. For each new feature ask: *does it make guests' stories and the room richer, or does it only add numbers?* Keep one currency (coins) + collectible ingredients + hearts; **no second "rare coin"/medal currency**. Our identity = guests you care about (regulars, moments), cozy (no grind), retro world + modern UI, themed areas as social spaces, and possibly a **Swedish-pizzeria flavor** (Kebabpizza, Hawaii, Vesuvio, Capricciosa…) as a unique hook.
+**More idea seeds (user, after M10):**
+- **Kebab dishes as a fun extra** (Kebab Roll, Kebab Pita, Kebab & Fries) — not a Swedish-pizzeria theme. Unlocked **through a story, not a VIP drop**: e.g. a regular, *Kemal*, who loves the place; at 3♥ he shares his family's kebab recipe (a Moment) → kebab menu unlocked.
+- **Exotic animals:** some guests arrive with exotic pets (parrot, tortoise, ferret…). If such a guest "approves" your Animal Area (a Moment), you unlock **Exotic Animal Food** for the pet kitchen.
+
+**Guardrails (Kairosoft-likeness check).** Genre mechanics are free to use, but a game that *feels* like a clone loses the comparison to the masters of that formula. For each new feature ask: *does it make guests' stories and the room richer, or does it only add numbers?* Keep one currency (coins) + collectible ingredients + hearts; **no second "rare coin"/medal currency**. Our identity = guests you care about (regulars, moments), cozy (no grind), retro world + modern UI, themed areas as social spaces, themed areas as social spaces. (A Swedish-pizzeria theme was considered and rejected by the user.)
 
 **Next Goals card** (pillar 5): a compact card in the Menu (and a small "!" pulse on the Menu button when a goal is newly reached) listing 3 goals: next rank (fame x/y), a recipe/upgrade goal, a regular hint or hearts goal.
 

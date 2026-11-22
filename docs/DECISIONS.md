@@ -174,3 +174,8 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 ### D-035 Procedural audio, settings and "Back to title" (M10)
 **Status:** Accepted (M10)
 **Decision:** All sounds are synthesised with the Web Audio API in `src/platform/audio.ts` from tone lists in `src/data/audio.ts` (no asset files, no new dependency). The context is created on the first user gesture and suspended while the page is hidden. SFX are rate-limited per sound and with a global burst budget. Music is a quiet plucked arpeggio loop (80 bpm) that glides to a softer, darker variant while closing, at the report and at night. Settings (sound effects, music) live in their own localStorage key, apart from the save. "Back to title" saves and reloads the page, which drops every binding of the running session in one go (simplest correct teardown). **Why:** placeholder audio that costs nothing to keep and is replaced later by the real assets listed in ASSET_LIST §7; a reload avoids leaking listeners from the old sim.
+
+### D-036 Recipe levels 1–5: coins for Lv.2–3, coins + rare ingredient for Lv.4–5 (revises D-031)
+**Status:** Accepted (user choice after M10)
+**Decision:** Dishes go to **Lv.5**. Lv.2–3 cost coins only; Lv.4–5 cost coins **and** a rare ingredient. Common ingredients are no longer needed for levels (they stay useful later for toppings/secret recipes; until then the market mainly sells rares).
+**Why:** Early levels should feel quick and rewarding; the rare-ingredient hunt becomes the late challenge ("always a next goal"). Later: Lv.5 + a special topping = "super delicious" → attracts a special guest.
