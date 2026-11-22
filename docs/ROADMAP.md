@@ -217,5 +217,14 @@ Verified (tests, `npm run balance` and Playwright at 390×844 and 844×390, DSF 
 - [x] View: unique placeholder looks (grey bun and shawl, red cap, ponytail), heart emote; audio: new-regular jingle, gift chime for beats.
 - [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` pass; `npm run balance` still runs and reports when each regular unlocks (Nonna ≈ day 4.5, Oliver ≈ day 5.5 on average for the scripted player).
 
+### M11b — Recipe levels 1–5 & surroundings
+
+- [x] Recipe levels 1–5 (D-036): Lv.2 = 60 and Lv.3 = 150 coins only; Lv.4 = 300 and Lv.5 = 500 coins + one rare / exclusive ingredient per dish; `MAX_RECIPE_LEVEL` = 5.
+- [x] Ingredients: 7 rares + the exclusive Nonna's Secret Basil; the four commons are gone. Market (3 rare offers, 150–260) and gifts draw from rares only; exclusive never appears in either.
+- [x] Nonna Rosa unlocks at a Margherita Lv.4, her 2♥ beat gives Nonna's Secret Basil; Oliver unlocks after 20 Pepperoni.
+- [x] Save version 4 with a v3 → v4 migration (fixture `tests/fixtures/save-v3.json`).
+- [x] Recipe book with 5 pips, "Next: Lv.N" (coins only or coins + ingredient, Exclusive badge and hint); Next Goals handle Lv.4–5; `npm run balance` reports the day each level is first reached.
+- [x] Surroundings (view only): sidewalk and street in front of the door, grass and soil around the back and sides, trees, bushes, flowers, lamp post and bench from `src/data/surroundings.ts`; night overlay covers them; camera frames a little of it.
+
 Toilet & wandering (old M15) folds into M12/M16 as furniture + happiness sources.
 

@@ -13,7 +13,8 @@ export type Goal =
       kind: 'upgrade';
       recipe: RecipeId;
       level: number;
-      ingredient: IngredientId;
+      /** Null = coins only. */
+      ingredient: IngredientId | null;
       haveIngredient: boolean;
       money: number;
       coins: number;
@@ -59,7 +60,7 @@ function upgradeGoal(state: GameState): Goal {
     recipe: best.id,
     level: up.level,
     ingredient: up.ingredient,
-    haveIngredient: (state.inventory[up.ingredient] ?? 0) > 0,
+    haveIngredient: up.ingredient ? (state.inventory[up.ingredient] ?? 0) > 0 : true,
     money: state.money,
     coins: up.coins,
   };

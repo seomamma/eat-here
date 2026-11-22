@@ -35,11 +35,15 @@ function GoalRow(props: { goal: Goal }) {
         <li class="goal">
           <span class="goal-text">{G.upgrade(RECIPES[g.recipe].name, g.level)}</span>
           <span class="goal-sub">
-            <span class={g.haveIngredient ? 'goal-ok' : ''}>
-              {g.haveIngredient ? '✓ ' : ''}
-              {G.haveIngredient(INGREDIENTS[g.ingredient].name)}
-            </span>
-            {' · '}
+            {g.ingredient && (
+              <>
+                <span class={g.haveIngredient ? 'goal-ok' : ''}>
+                  {g.haveIngredient ? '✓ ' : ''}
+                  {G.haveIngredient(INGREDIENTS[g.ingredient].name)}
+                </span>
+                {' · '}
+              </>
+            )}
             <span class={g.money >= g.coins ? 'goal-ok' : ''}>{G.coins(g.money, g.coins)}</span>
           </span>
         </li>

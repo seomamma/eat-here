@@ -57,11 +57,11 @@ export const REGULARS = {
     look: 'nonna_rosa',
     favorite: 'margherita',
     unlock: {
-      trigger: { kind: 'servedLevel', recipe: 'margherita', level: 3 },
+      trigger: { kind: 'servedLevel', recipe: 'margherita', level: 4 },
       hint: 'Someone in town dreams of a perfect Margherita…',
       card: {
         title: 'Nonna Rosa became a regular!',
-        text: 'A perfect Margherita won her heart. She will drop by every Friday for lunch.',
+        text: 'A Margherita this good won her heart. She will drop by every Friday for lunch.',
         icon: 'nonna_rosa',
       },
     },
@@ -73,10 +73,10 @@ export const REGULARS = {
         hearts: 2,
         card: {
           title: 'A gift from Nonna Rosa',
-          text: 'Nonna Rosa brought you something from her secret pantry.',
+          text: 'Nonna Rosa shared the basil from her windowsill. It is not for sale anywhere.',
           icon: 'basil',
         },
-        reward: { ingredient: 'buffalo_mozzarella' },
+        reward: { ingredient: 'nonnas_secret_basil' },
       },
       {
         hearts: 4,
@@ -95,7 +95,7 @@ export const REGULARS = {
     look: 'oliver',
     favorite: 'pepperoni',
     unlock: {
-      trigger: { kind: 'servedCount', recipe: 'pepperoni', count: 10 },
+      trigger: { kind: 'servedCount', recipe: 'pepperoni', count: 20 },
       hint: 'A pepperoni fan is keeping an eye on your menu…',
       card: {
         title: 'Oliver became a regular!',

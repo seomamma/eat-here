@@ -46,26 +46,19 @@ export const DAYS_PER_WEEK = 7;
 /** Real seconds the night transition (report closed -> next morning) lasts at 1x speed. */
 export const NIGHT_REAL_SEC = 2.5;
 
-/** Highest recipe level the MVP ships (GAME_DESIGN §6: 1-5 later). */
-export const MAX_RECIPE_LEVEL_MVP = 3;
+/** Highest recipe level (D-036). */
+export const MAX_RECIPE_LEVEL = 5;
 /** Dish price = round(base price * (1 + PRICE_PER_LEVEL * (level - 1))). */
 export const PRICE_PER_LEVEL = 0.15;
 
 /** Special-ingredient sources (D-031). */
 export const MARKET_SLOTS = 3;
-/** Chance that one market slot offers a rare ingredient. */
-export const MARKET_RARE_CHANCE = 0.2;
-/** Market price range [min, max] per rarity, in coins. */
-export const MARKET_PRICE: Record<'common' | 'rare', readonly [number, number]> = {
-  common: [40, 70],
-  rare: [180, 260],
-};
+/** Market price range [min, max] in coins (rare ingredients only, D-036). */
+export const MARKET_PRICE: readonly [number, number] = [150, 260];
 /** A guest leaving with at least this happiness may leave a gift. */
 export const GIFT_MIN_HAPPINESS = 70;
 /** Chance of a gift per such guest. */
 export const GIFT_CHANCE = 0.12;
-/** Chance that a gift is a rare ingredient (otherwise common). */
-export const GIFT_RARE_CHANCE = 0.4;
 
 /** Tips at least this big may become the day's "notable" single ledger entry (D-033). */
 export const LEDGER_NOTABLE_TIP = 3;

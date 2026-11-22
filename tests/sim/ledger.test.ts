@@ -46,7 +46,6 @@ describe('money ledger', () => {
   it('upgrades are recorded and the ledger resets with the next day', () => {
     const g = new Game(createInitialState(3));
     g.state.money = 1000;
-    g.state.inventory.oregano = 5;
     const before = g.state.money;
     const r = g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' });
     const up = g.state.dayStats.ledger.entries.filter((e) => e.kind === 'upgrade');

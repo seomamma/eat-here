@@ -1,12 +1,12 @@
 import { INGREDIENTS } from '../../data/ingredients';
 import { RECIPES, RECIPE_IDS, type RecipeId } from '../../data/recipes';
-import { MAX_RECIPE_LEVEL_MVP } from '../../data/balance';
+import { MAX_RECIPE_LEVEL } from '../../data/balance';
 import { STRINGS } from '../../data/strings';
 import { nextUpgrade, priceAtLevel, validateUpgrade } from '../../sim/systems/recipes';
 import { recipesOpen } from '../build';
 import { dispatch, inventory, money, phase, recipeStates } from '../store';
 import { Card } from './Card';
-import { DishIcon, IngredientIcon, RarityBadge } from './Icons';
+import { CoinGlyph, DishIcon, IngredientIcon, RarityBadge } from './Icons';
 import { PantryChips } from './ShopPanel';
 
 const R = STRINGS.recipes;
@@ -14,7 +14,7 @@ const R = STRINGS.recipes;
 function Pips(props: { level: number }) {
   return (
     <span class="pips" aria-label={R.level(props.level)}>
-      {Array.from({ length: MAX_RECIPE_LEVEL_MVP }, (_, i) => (
+      {Array.from({ length: MAX_RECIPE_LEVEL }, (_, i) => (
         <i key={i} class={i < props.level ? 'pip pip--on' : 'pip'} />
       ))}
     </span>
@@ -48,8 +48,8 @@ function RecipeCard(props: { id: RecipeId }) {
     },
     props.id,
   );
-  const owned = up ? (inventory.value[up.ingredient] ?? 0) : 0;
-  const ing = up ? INGREDIENTS[up.ingredient] : null;
+  const owned = up?.ingredient ? (inventory.value[up.ingredient] ?? 0) : 0;
+  const ing = up?.ingredient ? INGREDIENTS[up.ingredient] : null;
   return (
     <li class="recipe">
       <DishIcon id={props.id} />
@@ -64,15 +64,29 @@ function RecipeCard(props: { id: RecipeId }) {
             <span class="recipe-next-price">{R.nextPrice(priceAtLevel(props.id, up.level))}</span>
           )}
         </div>
-        {up && ing ? (
+        {up ? (
           <div class="recipe-upgrade">
-            <IngredientIcon id={up.ingredient} size={34} />
+            {up.ingredient && ing ? (
+              <IngredientIcon id={up.ingredient} size={34} />
+            ) : (
+              <CoinGlyph size={34} />
+            )}
             <div class="recipe-ing">
-              <span class="recipe-ing-name">{ing.name}</span>
-              <span class="shop-meta">
-                <RarityBadge rarity={ing.rarity} />
-                <span class={owned > 0 ? 'owned owned--yes' : 'owned'}>{R.owned(owned)}</span>
-              </span>
+              <span class="recipe-ing-name">{R.nextLevel(up.level)}</span>
+              {ing ? (
+                <>
+                  <span class="recipe-ing-item">{ing.name}</span>
+                  <span class="shop-meta">
+                    <RarityBadge rarity={ing.rarity} />
+                    <span class={owned > 0 ? 'owned owned--yes' : 'owned'}>{R.owned(owned)}</span>
+                    {ing.rarity === 'exclusive' && (
+                      <span class="exclusive-hint">{STRINGS.exclusiveHint}</span>
+                    )}
+                  </span>
+                </>
+              ) : (
+                <span class="shop-meta">{R.coinsOnly}</span>
+              )}
             </div>
             <div class="recipe-action">
               <button

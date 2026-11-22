@@ -1,4 +1,4 @@
-import { MAX_RECIPE_LEVEL_MVP, PRICE_PER_LEVEL } from '../../data/balance';
+import { MAX_RECIPE_LEVEL, PRICE_PER_LEVEL } from '../../data/balance';
 import type { IngredientId } from '../../data/ingredients';
 import { RECIPES, type RecipeId, type RecipeUpgrade } from '../../data/recipes';
 import type { DayPhase } from '../time';
@@ -20,9 +20,9 @@ export function priceAtLevel(recipeId: RecipeId, level: number): number {
   return Math.round(RECIPES[recipeId].price * (1 + PRICE_PER_LEVEL * (level - 1)));
 }
 
-/** The upgrade that takes the recipe from `level` to `level + 1`, or null at the MVP max. */
+/** The upgrade that takes the recipe from `level` to `level + 1`, or null at the max level. */
 export function nextUpgrade(recipeId: RecipeId, level: number): RecipeUpgrade | null {
-  if (level >= MAX_RECIPE_LEVEL_MVP) return null;
+  if (level >= MAX_RECIPE_LEVEL) return null;
   return RECIPES[recipeId].upgrades.find((u) => u.level === level + 1) ?? null;
 }
 
@@ -34,7 +34,8 @@ export function validateUpgrade(view: UpgradeView, recipeId: RecipeId): UpgradeR
   if (!recipe.unlocked) return { ok: false, reason: 'locked' };
   const up = nextUpgrade(recipeId, recipe.level);
   if (!up) return { ok: false, reason: 'maxLevel' };
-  if ((view.inventory[up.ingredient] ?? 0) < 1) return { ok: false, reason: 'missingIngredient' };
+  if (up.ingredient && (view.inventory[up.ingredient] ?? 0) < 1)
+    return { ok: false, reason: 'missingIngredient' };
   if (view.money < up.coins) return { ok: false, reason: 'notEnoughMoney' };
   return { ok: true };
 }

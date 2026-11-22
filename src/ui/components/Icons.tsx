@@ -8,15 +8,15 @@ const STROKE = { stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linejoin': 'ro
 function IngredientShape(props: { id: IngredientId }) {
   const fill = INGREDIENTS[props.id].color;
   switch (props.id) {
-    case 'oregano':
-    case 'fresh_basil':
+    case 'sicilian_oregano':
+    case 'nonnas_secret_basil':
       return (
         <>
           <path d="M5 19C4 9 11 4 20 4c1 9-4 16-15 15z" fill={fill} {...STROKE} />
           <path d="M5 19L15 9" fill="none" {...STROKE} />
         </>
       );
-    case 'garlic_butter':
+    case 'black_garlic':
     case 'hot_honey':
       return (
         <>
@@ -46,7 +46,7 @@ function IngredientShape(props: { id: IngredientId }) {
           <circle cx="11" cy="16" r="1.2" fill="var(--ink)" />
         </>
       );
-    case 'chili_flakes':
+    case 'calabrian_chili':
       return (
         <>
           <path d="M4 13l5-4 3 4-4 4zM12 15l4-5 4 3-3 5zM9 19l4 2-4 1z" fill={fill} {...STROKE} />
@@ -55,13 +55,13 @@ function IngredientShape(props: { id: IngredientId }) {
   }
 }
 
-/** Ingredient icon in a square; rare ingredients get a saffron glow. */
+/** Ingredient icon in a square; rare ingredients get a round saffron frame, exclusive ones a tomato frame. */
 export function IngredientIcon(props: { id: IngredientId; size?: number }) {
-  const rare = INGREDIENTS[props.id].rarity === 'rare';
+  const { rarity } = INGREDIENTS[props.id];
   const size = props.size ?? 44;
   return (
     <span
-      class={`ing-icon${rare ? ' ing-icon--rare' : ''}`}
+      class={`ing-icon ing-icon--${rarity}`}
       style={{ width: `${size}px`, height: `${size}px` }}
       aria-hidden="true"
     >
@@ -118,5 +118,22 @@ export function DishIcon(props: { id: RecipeId; size?: number }) {
         </svg>
       )}
     </span>
+  );
+}
+
+/** Coin glyph for "coins only" upgrades (same look as the HUD coin). */
+export function CoinGlyph(props: { size?: number }) {
+  const size = props.size ?? 34;
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" class="coin-glyph">
+      <circle cx="12" cy="12" r="10" fill="var(--saffron)" stroke="var(--ink)" stroke-width="3" />
+      <path
+        d="M12 7v10M9 10c0-2 6-2 6 0s-6 2-6 4 6 2 6 0"
+        fill="none"
+        stroke="var(--ink)"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+    </svg>
   );
 }

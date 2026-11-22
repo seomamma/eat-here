@@ -1,18 +1,5 @@
-import {
-  GIFT_CHANCE,
-  GIFT_MIN_HAPPINESS,
-  GIFT_RARE_CHANCE,
-  MARKET_PRICE,
-  MARKET_RARE_CHANCE,
-  MARKET_SLOTS,
-} from '../../data/balance';
-import {
-  COMMON_INGREDIENTS,
-  INGREDIENTS,
-  RARE_INGREDIENTS,
-  type IngredientId,
-  type Rarity,
-} from '../../data/ingredients';
+import { GIFT_CHANCE, GIFT_MIN_HAPPINESS, MARKET_PRICE, MARKET_SLOTS } from '../../data/balance';
+import { INGREDIENTS, RARE_INGREDIENTS, type IngredientId } from '../../data/ingredients';
 import type { Emitter, GameEvents } from '../events';
 import { rngInt, rngNext, rngPick } from '../rng';
 import type { GameState } from '../state';
@@ -39,27 +26,14 @@ export function createInventory(): Record<IngredientId, number> {
   return out;
 }
 
-function pickOfRarity(state: GameState, rarity: Rarity, avoid: readonly IngredientId[]) {
-  const pool = (rarity === 'rare' ? RARE_INGREDIENTS : COMMON_INGREDIENTS).filter(
-    (id) => !avoid.includes(id),
-  );
-  return rngPick(
-    state,
-    pool.length > 0 ? pool : rarity === 'rare' ? RARE_INGREDIENTS : COMMON_INGREDIENTS,
-  );
-}
-
-/** Rolls the day's offers with the seeded RNG (distinct ingredients within one day). */
+/** Rolls the day's offers with the seeded RNG: rares only, distinct within one day (D-036). */
 export function rollMarket(state: GameState, day: number): MarketState {
   const offers: MarketOffer[] = [];
   for (let i = 0; i < MARKET_SLOTS; i++) {
-    const rarity: Rarity = rngNext(state) < MARKET_RARE_CHANCE ? 'rare' : 'common';
-    const ingredient = pickOfRarity(
-      state,
-      rarity,
-      offers.map((o) => o.ingredient),
-    );
-    const [min, max] = MARKET_PRICE[rarity];
+    const taken = offers.map((o) => o.ingredient);
+    const free = RARE_INGREDIENTS.filter((id) => !taken.includes(id));
+    const ingredient = rngPick(state, free.length > 0 ? free : RARE_INGREDIENTS);
+    const [min, max] = MARKET_PRICE;
     offers.push({ ingredient, price: rngInt(state, min, max), bought: false });
   }
   return { day, offers };
@@ -88,8 +62,7 @@ export function addIngredient(
 }
 
 /**
- * A guest leaves very happy: small chance of a gift ingredient (rares likelier than in the
- * market). No random numbers are drawn below the happiness threshold.
+ * A guest leaves very happy: small chance of a rare gift ingredient (never exclusive). No random numbers are drawn below the happiness threshold.
  */
 export function rollGift(
   state: GameState,
@@ -98,8 +71,7 @@ export function rollGift(
 ): void {
   if (guest.happiness < GIFT_MIN_HAPPINESS) return;
   if (rngNext(state) >= GIFT_CHANCE) return;
-  const rarity: Rarity = rngNext(state) < GIFT_RARE_CHANCE ? 'rare' : 'common';
-  const ingredient = rngPick(state, rarity === 'rare' ? RARE_INGREDIENTS : COMMON_INGREDIENTS);
+  const ingredient = rngPick(state, RARE_INGREDIENTS);
   addIngredient(state, events, ingredient);
   events.emit('giftReceived', { guestId: guest.id, guestName: guest.name, ingredient });
 }

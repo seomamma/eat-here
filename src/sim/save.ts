@@ -3,10 +3,14 @@ import { INGREDIENTS } from '../data/ingredients';
 import { REGULAR_IDS } from '../data/regulars';
 import { RECIPE_IDS } from '../data/recipes';
 import type { GameState } from './state';
+import { createInventory, rollMarket } from './systems/market';
 import { createCounters, createRegularStates } from './systems/regulars';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
+
+/** Coins paid for each removed common ingredient when upgrading a v3 save (old market minimum). */
+const COMMON_REFUND = 40;
 
 export const SAVE_FORMAT = 'eat-here-save';
 
@@ -52,6 +56,45 @@ export const MIGRATIONS: Migrations = {
       counters: createCounters(),
       regulars: createRegularStates(),
     };
+  },
+  // v3 -> v4: recipe levels 1-5 (D-036). Recipe levels stay. The four old common ingredients
+  // are gone: each one owned is paid out as COMMON_REFUND coins. Nonna's 2-heart beat now gives
+  // the exclusive basil, so a save that already saw the old beat gets one basil (else Lv.5
+  // Margherita would be unreachable). The market is re-rolled (rares only) when it holds an
+  // ingredient that no longer exists or is not rare.
+  3: (state) => {
+    const old = isObj(state.inventory) ? state.inventory : {};
+    const inventory: Record<string, number> = { ...createInventory() };
+    let refund = 0;
+    for (const [id, n] of Object.entries(old)) {
+      if (!isInt(n) || n < 0) continue;
+      if (id in inventory) inventory[id] = n;
+      else refund += n * COMMON_REFUND;
+    }
+    const seen = Array.isArray(state.momentsSeen) ? state.momentsSeen : [];
+    if (seen.includes('nonna_rosa_h2') && (inventory.nonnas_secret_basil ?? 0) < 1) {
+      inventory.nonnas_secret_basil = 1;
+    }
+    const market = isObj(state.market) ? state.market : null;
+    const offers = market && Array.isArray(market.offers) ? market.offers : [];
+    const valid =
+      offers.length > 0 &&
+      offers.every(
+        (o: unknown) =>
+          isObj(o) &&
+          typeof o.ingredient === 'string' &&
+          INGREDIENTS[o.ingredient as keyof typeof INGREDIENTS]?.rarity === 'rare',
+      );
+    const next: Record<string, unknown> = {
+      ...state,
+      inventory,
+      money: (isNum(state.money) ? state.money : 0) + refund,
+    };
+    if (!valid) {
+      // The re-roll draws from the saved RNG, so it stays deterministic.
+      next.market = rollMarket(next as unknown as GameState, isInt(market?.day) ? market.day : 1);
+    }
+    return next;
   },
 };
 

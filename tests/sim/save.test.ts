@@ -1,6 +1,8 @@
 import fixtureText from '../fixtures/save-v1.json?raw';
 import fixtureV2Text from '../fixtures/save-v2.json?raw';
+import fixtureV3Text from '../fixtures/save-v3.json?raw';
 import { describe, expect, it } from 'vitest';
+import { INGREDIENTS, INGREDIENT_IDS } from '../../src/data/ingredients';
 import { isGuest, isStaff } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
 import {
@@ -191,12 +193,12 @@ describe('migrate', () => {
     step(g, 300);
     expect(g.state.tick).toBeGreaterThan(500);
   });
-  it('migrates a v2 save to v3: empty moments, counters and regulars, guests become plain', () => {
+  it('migrates a v2 save to the current version: empty moments, counters and regulars, guests become plain', () => {
     const res = deserialize(fixtureV2Text);
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     const { state } = res;
-    expect(state.version).toBe(3);
+    expect(state.version).toBe(SAVE_VERSION);
     expect(state.momentsSeen).toEqual([]);
     expect(state.counters).toEqual({ served: {}, servedLevel: {} });
     expect(state.regulars.nonna_rosa.unlocked).toBe(false);
@@ -211,6 +213,41 @@ describe('migrate', () => {
     const g = new Game(state);
     step(g, 400);
     expect(g.state.tick).toBeGreaterThan(800);
+  });
+
+  it('migrates a v3 save to v4: commons become coins, market is rares only, levels stay', () => {
+    const res = deserialize(fixtureV3Text);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const { state } = res;
+    expect(state.version).toBe(4);
+    expect(Object.keys(state.inventory).sort()).toEqual([...INGREDIENT_IDS].sort());
+    expect(state.inventory.buffalo_mozzarella).toBe(1);
+    // 2 oregano + 1 fresh basil = 3 x 40 coins on top of the saved 685.
+    expect(state.money).toBe(685 + 120);
+    // Nonna's old 2-heart beat was seen: the player gets the new exclusive basil.
+    expect(state.inventory.nonnas_secret_basil).toBe(1);
+    expect(state.recipes.margherita.level).toBe(3);
+    expect(state.regulars.nonna_rosa.unlocked).toBe(true);
+    expect(state.market.offers).toHaveLength(3);
+    for (const o of state.market.offers) expect(INGREDIENTS[o.ingredient].rarity).toBe('rare');
+    // Deterministic: the same file migrates to the same state.
+    const again = deserialize(fixtureV3Text);
+    expect(again.ok && again.state).toEqual(state);
+    const g = new Game(state);
+    step(g, 400);
+    expect(g.state.tick).toBeGreaterThan(800);
+  });
+
+  it('keeps a v3 market that already has only rares', () => {
+    const f = JSON.parse(fixtureV3Text) as { state: { market: unknown } };
+    const market = {
+      day: 3,
+      offers: [{ ingredient: 'hot_honey', price: 200, bought: true }],
+    };
+    f.state.market = market;
+    const res = deserialize(JSON.stringify(f));
+    expect(res.ok && res.state.market).toEqual(market);
   });
 
   it('rejects a v3 state with a broken regulars block', () => {

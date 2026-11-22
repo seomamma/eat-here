@@ -88,14 +88,14 @@ describe('moments engine', () => {
     g.state.regulars.nonna_rosa.hearts = 2;
     checkMoments(g.state, g.events);
     expect(seen).toEqual([
-      { id: 'nonna_rosa_h2', title: 'A gift from Nonna Rosa', ingredient: 'buffalo_mozzarella' },
+      { id: 'nonna_rosa_h2', title: 'A gift from Nonna Rosa', ingredient: 'nonnas_secret_basil' },
     ]);
-    expect(g.state.inventory.buffalo_mozzarella).toBe(1);
+    expect(g.state.inventory.nonnas_secret_basil).toBe(1);
     expect(g.state.momentsSeen).toContain('nonna_rosa_h2');
     checkMoments(g.state, g.events);
     checkMoments(g.state, g.events);
     expect(seen.length).toBe(1);
-    expect(g.state.inventory.buffalo_mozzarella).toBe(1);
+    expect(g.state.inventory.nonnas_secret_basil).toBe(1);
   });
 
   it('applies coin rewards (with a ledger entry) and fame rewards', () => {
@@ -125,21 +125,21 @@ describe('moments engine', () => {
 });
 
 describe('regular unlocks', () => {
-  it('Nonna Rosa unlocks exactly when a Margherita is served at Lv.3', () => {
+  it('Nonna Rosa unlocks exactly when a Margherita is served at Lv.4', () => {
     const g = fresh();
     const log = attach(g);
-    for (const level of [1, 2]) {
+    for (const level of [1, 2, 3]) {
       g.state.recipes.margherita.level = level;
       recordServed(g.state, 'margherita');
       checkMoments(g.state, g.events);
     }
-    // Other dishes at Lv.3 do not count.
-    g.state.recipes.marinara.level = 3;
+    // Other dishes at Lv.4 do not count.
+    g.state.recipes.marinara.level = 4;
     recordServed(g.state, 'marinara');
     checkMoments(g.state, g.events);
     expect(g.state.regulars.nonna_rosa.unlocked).toBe(false);
     expect(log.moments).toEqual([]);
-    g.state.recipes.margherita.level = 3;
+    g.state.recipes.margherita.level = 4;
     recordServed(g.state, 'margherita');
     checkMoments(g.state, g.events);
     expect(g.state.regulars.nonna_rosa.unlocked).toBe(true);
@@ -147,10 +147,10 @@ describe('regular unlocks', () => {
     expect(g.state.regulars.oliver.unlocked).toBe(false);
   });
 
-  it('Oliver unlocks exactly at the 10th Pepperoni served', () => {
+  it('Oliver unlocks exactly at the 20th Pepperoni served', () => {
     const g = fresh();
     const log = attach(g);
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 19; i++) {
       recordServed(g.state, 'pepperoni');
       checkMoments(g.state, g.events);
       expect(g.state.regulars.oliver.unlocked).toBe(false);
@@ -325,7 +325,7 @@ describe('hearts', () => {
         expect(reg.hearts).toBe(2);
         expect(log.hearts.length).toBe(1);
         expect(log.moments).toContain('nonna_rosa_h2');
-        expect(g.state.inventory.buffalo_mozzarella).toBeGreaterThanOrEqual(1);
+        expect(g.state.inventory.nonnas_secret_basil).toBeGreaterThanOrEqual(1);
         gainedAny = true;
         beats++;
       } else {

@@ -135,13 +135,13 @@ Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left 
 - On each visit day, the regular arrives once in their window as a named guest with their own look. They get extra patience; if no seat is free they wait at the door instead of leaving quickly.
 - **"The usual, please!"**: if their favorite is on the menu they always order it and get **+10 "Their usual!"** happiness; fame from regulars ×2.
 - **Friendship hearts (0–5):** +1 heart per visit with happiness ≥ 70 (max one per day). Hearts are shown in the Guests book and in their guest card.
-- **Story beats:** moments triggered by hearts/visits, e.g. at 2 hearts "Nonna Rosa brought you her secret basil" (a rare ingredient reward), at 5 hearts a small bonus (e.g. fame or a special decor item later).
+- **Story beats:** moments triggered by hearts/visits, e.g. at 2 hearts "Nonna Rosa brought you her secret basil" (an exclusive ingredient reward), at 5 hearts a small bonus (e.g. fame or a special decor item later).
 
 **MVP regulars (2):**
 | Regular | Unlocks when | Visits | Favorite | Beats |
 |---|---|---|---|---|
-| **Nonna Rosa** | a Margherita **Lv.3** is served | Fridays (lunch) | Margherita | 2♥: gives Buffalo Mozzarella · 4♥: "She says it tastes like Napoli" (+fame) |
-| **Oliver** | 10 Pepperoni served (after Rank 2) | Tuesdays (dinner) | Pepperoni | 2♥: "Oliver greets the chef by name" · 3♥: "Oliver brought a date!" (2nd named guest, sits with him if a 2-seat table is free) · 5♥: "Oliver and Mia are celebrating something…" (+tip bonus) |
+| **Nonna Rosa** | a Margherita **Lv.4** is served | Fridays (lunch) | Margherita | 2♥: gives Nonna's Secret Basil (exclusive, needed for Margherita Lv.5) · 4♥: "She says it tastes like Napoli" (+fame) |
+| **Oliver** | 20 Pepperoni served (after Rank 2) | Tuesdays (dinner) | Pepperoni | 2♥: "Oliver greets the chef by name" · 3♥: "Oliver brought a date!" (2nd named guest, sits with him if a 2-seat table is free) · 5♥: "Oliver and Mia are celebrating something…" (+tip bonus) |
 
 ### Vision notes v2 — building & dishes (ideas after M10, under discussion)
 
@@ -193,21 +193,21 @@ Staff pick jobs from a shared **job queue** (see ARCHITECTURE.md). Idle staff re
 
 Costs are **abstract**: each sold dish deducts its ingredient cost. No stock, no shortages. (Special upgrade ingredients are separate collectibles, see below.)
 
-### Recipe leveling with rare ingredients (MVP)
+### Recipe leveling 1–5 (D-036)
 
-Each dish has a **level (1–5; MVP ships 1–3)**. Leveling a dish needs **coins + one special ingredient item** (D-031). Each level: +5 quality points ("Tasty dish"), +15 % price, a big "LEVEL UP!" moment.
+Each dish has a **level (1–5)**. Lv.2–3 cost **coins only** (60 / 150); Lv.4–5 cost **coins + one special ingredient item** (300 / 500, D-031/D-036). Each level: +5 quality points ("Tasty dish"), +15 % price, a big "LEVEL UP!" moment.
 
-| Dish | Lv.2 needs | Lv.3 needs |
+| Dish | Lv.4 needs | Lv.5 needs |
 |---|---|---|
-| Marinara | Oregano (common) | San Marzano Tomatoes (rare) |
-| Margherita | Fresh Basil (common) | Buffalo Mozzarella (rare) |
-| Garlic Bread | Garlic Butter (common) | Aged Parmesan (rare) |
-| Pepperoni | Chili Flakes (common) | Hot Honey (rare) |
+| Marinara | San Marzano Tomatoes (rare) | Sicilian Oregano (rare) |
+| Margherita | Buffalo Mozzarella (rare) | **Nonna's Secret Basil** (exclusive) |
+| Garlic Bread | Aged Parmesan (rare) | Black Garlic (rare) |
+| Pepperoni | Hot Honey (rare) | Calabrian Chili (rare) |
 
-**Special ingredients are collectibles**, not stock: you never need them for daily cooking (cooking costs stay abstract, D-016). They are only spent when leveling a dish. Rarity tiers: common, rare (epic/legendary later). Sources — deliberately a little hard to get:
-- **Market** (tab in the Shop): every morning 3 random offers (seeded), each buyable once that day. Commons are cheap; a rare shows up only now and then and is pricey.
-- **Gifts from guests:** a guest who leaves very happy (≥ 70) has a small chance to leave an ingredient — *"Nora left you a gift: Buffalo Mozzarella!"*. Rares are more likely here.
-- **Rank-up rewards:** each rank up gives one ingredient (Rank 2 → a rare).
+**Special ingredients are collectibles**, not stock: you never need them for daily cooking (cooking costs stay abstract, D-016). They are only spent when leveling a dish. Rarity tiers: **rare** (market, gifts, rank rewards) and **exclusive** (only from a story beat, never sold or gifted: Nonna's Secret Basil from Nonna Rosa's 2♥ beat); epic/legendary later. The four old common ingredients are gone. Sources — deliberately a little hard to get:
+- **Market** (tab in the Shop): every morning 3 random rare offers (seeded, 150–260 coins), each buyable once that day.
+- **Gifts from guests:** a guest who leaves very happy (≥ 70) has a small chance to leave a rare ingredient — *"Nora left you a gift: Buffalo Mozzarella!"*.
+- **Rank-up rewards:** each rank up gives one rare ingredient (Rank 2 → Buffalo Mozzarella).
 - Later: regulars, awards, suppliers (GAME_DESIGN §10b).
 
 ### Secret recipes (post-MVP: experimental version)

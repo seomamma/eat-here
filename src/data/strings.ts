@@ -98,7 +98,8 @@ export const STRINGS = {
     pantryEmpty: 'None yet',
     usedFor: (dish: string, level: number) => `For ${dish} Lv.${level}`,
   },
-  rarity: { common: 'Common', rare: 'Rare' },
+  rarity: { rare: 'Rare', exclusive: 'Exclusive' },
+  exclusiveHint: 'From Nonna Rosa',
   recipes: {
     title: 'Recipes',
     level: (level: number) => `Lv.${level}`,
@@ -106,6 +107,8 @@ export const STRINGS = {
     nextPrice: (price: number) => `\u2192 ${price}`,
     next: 'Next upgrade',
     owned: (n: number) => `Owned ${n}/1`,
+    nextLevel: (level: number) => `Next: Lv.${level}`,
+    coinsOnly: 'Coins only',
     upgrade: 'Upgrade',
     maxLevel: 'Max level',
     unlocksAt: (rank: number) => `Unlocks at Rank ${rank}`,

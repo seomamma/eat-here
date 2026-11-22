@@ -4,7 +4,7 @@ import {
   GIFT_MIN_HAPPINESS,
   MARKET_PRICE,
   MARKET_SLOTS,
-  MAX_RECIPE_LEVEL_MVP,
+  MAX_RECIPE_LEVEL,
 } from '../../src/data/balance';
 import {
   INGREDIENTS,
@@ -45,88 +45,117 @@ function nextDay(g: Game): void {
 }
 
 describe('ingredient and recipe data', () => {
-  it('has 8 ingredients (4 common, 4 rare) and every dish upgrades to Lv.3', () => {
+  it('has 8 ingredients (7 rare, 1 exclusive) and every dish upgrades to Lv.5', () => {
+    expect(MAX_RECIPE_LEVEL).toBe(5);
     expect(INGREDIENT_IDS).toHaveLength(8);
-    expect(RARE_INGREDIENTS).toHaveLength(4);
+    expect(RARE_INGREDIENTS).toHaveLength(7);
+    expect(INGREDIENT_IDS.filter((id) => INGREDIENTS[id].rarity === 'exclusive')).toEqual([
+      'nonnas_secret_basil',
+    ]);
     for (const id of RECIPE_IDS) {
       const ups = RECIPES[id].upgrades;
-      expect(ups.map((u) => u.level)).toEqual([2, MAX_RECIPE_LEVEL_MVP]);
-      expect(INGREDIENTS[ups[0]?.ingredient ?? 'oregano'].rarity).toBe('common');
-      expect(INGREDIENTS[ups[1]?.ingredient ?? 'oregano'].rarity).toBe('rare');
+      expect(ups.map((u) => u.level)).toEqual([2, 3, 4, 5]);
+      // Coins only for Lv.2-3, coins + a rare or exclusive ingredient for Lv.4-5.
+      expect(ups[0]).toMatchObject({ ingredient: null, coins: 60 });
+      expect(ups[1]).toMatchObject({ ingredient: null, coins: 150 });
+      expect(ups[2]?.coins).toBe(300);
+      expect(ups[3]?.coins).toBe(500);
+      for (const u of ups.slice(2)) expect(u.ingredient).not.toBeNull();
+      expect(INGREDIENTS[ups[2]?.ingredient ?? 'hot_honey'].rarity).toBe('rare');
     }
+    expect(RECIPES.margherita.upgrades[3]?.ingredient).toBe('nonnas_secret_basil');
   });
 });
 
 describe('upgradeRecipe', () => {
-  it('spends the ingredient and coins, raises the level and emits recipeLeveledUp', () => {
+  it('Lv.2 and Lv.3 cost coins only; Lv.4 and Lv.5 also consume the ingredient', () => {
     const g = game();
     const events: { recipeId: string; level: number }[] = [];
     g.events.on('recipeLeveledUp', (e) => events.push(e));
-    g.state.inventory.fresh_basil = 1;
-    g.state.money = 500;
+    g.state.money = 2000;
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({ ok: true });
     expect(g.state.recipes.margherita.level).toBe(2);
-    expect(g.state.inventory.fresh_basil).toBe(0);
-    expect(g.state.money).toBe(500 - 80);
-    expect(events).toEqual([{ recipeId: 'margherita', level: 2 }]);
-
-    g.state.inventory.buffalo_mozzarella = 1;
+    expect(g.state.money).toBe(2000 - 60);
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({ ok: true });
     expect(g.state.recipes.margherita.level).toBe(3);
-    expect(g.state.money).toBe(500 - 80 - 200);
-    expect(events.at(-1)).toEqual({ recipeId: 'margherita', level: 3 });
+    expect(g.state.money).toBe(2000 - 60 - 150);
+    // Lv.4 needs Buffalo Mozzarella.
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({
+      ok: false,
+      reason: 'missingIngredient',
+    });
+    g.state.inventory.buffalo_mozzarella = 1;
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({ ok: true });
+    expect(g.state.recipes.margherita.level).toBe(4);
+    expect(g.state.inventory.buffalo_mozzarella).toBe(0);
+    expect(g.state.money).toBe(2000 - 60 - 150 - 300);
+    // Lv.5 needs the exclusive basil, not a rare.
+    g.state.inventory.buffalo_mozzarella = 1;
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({
+      ok: false,
+      reason: 'missingIngredient',
+    });
+    g.state.inventory.nonnas_secret_basil = 1;
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({ ok: true });
+    expect(g.state.recipes.margherita.level).toBe(5);
+    expect(g.state.inventory.nonnas_secret_basil).toBe(0);
+    expect(g.state.inventory.buffalo_mozzarella).toBe(1);
+    expect(g.state.money).toBe(2000 - 60 - 150 - 300 - 500);
+    expect(events.map((e) => e.level)).toEqual([2, 3, 4, 5]);
+    // Max level.
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'margherita' })).toEqual({
+      ok: false,
+      reason: 'maxLevel',
+    });
   });
 
-  it('every dish can go Lv.1 -> 3 with its two ingredients', () => {
+  it('every dish can go Lv.1 -> 5 with its two ingredients', () => {
     for (const id of RECIPE_IDS) {
       const g = game();
       g.state.recipes[id].unlocked = true;
-      g.state.money = 1000;
-      for (const u of RECIPES[id].upgrades) g.state.inventory[u.ingredient] = 1;
-      expect(g.dispatch({ type: 'upgradeRecipe', recipeId: id })).toEqual({ ok: true });
-      expect(g.dispatch({ type: 'upgradeRecipe', recipeId: id })).toEqual({ ok: true });
-      expect(g.state.recipes[id].level).toBe(3);
+      g.state.money = 5000;
+      for (const u of RECIPES[id].upgrades) if (u.ingredient) g.state.inventory[u.ingredient] = 1;
+      for (let i = 0; i < 4; i++)
+        expect(g.dispatch({ type: 'upgradeRecipe', recipeId: id })).toEqual({ ok: true });
+      expect(g.state.recipes[id].level).toBe(5);
     }
   });
 
   it('refuses with a clear reason and changes nothing', () => {
     const g = game();
-    g.state.money = 1000;
-    const before = JSON.stringify(g.state.inventory);
-    // missing ingredient
-    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' })).toEqual({
-      ok: false,
-      reason: 'missingIngredient',
-    });
-    // not enough coins
-    g.state.inventory.oregano = 1;
-    g.state.money = 79;
+    g.state.money = 59;
+    // not enough coins (Lv.2 is coins only)
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' })).toEqual({
       ok: false,
       reason: 'notEnoughMoney',
     });
-    expect(g.state.money).toBe(79);
+    expect(g.state.money).toBe(59);
     expect(g.state.recipes.marinara.level).toBe(1);
     // locked
-    g.state.inventory.chili_flakes = 1;
     g.state.money = 1000;
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'pepperoni' })).toEqual({
       ok: false,
       reason: 'locked',
     });
-    // max level
+    // missing ingredient at Lv.4 leaves coins and inventory alone
     g.state.recipes.marinara.level = 3;
+    const before = JSON.stringify(g.state.inventory);
+    expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' })).toEqual({
+      ok: false,
+      reason: 'missingIngredient',
+    });
+    expect(g.state.money).toBe(1000);
+    expect(JSON.stringify(g.state.inventory)).toBe(before);
+    // max level
+    g.state.recipes.marinara.level = MAX_RECIPE_LEVEL;
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' })).toEqual({
       ok: false,
       reason: 'maxLevel',
     });
-    expect(g.state.inventory.oregano).toBe(1);
-    expect(before).toContain('"oregano":0');
   });
 
   it('is refused at night with notNow, but allowed in the report phase', () => {
     const g = game();
-    g.state.inventory.oregano = 1;
     g.state.money = 500;
     g.state.clock.phase = 'night';
     expect(g.dispatch({ type: 'upgradeRecipe', recipeId: 'marinara' })).toEqual({
@@ -186,7 +215,7 @@ describe('market', () => {
     expect(g.state.market.day).toBe(1);
     expect(g.state.market.offers).toHaveLength(MARKET_SLOTS);
     for (const o of g.state.market.offers) {
-      const [min, max] = MARKET_PRICE[INGREDIENTS[o.ingredient].rarity];
+      const [min, max] = MARKET_PRICE;
       expect(o.price).toBeGreaterThanOrEqual(min);
       expect(o.price).toBeLessThanOrEqual(max);
       expect(o.bought).toBe(false);
@@ -219,18 +248,19 @@ describe('market', () => {
     expect(seeds.size).toBeGreaterThan(1);
   });
 
-  it('rare offers show up now and then, priced above commons', () => {
+  it('offers rares only, never the exclusive ingredient, priced 150-260', () => {
     const s = createInitialState(11);
-    let rare = 0;
-    let offers = 0;
+    const seen = new Set<string>();
     for (let d = 0; d < 300; d++) {
       for (const o of rollMarket(s, d).offers) {
-        offers++;
-        if (INGREDIENTS[o.ingredient].rarity === 'rare') rare++;
+        seen.add(o.ingredient);
+        expect(INGREDIENTS[o.ingredient].rarity).toBe('rare');
+        expect(o.price).toBeGreaterThanOrEqual(150);
+        expect(o.price).toBeLessThanOrEqual(260);
       }
     }
-    expect(rare / offers).toBeGreaterThan(0.12);
-    expect(rare / offers).toBeLessThan(0.28);
+    expect(seen.has('nonnas_secret_basil')).toBe(false);
+    expect([...seen].sort()).toEqual([...RARE_INGREDIENTS].sort());
   });
 
   it('an offer can be bought once; refusals have reasons', () => {
@@ -279,7 +309,7 @@ describe('gifts', () => {
     expect(Object.values(g.state.inventory).every((n) => n === 0)).toBe(true);
   });
 
-  it('above the threshold they happen at about GIFT_CHANCE, with rares among them', () => {
+  it('above the threshold they happen at about GIFT_CHANCE and are always rare', () => {
     const g = game(3);
     const got: string[] = [];
     g.events.on('giftReceived', (e) => got.push(e.ingredient));
@@ -287,9 +317,8 @@ describe('gifts', () => {
     for (let i = 0; i < n; i++) rollGift(g.state, g.events, guest(GIFT_MIN_HAPPINESS));
     expect(got.length / n).toBeGreaterThan(GIFT_CHANCE - 0.03);
     expect(got.length / n).toBeLessThan(GIFT_CHANCE + 0.03);
-    const rare = got.filter((i) => INGREDIENTS[i as IngredientId].rarity === 'rare').length;
-    expect(rare / got.length).toBeGreaterThan(0.3);
-    expect(rare / got.length).toBeLessThan(0.5);
+    // Gifts are rares only; the exclusive basil is never gifted.
+    for (const i of got) expect(INGREDIENTS[i as IngredientId].rarity).toBe('rare');
     expect(Object.values(g.state.inventory).reduce((a, b) => a + b, 0)).toBe(got.length);
   });
 

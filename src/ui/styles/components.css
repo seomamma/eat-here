@@ -1011,11 +1011,25 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.badge--common {
-  background: var(--canvas);
-}
 .badge--rare {
   background: var(--saffron);
+}
+.badge--exclusive {
+  background: var(--tomato);
+  color: var(--paper);
+}
+.exclusive-hint {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--tomato);
+}
+.recipe-ing-item {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.coin-glyph {
+  flex: none;
 }
 .ing-icon,
 .dish-icon {
@@ -1076,6 +1090,13 @@
 .chip--rare {
   background: #fff3cf;
   box-shadow: 0 0 6px 1px var(--saffron);
+}
+.chip--exclusive {
+  background: #ffe1dd;
+  box-shadow: 0 0 6px 1px var(--tomato);
+}
+.ing-icon--exclusive {
+  background: #ffe1dd;
 }
 .recipe-list {
   list-style: none;

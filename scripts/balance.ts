@@ -4,7 +4,7 @@
  */
 import { DECOR_RADIUS } from '../src/data/happiness';
 import { FURNITURE } from '../src/data/furniture';
-import { INGREDIENTS, type IngredientId } from '../src/data/ingredients';
+import type { IngredientId } from '../src/data/ingredients';
 import { RECIPE_IDS, RECIPES } from '../src/data/recipes';
 import { REGULAR_IDS, regularDef } from '../src/data/regulars';
 import { isGuest } from '../src/sim/characters';
@@ -38,6 +38,8 @@ export interface RunResult {
   rank2Day: number | null;
   /** Day on which the first plant was bought (null if never). */
   plantDay: number | null;
+  /** First day (at its end) any dish had reached Lv.2..5 (null = not within the run). */
+  levelDay: Record<number, number | null>;
   /** Day each regular became a regular (null = not within the run), and hearts at the end. */
   regulars: Record<string, { unlockDay: number | null; hearts: number }>;
 }
@@ -67,19 +69,13 @@ function bestPlantSpot(game: Game): { x: number; y: number } | null {
 }
 
 /** Ingredients the next upgrades of every unlocked recipe still need and the player lacks. */
-function neededCommons(game: Game): IngredientId[] {
+function neededIngredients(game: Game): IngredientId[] {
   const out: IngredientId[] = [];
   for (const id of RECIPE_IDS) {
     const r = game.state.recipes[id];
     if (!r.unlocked) continue;
     const up = nextUpgrade(id, r.level);
-    if (
-      up &&
-      INGREDIENTS[up.ingredient].rarity === 'common' &&
-      game.state.inventory[up.ingredient] < 1
-    ) {
-      out.push(up.ingredient);
-    }
+    if (up?.ingredient && game.state.inventory[up.ingredient] < 1) out.push(up.ingredient);
   }
   return out;
 }
@@ -104,8 +100,8 @@ function think(game: Game, log: { plantDay: number | null }): void {
       if (res.ok && log.plantDay === null) log.plantDay = state.clock.day;
     }
   }
-  // Buy commons that unlock an upgrade (cheapest first), keeping the reserve.
-  const wanted = neededCommons(game);
+  // Buy market ingredients that unlock an upgrade (cheapest first), keeping the reserve.
+  const wanted = neededIngredients(game);
   const offers = state.market.offers
     .map((o, index) => ({ o, index }))
     .filter(({ o }) => !o.bought && wanted.includes(o.ingredient))
@@ -118,7 +114,14 @@ function think(game: Game, log: { plantDay: number | null }): void {
 /** Plays `days` days with one seed. */
 export function runSeed(seed: number, days: number): RunResult {
   const game = new Game(createInitialState(seed));
-  const result: RunResult = { seed, days: [], rank2Day: null, plantDay: null, regulars: {} };
+  const result: RunResult = {
+    seed,
+    days: [],
+    rank2Day: null,
+    plantDay: null,
+    levelDay: { 2: null, 3: null, 4: null, 5: null },
+    regulars: {},
+  };
   for (const id of REGULAR_IDS) result.regulars[id] = { unlockDay: null, hearts: 0 };
   const log = { plantDay: null as number | null };
   let happy: number[] = [];
@@ -162,6 +165,9 @@ export function runSeed(seed: number, days: number): RunResult {
       served: stats.guestsServed,
       plants: game.state.furniture.filter((f) => f.defId === 'plant_potted').length,
     });
+    const top = Math.max(...RECIPE_IDS.map((id) => game.state.recipes[id].level));
+    for (let lv = 2; lv <= 5; lv++)
+      if (top >= lv && result.levelDay[lv] === null) result.levelDay[lv] = d;
     game.dispatch({ type: 'continueAfterReport' });
     // Run through the night into the next morning.
     for (let i = 0; i < 100 && game.state.clock.phase === 'night'; i++) game.tickOnce();
@@ -218,6 +224,16 @@ export function formatReport(results: RunResult[]): string {
   const minProfit = Math.min(...results.flatMap((r) => r.days.map((d) => d.profit)));
   const minBigTip = Math.min(...results.flatMap((r) => r.days.map((d) => d.bigTip)));
   const fmt = (xs: (number | null)[]) => xs.map((x) => x ?? '-').join(' ');
+  for (let lv = 2; lv <= 5; lv++) {
+    const found = results.flatMap((r) =>
+      r.levelDay[lv] === null ? [] : [r.levelDay[lv] as number],
+    );
+    lines.push(
+      `First dish at Lv.${lv}: ${found.length}/${results.length} seeds, ` +
+        `mean day ${found.length ? mean(found).toFixed(1) : '-'} ` +
+        `(per seed: ${fmt(results.map((r) => r.levelDay[lv] ?? null))})`,
+    );
+  }
   lines.push('');
   lines.push(`Rank 2 day per seed:     ${fmt(r2)}`);
   lines.push(`First plant day per seed: ${fmt(plant)}`);

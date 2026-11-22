@@ -179,6 +179,7 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Status:** Accepted (user choice after M10)
 **Decision:** Dishes go to **Lv.5**. Lv.2–3 cost coins only; Lv.4–5 cost coins **and** a rare ingredient. Common ingredients are no longer needed for levels (they stay useful later for toppings/secret recipes; until then the market mainly sells rares).
 **Why:** Early levels should feel quick and rewarding; the rare-ingredient hunt becomes the late challenge ("always a next goal"). Later: Lv.5 + a special topping = "super delicious" → attracts a special guest.
+**M11b numbers:** Lv.2 = 60, Lv.3 = 150, Lv.4 = 300, Lv.5 = 500 coins (unchanged by the balance script: first Lv.4 ≈ day 5.5, first Lv.5 ≈ day 9.5 for the scripted player). Rarity `exclusive` = only from a story beat (Nonna's Secret Basil). Market and gifts are rares only (market 150–260). Nonna Rosa unlocks at a Margherita Lv.4, Oliver after 20 Pepperoni. Save v4 pays 40 coins per old common owned.
 
 ### D-037 Regulars and moments are plain state plus data (M11)
 **Status:** Accepted

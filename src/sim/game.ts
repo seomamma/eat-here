@@ -262,13 +262,15 @@ export class Game {
     if (!up) return { ok: false, reason: 'maxLevel' };
     state.money -= up.coins;
     recordLedger(state.dayStats, state.tick, 'upgrade', -up.coins, `${recipeId}:${up.level}`);
-    state.inventory[up.ingredient]--;
     recipe.level = up.level;
     this.events.emit('moneyChanged', { money: state.money });
-    this.events.emit('inventoryChanged', {
-      ingredient: up.ingredient,
-      count: state.inventory[up.ingredient],
-    });
+    if (up.ingredient) {
+      state.inventory[up.ingredient]--;
+      this.events.emit('inventoryChanged', {
+        ingredient: up.ingredient,
+        count: state.inventory[up.ingredient],
+      });
+    }
     this.events.emit('recipeLeveledUp', { recipeId, level: recipe.level });
     checkMoments(state, this.events);
     return { ok: true };

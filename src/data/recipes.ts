@@ -4,8 +4,8 @@ import type { IngredientId } from './ingredients';
 export interface RecipeUpgrade {
   /** Level reached by this upgrade. */
   level: number;
-  /** Special ingredient consumed (one). */
-  ingredient: IngredientId;
+  /** Special ingredient consumed (one); null = coins only (Lv.2-3). */
+  ingredient: IngredientId | null;
   /** Coins paid. */
   coins: number;
 }
@@ -18,7 +18,7 @@ export interface RecipeDef {
   cookTimeSec: number;
   /** 'start' = available from the beginning; otherwise the rank that unlocks it. */
   unlock: 'start' | { rank: number };
-  /** Upgrades to Lv.2 and Lv.3 (MAX_RECIPE_LEVEL_MVP). */
+  /** Upgrades to Lv.2 .. MAX_RECIPE_LEVEL (D-036). */
   upgrades: readonly RecipeUpgrade[];
 }
 
@@ -31,8 +31,10 @@ export const RECIPES = {
     cookTimeSec: 6,
     unlock: 'start',
     upgrades: [
-      { level: 2, ingredient: 'oregano', coins: 80 },
-      { level: 3, ingredient: 'san_marzano', coins: 200 },
+      { level: 2, ingredient: null, coins: 60 },
+      { level: 3, ingredient: null, coins: 150 },
+      { level: 4, ingredient: 'san_marzano', coins: 300 },
+      { level: 5, ingredient: 'sicilian_oregano', coins: 500 },
     ],
   },
   margherita: {
@@ -43,8 +45,10 @@ export const RECIPES = {
     cookTimeSec: 7,
     unlock: 'start',
     upgrades: [
-      { level: 2, ingredient: 'fresh_basil', coins: 80 },
-      { level: 3, ingredient: 'buffalo_mozzarella', coins: 200 },
+      { level: 2, ingredient: null, coins: 60 },
+      { level: 3, ingredient: null, coins: 150 },
+      { level: 4, ingredient: 'buffalo_mozzarella', coins: 300 },
+      { level: 5, ingredient: 'nonnas_secret_basil', coins: 500 },
     ],
   },
   garlic_bread: {
@@ -55,8 +59,10 @@ export const RECIPES = {
     cookTimeSec: 4,
     unlock: 'start',
     upgrades: [
-      { level: 2, ingredient: 'garlic_butter', coins: 80 },
-      { level: 3, ingredient: 'aged_parmesan', coins: 200 },
+      { level: 2, ingredient: null, coins: 60 },
+      { level: 3, ingredient: null, coins: 150 },
+      { level: 4, ingredient: 'aged_parmesan', coins: 300 },
+      { level: 5, ingredient: 'black_garlic', coins: 500 },
     ],
   },
   pepperoni: {
@@ -67,8 +73,10 @@ export const RECIPES = {
     cookTimeSec: 8,
     unlock: { rank: 2 },
     upgrades: [
-      { level: 2, ingredient: 'chili_flakes', coins: 80 },
-      { level: 3, ingredient: 'hot_honey', coins: 200 },
+      { level: 2, ingredient: null, coins: 60 },
+      { level: 3, ingredient: null, coins: 150 },
+      { level: 4, ingredient: 'hot_honey', coins: 300 },
+      { level: 5, ingredient: 'calabrian_chili', coins: 500 },
     ],
   },
 } satisfies Record<string, RecipeDef>;
