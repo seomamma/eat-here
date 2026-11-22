@@ -3,6 +3,7 @@ import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
 import type { LookId } from '../data/regulars';
 import { STAFF, type StaffRole } from '../data/staff';
+import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { TILE_H, TILE_W } from './iso';
 
 /**
@@ -56,6 +57,8 @@ export const DOOR_FRAME_H = 40;
 export const TEX = {
   floorWood: ['floor_wood_0', 'floor_wood_1'],
   floorTile: 'floor_tile',
+  floorTerracotta: 'floor_terracotta',
+  floorHerringbone: 'floor_herringbone',
   doorMat: 'door_mat',
   doorFrame: 'door_frame',
   wallBackL: 'wall_back_l',
@@ -241,6 +244,38 @@ function woodFloor(variant: number): Raster {
   });
 }
 
+/** Terracotta: warm 8x8 tiles with light grout. */
+const drawFloorTerracotta = (): Raster =>
+  fromFn(TILE_W, TILE_H, (px, py) => {
+    const uv = diamondUV(px, py);
+    if (!uv) return null;
+    const ii = Math.floor(uv.i * 16);
+    const jj = Math.floor(uv.j * 16);
+    if (ii % 8 === 0 || jj % 8 === 0) return C.cream3; // grout
+    const n = hash(px, py, 7);
+    if (n < 40) return C.brick3;
+    return (Math.floor(ii / 8) + Math.floor(jj / 8)) % 2 === 0 ? '#CF6A46' : '#C25D3C';
+  });
+
+/** Herringbone: 4x4 blocks of short planks that turn a quarter every block. */
+const drawFloorHerringbone = (): Raster =>
+  fromFn(TILE_W, TILE_H, (px, py) => {
+    const uv = diamondUV(px, py);
+    if (!uv) return null;
+    const ii = Math.floor(uv.i * 16);
+    const jj = Math.floor(uv.j * 16);
+    const flip = (Math.floor(ii / 4) + Math.floor(jj / 4)) % 2 === 0;
+    const along = flip ? jj : ii;
+    const across = flip ? ii : jj;
+    if (along % 2 === 0) return C.wood2; // seam between the short planks
+    if (across % 4 === 0 && along % 4 === 1) return C.wood2;
+    return hash(px, py, 3) < 80
+      ? C.cream1
+      : (Math.floor(along / 2) + Math.floor(ii / 4)) % 2 === 0
+        ? C.wood4
+        : C.cream2;
+  });
+
 const drawFloorTile = (): Raster =>
   fromFn(TILE_W, TILE_H, (px, py) => {
     const uv = diamondUV(px, py);
@@ -283,7 +318,7 @@ const drawHighlight = (): Raster => {
  * 'l' along the x = 0 edge (rises to the right). The right wall is the darker one (light from
  * the top-left). `end` draws a vertical outline on the segment's free end.
  */
-function backWall(side: 'l' | 'r', end: boolean): Raster {
+function backWall(side: 'l' | 'r', end: boolean, style: WallStyleId = 'cream'): Raster {
   const right = side === 'r';
   const cap = right ? C.cream2 : C.cream1;
   const face = right ? C.cream3 : C.cream2;
@@ -291,6 +326,12 @@ function backWall(side: 'l' | 'r', end: boolean): Raster {
   const brick = right ? C.brick1 : C.brick2;
   const brickHi = right ? C.brick2 : C.brick3;
   const mortar = right ? '#5E2217' : C.brick1;
+  const bricks = (tx: number, row: number): string => {
+    if (row === 0) return brickHi;
+    if (row % 4 === 3) return mortar;
+    const off = Math.floor(row / 4) % 2 === 0 ? 0 : 4;
+    return (tx + off) % 8 === 0 ? mortar : brick;
+  };
   return fromFn(WALL_BACK_W, WALL_BACK_H, (tx, ty) => {
     const top = right ? Math.floor(tx / 2) : Math.floor((WALL_BACK_W - 1 - tx) / 2);
     const d = ty - top;
@@ -299,18 +340,54 @@ function backWall(side: 'l' | 'r', end: boolean): Raster {
     if (d === 0 || d === WALL_BACK_RISE - 1) return C.outline;
     if (d <= 2) return cap;
     if (d === 3) return faceShade;
+    if (style === 'brick') return bricks(tx, d - 4);
+    if (style === 'green_stripes') {
+      if (d === 30) return C.wood3; // chair rail
+      if (d === 31) return C.wood1;
+      if (d > 31) return tx % 4 === 0 ? C.wood1 : tx % 4 === 3 ? C.wood3 : C.wood2; // paneling
+      const light = right ? C.basil2 : C.basil3;
+      return Math.floor(tx / 2) % 2 === 0 ? light : right ? C.basil1 : C.basil2;
+    }
+    if (style === 'blue_tiles') {
+      if (d === 30) return C.cool4;
+      if (d === 31) return C.cool1;
+      const grout = right ? C.cool1 : C.cool2;
+      const tile = d > 31 ? (right ? C.cool2 : C.cool3) : right ? C.cool3 : C.cool4;
+      return tx % 4 === 0 || d % 4 === 0 ? grout : tile;
+    }
     if (d === 30) return C.wood2; // chair rail
     if (d === 31) return C.wood1;
-    if (d > 31) {
-      const row = d - 32; // 0..7
-      if (row === 0) return brickHi;
-      if (row % 4 === 3) return mortar;
-      const off = Math.floor(row / 4) % 2 === 0 ? 0 : 4;
-      return (tx + off) % 8 === 0 ? mortar : brick;
-    }
+    if (d > 31) return bricks(tx, d - 32);
     // Plaster with faint vertical panelling.
     return tx % 8 === 0 ? faceShade : face;
   });
+}
+
+/** Texture key of a back-wall segment in a style (the cream default keeps the original keys). */
+export function wallTexKey(side: 'l' | 'r', end: boolean, style: WallStyleId): string {
+  const base =
+    side === 'l'
+      ? end
+        ? TEX.wallBackLEnd
+        : TEX.wallBackL
+      : end
+        ? TEX.wallBackREnd
+        : TEX.wallBackR;
+  return style === 'cream' ? base : `${base}_${style}`;
+}
+
+/** Texture key of a floor tile; wood alternates two variants by position. */
+export function floorTexKey(style: FloorStyleId, x: number, y: number): string {
+  switch (style) {
+    case 'checker':
+      return TEX.floorTile;
+    case 'terracotta':
+      return TEX.floorTerracotta;
+    case 'herringbone':
+      return TEX.floorHerringbone;
+    default:
+      return TEX.floorWood[(x * 3 + y * 5) % 2] ?? TEX.floorWood[0];
+  }
 }
 
 /** Low cut-away wall segment: 1px cap, 2px face, outline. 'l' = front-left edge, 'r' = front-right. */
@@ -1068,19 +1145,469 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.basil2,
       }),
     ]),
+  chair_cushion: (ox, oy, back) =>
+    boxes(1, 1, ox, oy, [
+      ...legs(0.2, 0.2, 0.8, 0.8, 5, 0.12),
+      part({
+        i0: 0.14,
+        j0: 0.14,
+        i1: 0.86,
+        j1: 0.86,
+        z0: 5,
+        z1: 9,
+        top: C.tomato3,
+        left: C.tomato2,
+        right: C.tomato1,
+      }),
+      part({
+        i0: 0.16,
+        j0: back ? 0.7 : 0.14,
+        i1: 0.84,
+        j1: back ? 0.86 : 0.3,
+        z0: 9,
+        z1: 19,
+        top: C.tomato3,
+        left: C.tomato2,
+        right: C.tomato1,
+      }),
+    ]),
+  table_long: (ox, oy) =>
+    boxes(2, 1, ox, oy, [
+      ...legs(0.12, 0.12, 1.88, 0.88, 9),
+      part({
+        i0: 0.06,
+        j0: 0.06,
+        i1: 1.94,
+        j1: 0.94,
+        z0: 9,
+        z1: 12,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+      // Red runner with two plates.
+      part({
+        i0: 0.15,
+        j0: 0.36,
+        i1: 1.85,
+        j1: 0.64,
+        z0: 12,
+        z1: 13,
+        top: C.tomato3,
+        left: C.tomato2,
+        right: C.tomato1,
+      }),
+      part({
+        i0: 0.32,
+        j0: 0.4,
+        i1: 0.55,
+        j1: 0.6,
+        z0: 13,
+        z1: 14,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+      part({
+        i0: 1.45,
+        j0: 0.4,
+        i1: 1.68,
+        j1: 0.6,
+        z0: 13,
+        z1: 14,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+    ]),
+  vending_machine: (ox, oy, back) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.1,
+        j0: 0.1,
+        i1: 0.9,
+        j1: 0.9,
+        z0: 0,
+        z1: 26,
+        top: C.tomato3,
+        left: C.tomato2,
+        right: C.tomato1,
+        decal: (face, a, e) => {
+          if (back || face !== 'left') return undefined;
+          // Glass window with three shelves of snacks, buttons and a dispenser slot.
+          if (a > 1.5 && a < 9.5 && e > 9 && e < 23) {
+            if (e > 13 && e < 14.5) return C.cool2;
+            if (e > 18 && e < 19.5) return C.cool2;
+            const row = e < 14 ? 0 : e < 19 ? 1 : 2;
+            if (e % 5 > 1 && e % 5 < 4 && Math.floor(a / 2) % 2 === 0) {
+              return [C.cheese2, C.basil3, C.cream1][(row + Math.floor(a / 2)) % 3];
+            }
+            return C.cool4;
+          }
+          if (a > 10 && a < 12 && e > 12 && e < 19) return e % 3 < 1.5 ? C.cheese2 : C.cheese3;
+          if (a > 1.5 && a < 9.5 && e > 3 && e < 6.5) return C.outline;
+          return undefined;
+        },
+      }),
+      part({
+        i0: 0.18,
+        j0: 0.18,
+        i1: 0.82,
+        j1: 0.82,
+        z0: 26,
+        z1: 28,
+        top: C.cheese3,
+        left: C.cheese2,
+        right: C.cheese1,
+      }),
+    ]),
+  piano: (ox, oy, back) =>
+    boxes(2, 1, ox, oy, [
+      // Cabinet: tall at the back, with the keyboard shelf in front (front view faces +y).
+      part({
+        i0: 0.05,
+        j0: back ? 0.5 : 0.15,
+        i1: 1.95,
+        j1: back ? 0.85 : 0.5,
+        z0: 0,
+        z1: 22,
+        top: C.cool2,
+        left: C.cool1,
+        right: '#1D2638',
+        decal: (face, a, e) => {
+          if (face === 'left' && !back && e > 14 && e < 18 && a % 8 > 1) return C.cool3;
+          return undefined;
+        },
+      }),
+      part({
+        i0: 0.05,
+        j0: back ? 0.15 : 0.5,
+        i1: 1.95,
+        j1: back ? 0.5 : 0.85,
+        z0: 0,
+        z1: 12,
+        top: C.cool1,
+        left: C.cool1,
+        right: '#1D2638',
+        decal: (face, a, e) => {
+          if (face === 'top' && !back) {
+            // White keys with black keys on top (a = tile units along x).
+            const k = Math.floor(a * 14);
+            if (e > 0.3) return k % 2 === 0 || k % 7 === 2 || k % 7 === 6 ? C.cream1 : C.outline;
+            return C.cream1;
+          }
+          return undefined;
+        },
+      }),
+      // Two brass candlesticks on the lid.
+      part({
+        i0: 0.2,
+        j0: back ? 0.55 : 0.25,
+        i1: 0.32,
+        j1: back ? 0.65 : 0.35,
+        z0: 22,
+        z1: 26,
+        top: C.cheese3,
+        left: C.cheese2,
+        right: C.cheese1,
+      }),
+    ]),
+  toilet: (ox, oy, back) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.1,
+        j0: 0.1,
+        i1: 0.9,
+        j1: 0.9,
+        z0: 0,
+        z1: 24,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+        decal: (face, a, e) => {
+          if (back || face !== 'left') return undefined;
+          // Blue door with a handle and a small sign.
+          if (a > 2.5 && a < 10 && e > 1 && e < 17) {
+            if (a > 8.2 && a < 9.2 && e > 8 && e < 10) return C.cheese2;
+            return a < 3.7 || a > 8.8 || e > 15.8 ? C.cool1 : C.cool3;
+          }
+          if (a > 4.5 && a < 8 && e > 18.5 && e < 22) return e % 2.2 < 1.1 ? C.cool2 : C.cool4;
+          return undefined;
+        },
+      }),
+      part({
+        i0: 0.04,
+        j0: 0.04,
+        i1: 0.96,
+        j1: 0.96,
+        z0: 24,
+        z1: 26,
+        top: C.cool3,
+        left: C.cool2,
+        right: C.cool1,
+      }),
+    ]),
+  flower_box: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.08,
+        j0: 0.2,
+        i1: 0.92,
+        j1: 0.8,
+        z0: 0,
+        z1: 6,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+        decal: (face, _a, e) => (face === 'left' && e > 2 && e < 3.2 ? C.wood2 : undefined),
+      }),
+      part({
+        i0: 0.14,
+        j0: 0.26,
+        i1: 0.86,
+        j1: 0.74,
+        z0: 6,
+        z1: 8,
+        top: C.basil3,
+        left: C.basil2,
+        right: C.basil1,
+      }),
+      ...(
+        [
+          [0.2, 0.35, C.tomato3, 11],
+          [0.45, 0.5, C.cheese3, 12],
+          [0.62, 0.32, C.cream1, 11],
+          [0.74, 0.5, C.tomato3, 10],
+          [0.33, 0.55, C.cheese3, 10],
+        ] as const
+      ).map(([i, j, c, z]) =>
+        part({ i0: i, j0: j, i1: i + 0.12, j1: j + 0.12, z0: 8, z1: z, top: c, left: c, right: c }),
+      ),
+    ]),
+  divider: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0,
+        j0: 0.42,
+        i1: 1,
+        j1: 0.58,
+        z0: 0,
+        z1: 13,
+        top: C.wood4,
+        left: C.cream2,
+        right: C.cream3,
+        decal: (face, a, e) => {
+          if (face !== 'left') return undefined;
+          // Wooden frame around a cream panel.
+          if (a < 1.8 || a > 14.2 || e < 1.8 || e > 10.5) return C.wood3;
+          return (Math.floor(a / 4) + Math.floor(e / 4)) % 2 === 0 ? undefined : C.cream1;
+        },
+      }),
+      part({
+        i0: 0,
+        j0: 0.36,
+        i1: 0.14,
+        j1: 0.64,
+        z0: 0,
+        z1: 15,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+      }),
+      part({
+        i0: 0.86,
+        j0: 0.36,
+        i1: 1,
+        j1: 0.64,
+        z0: 0,
+        z1: 15,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+      }),
+    ]),
+  floor_lamp: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.32,
+        j0: 0.32,
+        i1: 0.68,
+        j1: 0.68,
+        z0: 0,
+        z1: 2,
+        top: C.wood3,
+        left: C.wood2,
+        right: C.wood1,
+      }),
+      part({
+        i0: 0.45,
+        j0: 0.45,
+        i1: 0.55,
+        j1: 0.55,
+        z0: 2,
+        z1: 20,
+        top: C.wood3,
+        left: C.wood2,
+        right: C.wood1,
+      }),
+      part({
+        i0: 0.24,
+        j0: 0.24,
+        i1: 0.76,
+        j1: 0.76,
+        z0: 18,
+        z1: 26,
+        top: C.cream1,
+        left: C.cheese3,
+        right: C.cheese2,
+      }),
+    ]),
+  painting_easel: (ox, oy, back) =>
+    boxes(1, 1, ox, oy, [
+      ...legs(0.14, 0.38, 0.86, 0.62, 9, 0.1),
+      part({
+        i0: 0.1,
+        j0: 0.4,
+        i1: 0.9,
+        j1: 0.6,
+        z0: 6,
+        z1: 9,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+      }),
+      part({
+        i0: 0.1,
+        j0: 0.45,
+        i1: 0.9,
+        j1: 0.55,
+        z0: 9,
+        z1: 25,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+        decal: (face, a, e) => {
+          if (back || face !== 'left') return undefined;
+          if (a < 1.6 || a > 11.2 || e < 1.6 || e > 14.4) return C.wood2; // frame
+          // Landscape: sky, sun, hills.
+          if (e > 9) return Math.hypot(a - 9, e - 12.5) < 1.7 ? C.cheese2 : C.cool3;
+          return e > 5.5 ? C.basil3 : C.basil2;
+        },
+      }),
+    ]),
+  pillar: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.12,
+        j0: 0.12,
+        i1: 0.88,
+        j1: 0.88,
+        z0: 0,
+        z1: 4,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+      part({
+        i0: 0.24,
+        j0: 0.24,
+        i1: 0.76,
+        j1: 0.76,
+        z0: 4,
+        z1: 33,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+        decal: (face, a) => (face !== 'top' && a % 5 < 1 ? C.cream3 : undefined),
+      }),
+      part({
+        i0: 0.12,
+        j0: 0.12,
+        i1: 0.88,
+        j1: 0.88,
+        z0: 33,
+        z1: 37,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+    ]),
+  statue: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.12,
+        j0: 0.12,
+        i1: 0.88,
+        j1: 0.88,
+        z0: 0,
+        z1: 4,
+        top: C.cream2,
+        left: C.cream3,
+        right: '#B09A74',
+      }),
+      part({
+        i0: 0.2,
+        j0: 0.2,
+        i1: 0.8,
+        j1: 0.8,
+        z0: 4,
+        z1: 11,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+      // Robed figure with raised head.
+      part({
+        i0: 0.32,
+        j0: 0.32,
+        i1: 0.68,
+        j1: 0.68,
+        z0: 11,
+        z1: 26,
+        top: C.cool4,
+        left: C.cool4,
+        right: C.cool3,
+      }),
+      part({
+        i0: 0.38,
+        j0: 0.38,
+        i1: 0.62,
+        j1: 0.62,
+        z0: 26,
+        z1: 32,
+        top: C.cool4,
+        left: C.cool4,
+        right: C.cool3,
+      }),
+    ]),
 };
+
+/** Raster of a furniture piece's front (or back) view; also used for the shop icons. */
+export function furnitureRaster(defId: FurnitureDefId, back = false): Raster {
+  const [ox, oy] = FURNITURE[defId].spriteOrigin;
+  return FURNITURE_ART[defId](ox, oy, back);
+}
 
 /** Generates every placeholder texture at real pixel sizes. Idempotent. */
 export function generatePlaceholderTextures(textures: Phaser.Textures.TextureManager): void {
   upload(textures, TEX.floorWood[0], woodFloor(0));
   upload(textures, TEX.floorWood[1], woodFloor(1));
   upload(textures, TEX.floorTile, drawFloorTile());
+  upload(textures, TEX.floorTerracotta, drawFloorTerracotta());
+  upload(textures, TEX.floorHerringbone, drawFloorHerringbone());
   upload(textures, TEX.doorMat, drawDoorMat());
   upload(textures, TEX.doorFrame, doorFrame());
   upload(textures, TEX.wallBackL, backWall('l', false));
   upload(textures, TEX.wallBackLEnd, backWall('l', true));
   upload(textures, TEX.wallBackR, backWall('r', false));
   upload(textures, TEX.wallBackREnd, backWall('r', true));
+  for (const style of ['brick', 'green_stripes', 'blue_tiles'] as const) {
+    for (const side of ['l', 'r'] as const) {
+      for (const end of [false, true]) {
+        upload(textures, wallTexKey(side, end, style), backWall(side, end, style));
+      }
+    }
+  }
   upload(textures, TEX.wallFrontL, lowWall('l'));
   upload(textures, TEX.wallFrontR, lowWall('r'));
   upload(textures, TEX.tileHighlight, drawHighlight());

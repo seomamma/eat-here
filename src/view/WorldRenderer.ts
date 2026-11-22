@@ -8,6 +8,8 @@ import type { GameState } from '../sim/state';
 import { prefersReducedMotion } from '../platform/motion';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
 import { interpolatePosition } from './interpolate';
+import { SPARKLE_FRAME_COUNT, levelTextureKey } from './levelTextures';
+import { floorStyleAt, wallStyleOf } from '../sim/systems/surfaces';
 import { coinRise, squash } from './juice';
 import {
   CHAR_ANIMS,
@@ -25,10 +27,12 @@ import {
   TEX,
   WALL_BACK_RISE,
   charTexKey,
+  floorTexKey,
   furnitureTexKey,
   isMirroredRot,
   lookVariant,
   staffVariant,
+  wallTexKey,
   type CharAnim,
   type CharFacing,
 } from './placeholderTextures';
@@ -52,6 +56,8 @@ const PASS_TOP_PX = 8;
 const TABLE_TOP_PX = 9;
 /** Carried dish: bottom of the icon this far above the character's feet. */
 const CARRY_LIFT_PX = 4;
+/** Lv.5 sparkle: time between its two positions. */
+const SPARKLE_BLINK_MS = 650;
 /** Oven flicker period while baking. */
 const OVEN_FLICKER_MS = 220;
 
@@ -132,6 +138,7 @@ const SPARKLE_STATIC_MS = 500;
 /** Sparkle anchors above a guest's feet and above the oven's footprint centre (px). */
 const SPARKLE_ABOVE_PX = 14;
 const OVEN_SPARKLE_ABOVE_PX = 16;
+const FURNITURE_SPARKLE_ABOVE_PX = 10;
 /** A waiter this close (px) to a served guest joins the hop. */
 const SERVE_HOP_RANGE_PX = 40;
 const COIN_MS = 1100;
@@ -153,6 +160,12 @@ export class WorldRenderer {
   private tilesBuilt = false;
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
+  /** Floor tile images ("x,y") and back-wall segment images, restyled when the player paints. */
+  private readonly floorImages = new Map<string, Phaser.GameObjects.Image>();
+  private readonly wallImages = new Map<
+    string,
+    { img: Phaser.GameObjects.Image; side: 'l' | 'r'; end: boolean }
+  >();
   /** Piece being moved: hidden while its ghost is shown. */
   private hiddenFurnitureId: string | null = null;
   private highlight: Phaser.GameObjects.Image | null = null;
@@ -214,7 +227,21 @@ export class WorldRenderer {
       this.buildTiles(state);
       this.tilesBuilt = true;
     }
+    this.syncSurfaces(state);
     this.syncFurniture(state);
+  }
+
+  /** Re-skins floors and back walls that were painted (cheap: one texture key compare each). */
+  private syncSurfaces(state: GameState): void {
+    for (const [key, img] of this.floorImages) {
+      const [x, y] = key.split(',').map(Number) as [number, number];
+      const want = floorTexKey(floorStyleAt(state, x, y), x, y);
+      if (img.texture.key !== want) img.setTexture(want);
+    }
+    for (const [id, w] of this.wallImages) {
+      const want = wallTexKey(w.side, w.end, wallStyleOf(state, id));
+      if (w.img.texture.key !== want) w.img.setTexture(want);
+    }
   }
 
   /**
@@ -571,6 +598,23 @@ export class WorldRenderer {
     this.showSparkles(Math.round(o.x), Math.round(o.y) - OVEN_SPARKLE_ABOVE_PX);
   }
 
+  /** Sparkles over a furniture piece (it just levelled up). */
+  sparklesAtFurniture(state: GameState, id: string): void {
+    const f = state.furniture.find((o) => o.id === id);
+    if (!f) return;
+    const [w, h] = rotatedFootprint(f.defId, f.rot);
+    const o = tileToScreen(f.x + w / 2, f.y + h / 2);
+    this.showSparkles(Math.round(o.x), Math.round(o.y) - FURNITURE_SPARKLE_ABOVE_PX);
+  }
+
+  /** World-space box of a placed piece's sprite, or null when it is not drawn. */
+  furnitureBounds(id: string): { minX: number; minY: number; maxX: number; maxY: number } | null {
+    const img = this.furniture.get(id);
+    if (!img) return null;
+    const b = img.getBounds();
+    return { minX: b.x, minY: b.y, maxX: b.right, maxY: b.bottom };
+  }
+
   /** Draws (or moves) the 1px diamond outline on a tile; null hides it. Debug aid. */
   showHighlight(tile: Point | null): void {
     if (!tile) {
@@ -586,8 +630,8 @@ export class WorldRenderer {
   }
 
   /** Places an image whose top-left pixel sits at (x, y) on screen. */
-  private put(x: number, y: number, key: string, depth: number): void {
-    this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(depth);
+  private put(x: number, y: number, key: string, depth: number): Phaser.GameObjects.Image {
+    return this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(depth);
   }
 
   private buildTiles(state: GameState): void {
@@ -598,16 +642,11 @@ export class WorldRenderer {
         const o = tileToScreen(x, y);
         switch (tile) {
           case 'floor_wood':
-            this.put(
-              o.x - 16,
-              o.y,
-              TEX.floorWood[(x * 3 + y * 5) % 2] ?? TEX.floorWood[0],
-              DEPTH_FLOOR,
-            );
-            this.frontLeftWall(state, x, y, o);
-            break;
           case 'floor_tile':
-            this.put(o.x - 16, o.y, TEX.floorTile, DEPTH_FLOOR);
+            this.floorImages.set(
+              `${x},${y}`,
+              this.put(o.x - 16, o.y, floorTexKey(floorStyleAt(state, x, y), x, y), DEPTH_FLOOR),
+            );
             this.frontLeftWall(state, x, y, o);
             break;
           case 'door':
@@ -634,21 +673,31 @@ export class WorldRenderer {
     if (x === 0 && y >= 1) {
       // Back-left wall, standing on the top-left edge of tile (1, y).
       const end = y === state.grid.height - 1;
-      this.put(
-        -16 * y,
-        8 * y - 33,
-        end ? TEX.wallBackLEnd : TEX.wallBackL,
-        DEPTH_BACK_WALL + depthKey(x, y),
-      );
+      const id = `l${y}`;
+      this.wallImages.set(id, {
+        img: this.put(
+          -16 * y,
+          8 * y - 33,
+          wallTexKey('l', end, wallStyleOf(state, id)),
+          DEPTH_BACK_WALL + depthKey(x, y),
+        ),
+        side: 'l',
+        end,
+      });
     } else if (y === 0 && x >= 1 && x <= width - 2) {
       // Back-right wall, standing on the top-right edge of tile (x, 1).
       const end = x === width - 2;
-      this.put(
-        16 * x - 16,
-        8 * x - 33,
-        end ? TEX.wallBackREnd : TEX.wallBackR,
-        DEPTH_BACK_WALL + depthKey(x, y),
-      );
+      const id = `r${x}`;
+      this.wallImages.set(id, {
+        img: this.put(
+          16 * x - 16,
+          8 * x - 33,
+          wallTexKey('r', end, wallStyleOf(state, id)),
+          DEPTH_BACK_WALL + depthKey(x, y),
+        ),
+        side: 'r',
+        end,
+      });
     } else if (x === width - 1 && y >= 1) {
       // Front-right low wall, standing on the bottom-right edge of tile (width - 2, y).
       this.put(o.x - 16, o.y - 4, TEX.wallFrontR, depthKey(x, y) + DEPTH_FRONT_BIAS);
@@ -670,6 +719,9 @@ export class WorldRenderer {
   private syncFurniture(state: GameState): void {
     const live = new Set<string>();
     const baking = state.characters.some((c) => isStaff(c) && c.action === 'cook');
+    const sparkleFrame = prefersReducedMotion()
+      ? 0
+      : Math.floor(this.scene.time.now / SPARKLE_BLINK_MS) % SPARKLE_FRAME_COUNT;
     for (const f of state.furniture) {
       live.add(f.id);
       const def = FURNITURE[f.defId];
@@ -680,11 +732,12 @@ export class WorldRenderer {
         this.furniture.set(f.id, img);
       }
       // Rot 0/1 show the front, 2/3 the back; the oven only glows when seen from the front.
-      img.setTexture(
+      // Higher levels get a gold trim (Lv.3+) and a blinking sparkle (Lv.5).
+      const base =
         def.kind === 'oven' && f.rot < 2
           ? this.ovenTexture(baking)
-          : furnitureTexKey(f.defId, f.rot),
-      );
+          : furnitureTexKey(f.defId, f.rot);
+      img.setTexture(levelTextureKey(this.scene.textures, base, f.level, sparkleFrame));
       // The sprite's footprint top corner sits on the projected origin of tile (x, y).
       // Odd rotations are the same sprite mirrored around that corner (flip is around the origin).
       const o = tileToScreen(f.x, f.y);
