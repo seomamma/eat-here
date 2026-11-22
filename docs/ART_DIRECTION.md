@@ -91,6 +91,10 @@ Light comes from the **top-left** (the left back wall is lit, the right back wal
 - Touch targets ≥ 44 × 44 CSS px.
 - Layout anchors to screen edges: top bar (money, fame, rank, day/time), bottom bar (actions). Panels slide in from bottom (portrait) or right (landscape).
 
+### Character style (D-027)
+
+Chunky retro pixel: ~6–8 colors per character, 1 px outline, 1–2 px eyes, no small facial details, readable silhouette at 1× zoom. Roles are recognizable by headwear and outfit color alone. Emotion is carried by animation, emotes and bubbles — not by faces. The world (furniture, food, room) may be slightly more detailed than the characters.
+
 ## 6. Animation standards
 
 - Frame rate: **8 fps** for most loops (classic snappy pixel feel), 10–12 fps for quick actions.

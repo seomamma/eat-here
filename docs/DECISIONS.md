@@ -131,3 +131,9 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Status:** Accepted (after M1)
 **Decision:** Integer zoom is computed in **device pixels** (render at `devicePixelRatio`), so one art pixel is always a whole number of physical pixels, also on fractional-DPR phones (e.g. 2.625). Landscape uses slimmer HUD insets than portrait so the room isn't tiny.
 **Why:** Found in M1 review: CSS-pixel integer zoom gives uneven pixels on fractional DPR, and landscape at 844×390 left only 214 px for the room.
+
+### D-027 Character style: "chunky pixel" (user's level 3)
+**Status:** Accepted (during M4)
+**Decision:** Characters use a minimal, chunky retro style: 16×24 frames, ~6–8 colors per character, 1 px dark outline, 1–2 px eyes, no nose/mouth detail except in emotes, roles told apart by silhouette and headwear (chef hat, waiter cap/vest). The **world** (furniture, room, food) may carry somewhat more detail and warmth than the characters.
+**Alternatives:** "Balanced pixel" (more facial detail, recommended in an AI mock-up), "soft pixel" (near-illustrative).
+**Why:** At a true 16×24 size the detailed styles can't actually exist — the mock-ups were drawn far larger. Chunky pixel is the most honest to our sprite size, the fastest to produce and animate, the most robust for AI-concept cleanup, and maximizes the retro-world vs modern-UI contrast that is our identity. Expressiveness comes from animation (bounce, squash), emotes and bubbles rather than faces.
