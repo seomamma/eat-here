@@ -107,7 +107,8 @@ interface GameState {
   money: number;
   fame: number;
   rank: number;
-  grid: GridState;          // size, floor/wall tiles
+  grid: GridState;          // allocated at its final size; floor / door / outside tiles
+  room: Room;               // unlocked rectangle { x0, y0, x1, y1 } inside the grid (M12b)
   furniture: Furniture[];   // { id, defId, x, y, rot, level }
   staff: Staff[];           // { id, defId, role, x, y, state, jobId, stats, level, xp }
   guests: Guest[];          // { id, typeId, x, y, state, seatId, order, happiness, patience, path }
@@ -152,7 +153,7 @@ This keeps behavior predictable, debuggable, and naturally extends to more staff
 
 ### Grid & pathfinding
 
-- Tile grid (MVP ~10×12). Each tile: `floor | wall | outside` + occupancy (furniture id or empty).
+- Tile grid, **allocated at its final size** (20×17, `GRID_WIDTH/HEIGHT`). Each tile: `floor_wood | floor_tile | door | outside` + occupancy (furniture id or empty). The room is the **unlocked rectangle** `state.room = { x0, y0, x1, y1 }` (inclusive); everything outside it is `outside` (not walkable, not buildable). **Walls are derived from the rectangle** (back walls on the x0 and y0 edges, a low front-right wall on the x1 edge, a low front-left wall on the y1 edge), never stored per tile. The door sits on the y1 edge and never moves, so the room only grows towards +x, −x and −y (`src/data/expansion.ts`, `systems/expansion.ts`); `expandRoom` runs in the rank-up and emits `roomExpanded`. Coordinates of furniture, painted styles (`"x,y"`, `l<y>`, `r<x>`) and characters never change when the room grows.
 - Furniture defines a **footprint** and **use spots** (tiles where a character stands/sits to use it, with facing direction), e.g. chair: use spot = itself; oven: tile in front.
 - **A\*** with 4-directional movement over walkable tiles, own implementation (~100 lines, unit tested). Paths cached until the grid changes.
 - Characters don't collide with each other (they can overlap briefly) — the standard trick in this genre, keeps things simple.
@@ -192,7 +193,7 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 - **When:** autosave every in-game hour, after every purchase/upgrade/placement, at the start of each day, and immediately when the app/tab is hidden (`visibilitychange`, Capacitor `appStateChange`).
 - **Versioning:** each save has `version`; `migrate()` upgrades old saves step by step (`v1 → v2 → …`). Unit-tested with fixture saves.
 - Two slots, `main` and `backup`. A write first copies `main` to `backup` (only if `main` still validates, so a corrupt `main` never replaces a good backup), then writes `main`. Loading tries `main`, then `backup` (the title screen/game then shows a "We restored your last good save." notice); both unreadable = no save. Storage errors (quota, blocked) never throw; autosave shows a "couldn't save" toast.
-- **Format:** `{ format: 'eat-here-save', version, savedAt, state }`, currently version 5 (`SAVE_VERSION` in `sim/save.ts`; v4 → v5 (M12) adds `styles` (painted floors/walls) and the guests' `errand`/`snackAsked`, furniture levels already existed; v1 → v2 adds the empty per-day money ledger; v2 → v3 adds `momentsSeen`, `counters` and `regulars` (M11) and the `regularId`/`look`/`companionOf` fields of guests; v3 → v4 (recipe levels 1–5, D-036) drops the four common ingredients from the inventory and pays 40 coins for each one owned, grants one Nonna's Secret Basil to saves that already saw her 2♥ beat, and re-rolls the market when it holds anything but rares; `migrate()` runs `MIGRATIONS[n]` for each step n → n+1, then the state shape is validated). Anything that is not in `GameState` is runtime only and rebuilt on load: the walk grid cache, pause reasons (a loaded game starts unpaused; a save made in the `report` phase reopens the report), sim speed, the UI signals.
+- **Format:** `{ format: 'eat-here-save', version, savedAt, state }`, currently version 6 (`SAVE_VERSION` in `sim/save.ts`; v5 → v6 (M12b) moves the old 10×12 grid into the 20×17 grid by `LEGACY_OFFSET` (+2, +5), translates every coordinate once (furniture, style keys, characters with paths/targets/homes/wait spots), drops stored wall tiles, adds `room` (the starting room grown by every expansion up to the saved rank); v4 → v5 (M12) adds `styles` (painted floors/walls) and the guests' `errand`/`snackAsked`, furniture levels already existed; v1 → v2 adds the empty per-day money ledger; v2 → v3 adds `momentsSeen`, `counters` and `regulars` (M11) and the `regularId`/`look`/`companionOf` fields of guests; v3 → v4 (recipe levels 1–5, D-036) drops the four common ingredients from the inventory and pays 40 coins for each one owned, grants one Nonna's Secret Basil to saves that already saw her 2♥ beat, and re-rolls the market when it holds anything but rares; `migrate()` runs `MIGRATIONS[n]` for each step n → n+1, then the state shape is validated). Anything that is not in `GameState` is runtime only and rebuilt on load: the walk grid cache, pause reasons (a loaded game starts unpaused; a save made in the `report` phase reopens the report), sim speed, the UI signals.
 - **Money ledger (D-033):** `dayStats.ledger.entries` is reset every day, so it is bounded. Dish, tip and ingredient events are folded into one aggregate entry per kind (summed amount + count); only the day's single biggest tip (at least `LEDGER_NOTABLE_TIP`) is kept as its own entry, and furniture/market/upgrade purchases are kept individually. Σ entries = money change since the day started. Measured over 10 simulated days: about 3.5 KB at every day start, about 8 KB at the busiest moment (guarded by `tests/sim/size.test.ts`).
 - **Open RANK UP modal:** the rank, unlocks and reward are already in state when the modal opens, so only the celebration is lost: on load the pending modal is dropped, not re-shown.
 - **Flow:** the title screen runs before any sim exists; Continue/New Game then builds `Game` + Phaser world from the chosen state. New Game writes the fresh state at once (the previous pizzeria moves to `backup`).
@@ -202,7 +203,8 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 Audio (M10) lives in `src/platform/`: the AudioContext is created on the first user gesture and suspended while the page is hidden; sounds are triggered from sim events in `audioEvents.ts` and a delegated click listener on the UI overlay, so the sim never knows about audio.
 
 - `document.visibilitychange` / Capacitor `appStateChange` → `game.pause()` / `game.resume()`. No offline progress: time simply doesn't pass while paused.
-- Opening a modal (report, rank up) also pauses the sim.
+- Opening a modal (report, rank up, moment) also pauses the sim, and so does any open menu or panel (Menu, Shop, Recipes, Guests, Settings, Today; reason `menu`) and build mode. The guest info card does not pause.
+- Moving or turning a piece in use (M12b, `systems/relocate.ts`) carries its users along instead of refusing; selling it is still refused.
 
 ## 10. Data-driven content
 

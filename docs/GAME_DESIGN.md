@@ -263,14 +263,16 @@ All furniture is data-driven (`src/data/furniture.ts`): size (footprint), catego
 
 Fame accumulates from happy guests. Hitting thresholds triggers a **RANK UP!** with fanfare, and each rank unlocks something.
 
-| Rank | Name | Fame needed | Unlocks |
-|---|---|---|---|
-| 1 | Hole in the Wall | 0 | start |
-| 2 | Neighborhood Spot | 500 | Pepperoni, more guests per day |
-| 3 | Local Favorite | 1400 | new decor, staff hiring (post-MVP) |
-| 4 | Talk of the Town | 4200 | expansion, new guest type |
-| 5 | City Classic | 10500 | regulars, more ovens |
-| 6 | Legendary Pizzeria | 28000 | **ending celebration** |
+| Rank | Name | Fame needed | Unlocks | Space (room grows) |
+|---|---|---|---|---|
+| 1 | Hole in the Wall | 0 | start | 8 × 11 |
+| 2 | Neighborhood Spot | 500 | Pepperoni, more guests per day | +3 columns → 11 × 11 |
+| 3 | Local Favorite | 1400 | new decor, staff hiring (post-MVP) | +3 rows → 11 × 14 |
+| 4 | Talk of the Town | 4200 | expansion, new guest type | +3 columns → 14 × 14 |
+| 5 | City Classic | 10500 | regulars, more ovens | +2 columns, +2 rows → 16 × 16 |
+| 6 | Legendary Pizzeria | 28000 | **ending celebration** | +2 columns → 18 × 16 |
+
+The room grows with every rank from 2 (D-038): the door and everything already placed stay put, the new floor is plain wood, and the RANK UP modal shows "More space!".
 
 Higher rank → more guests arrive per day (spawn rate grows with rank and appeal).
 

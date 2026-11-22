@@ -52,6 +52,14 @@ describe('surroundings data', () => {
         expect(p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1, at).toBe(true);
         const width = p.kind === 'bench' ? 2 : 1;
         if (p.y === DOOR_Y + 1) expect(p.x <= DOOR_X && DOOR_X < p.x + width, at).toBe(false);
+        if (p.y <= room.y1 && p.kind !== 'lamp' && p.kind !== 'bench') {
+          // Nothing stands on the wall footprint tiles (x0 - 1, y0 - 1, x1 + 1).
+          const onWall =
+            (p.x === room.x0 - 1 && p.y >= room.y0) ||
+            (p.y === room.y0 - 1 && p.x >= room.x0 && p.x <= room.x1) ||
+            (p.x === room.x1 + 1 && p.y >= room.y0 && p.y <= room.y1);
+          expect(onWall, at).toBe(false);
+        }
         if (p.kind.startsWith('tree') && p.y <= room.y1) {
           const gap = Math.max(room.x0 - p.x, p.x - room.x1, room.y0 - p.y);
           expect(gap, at).toBeGreaterThanOrEqual(3);

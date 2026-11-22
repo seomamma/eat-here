@@ -242,6 +242,19 @@ Verified (tests, `npm run balance` and Playwright at 390×844 and 844×390, DSF 
 Toilet & wandering (old M15) folds into M12/M16 as furniture + happiness sources.
 
 
+### M12b — The room grows with rank
+
+Verified (tests, `npm run balance`, Playwright at 390×844 and 844×390, DSF 2):
+- [x] Sim grid allocated at its final size (20×17); `state.room` = unlocked rectangle; walls derived from its edges; the door (front edge `y1`) never moves, so growth is only +x, −x, −y (`src/data/expansion.ts`: Rank 2 +3 columns on +x, Rank 3 +3 rows on −y, Rank 4 +3 columns on +x, Rank 5 +2 columns on −x and +2 rows on −y, Rank 6 +2 columns on +x).
+- [x] `expandRoom` runs inside the rank-up (`roomExpanded` event, walk grid invalidated); new floor is plain wood, kitchen checker stays; furniture, styles, characters keep their coordinates.
+- [x] Placement, reachability, paint, spawn/door and surroundings use the room rectangle; `outside` tiles are neither walkable nor buildable; the tile in front of the door stays free.
+- [x] RANK UP modal lists "More space!" with the size ("+3 columns"); the camera glides to the new area and the new floor sparkles after the modal closes (instant with reduced motion); Next Goals shows "Rank N: more space (+3 columns)".
+- [x] Surroundings are generated around the current room (coordinate-hash trees, bushes, flowers; lamps and benches on the sidewalk) and re-laid out on growth.
+- [x] Camera: fit and pan bounds follow the room; the default zoom never goes below 2 device px per art px (one step closer when the whole room would render smaller).
+- [x] Save version 6, migration v5 → v6 translates furniture, style keys, characters (position, path, home, target, wait spot) and the room (grown to the saved rank); fixture `tests/fixtures/save-v5.json`.
+- [x] Addendum (user request): every open menu or panel pauses the sim (reason `menu`); furniture in use can be moved or turned (`systems/relocate.ts`: seated guests move with their chair, chef/waiter/toilet/vending users go to the new use spot, characters on the new footprint are nudged, walkers re-plan); selling a piece in use is still refused.
+- [x] Balance: Rank 2 day 3.8, Rank 3 day 9.0, Rank 4 day 26.2 (was 25.5), Rank 5 about day 70; guests served per day unchanged (about 21-22): the single chef is still the bottleneck (M14).
+
 ### M12 — Facility levels & more furniture
 
 - [x] Catalog (`src/data/furniture.ts`, `shop.ts`): 16 pieces in four categories with unlock ranks 1-4 (D-039); long table (chairs on both sides), cushioned chair (comfort), vending machine, piano (music aura), toilet, flower box, lamp, easel, statue, pillar, low divider; oven and pass are upgraded, not bought.

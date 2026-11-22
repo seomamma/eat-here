@@ -160,6 +160,8 @@ export function surroundingProps(room: Readonly<Room>): SurroundingProp[] {
       // Distance from the walls (0 right next to them), measured towards the open sides.
       const gap = Math.max(room.x0 - x, x - room.x1, room.y0 - y, 1) - 1;
       const doorSide = y >= SIDEWALK_Y;
+      // The tiles right under the walls are their footprint: nothing stands there.
+      if (!doorSide && gap < 1) continue;
       if (
         (doorSide || gap >= SCATTER.treeWallGap) &&
         isPeak(x, y, SCATTER.tree.salt, SCATTER.tree.radius, SCATTER.tree.min)
