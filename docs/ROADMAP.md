@@ -66,10 +66,10 @@
 - Coin popup on payment.
 
 **Acceptance criteria**
-- [ ] Guests enter, find a free chair, sit, eat (timer), pay, leave.
-- [ ] With all seats full, new guests wait at the door and eventually leave with 😤.
-- [ ] Money in HUD increases on each payment.
-- [ ] Headless test: one simulated hour, every spawned guest ends in `gone`, no seat double-booked.
+- [x] Guests enter, find a free chair, sit, eat (timer), pay, leave.
+- [x] With all seats full, new guests wait at the door and eventually leave with 😤.
+- [x] Money in HUD increases on each payment.
+- [x] Headless test: one simulated hour, every spawned guest ends in `gone`, no seat double-booked.
 
 ### M4 — Staff, kitchen & serving
 **Goal:** the real loop: order → cook → serve.
