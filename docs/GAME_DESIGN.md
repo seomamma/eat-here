@@ -195,6 +195,25 @@ Higher rank → more guests arrive per day (spawn rate grows with rank and appea
 - On reaching it: an ending celebration (credits, staff party), then **choice: continue playing freely**.
 - **Completion (optional, post-ending):** collection tracker — all dishes Lv.5, all secret recipes, all guest types, all regulars, all facilities Lv.5. Gives a "100%" badge and stars on the title screen.
 
+## 10b. Reward & progression ideas (backlog, evaluated after M5)
+
+Principle: rewards should feel **warm, not compulsive** — celebrate the player, never punish absence or add countdown stress (cozy pillar). Most ideas below share one engine: a **data-driven Moments system** (trigger conditions → celebratory card/popup → reward), built once post-MVP and reused for regulars' story beats, magazine articles, awards and neighborhood events.
+
+| Idea | Verdict | Notes |
+|---|---|---|
+| Eat Here! Magazine (signature dish reviewed, cover with *your* restaurant, guest boost) | ✅ High | Core of "your restaurant matters to the town". Shareable. Pair with Mystery Critic. |
+| Mystery Critic (anonymous critic guest, result → magazine review) | ✅ High | Cheap: a hidden guest type + review card. No direct control → no stress, it rewards a well-run restaurant. |
+| Regulars with stories | ✅ Planned | Already first post-MVP feature (Nonna Rosa, Oliver). Birthdays fit here. |
+| Secret Recipes | ✅ Planned | M18. Local favorites vs flops. |
+| Restaurant Awards (yearly: Best Budget Pizza, Coziest Room…) | ✅ Medium | Fits the yearly evaluation. Trophies are **decor items** with appeal; awards unlock better **suppliers** → premium ingredients for recipe levels. Avoid "Cleanest Kitchen" (we have no cleaning system). |
+| Staff Personalities (traits, skills from experience) | ✅ Planned | M14 + traits (e.g. "Speedy baker", "Chatty"). Pizza-focused traits — no pasta in v1.0. |
+| Neighborhood Events (football match, festival, rain) | 🟡 Later | Light prep choices (extra staff, menu). Implemented as Moments with temporary spawn/preference modifiers. |
+| Happy Streak (was "Customer Frenzy") | 🟡 Reworked | No countdown. N very happy guests in a row → a celebratory "Rush!" with bonus tips. Passive, never punishing. |
+| City Permits (terrace, evening hours) | 🟡 Reworked | Taxes/bureaucracy aren't cozy. Keep **rank** as the progression spine; present unlocks like the terrace as "the neighborhood invites you…" rank rewards. **No alcohol service** (age rating + tone). |
+| Second restaurant / empire | 🔴 Not v1.0 | Large scope. v1.0 = one restaurant that expands; a second location is a v2/DLC idea. |
+
+Pacing note: one day ≈ 4 min, so "day 60" ≈ 4 h of play. Our target (Legendary in ~8–15 h) is ~120–220 days; milestones in the rank table should be spaced accordingly.
+
 ## 11. MVP scope (first playable)
 
 **In:**
