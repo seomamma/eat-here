@@ -132,6 +132,8 @@ export class WorldRenderer {
   private tilesBuilt = false;
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
+  /** Piece being moved: hidden while its ghost is shown. */
+  private hiddenFurnitureId: string | null = null;
   private highlight: Phaser.GameObjects.Image | null = null;
   private marker: Phaser.GameObjects.Image | null = null;
   private effects: Effect[] = [];
@@ -178,6 +180,10 @@ export class WorldRenderer {
     const { width, height } = state.grid;
     const b = tileRectBounds(1, 1, width - 1, height);
     return { ...b, minY: b.minY - WALL_BACK_RISE };
+  }
+
+  setHiddenFurniture(id: string | null): void {
+    this.hiddenFurnitureId = id;
   }
 
   sync(state: GameState): void {
@@ -562,6 +568,7 @@ export class WorldRenderer {
         .setOrigin(def.spriteOrigin[0] / img.width, def.spriteOrigin[1] / img.height)
         .setFlipX(f.rot === 1)
         .setPosition(o.x, o.y)
+        .setVisible(f.id !== this.hiddenFurnitureId)
         .setDepth(depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS);
     }
     for (const [id, img] of this.furniture) {

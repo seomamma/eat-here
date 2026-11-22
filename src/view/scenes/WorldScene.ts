@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
-import { inBounds } from '../../sim/grid';
+import { furnitureAt, inBounds } from '../../sim/grid';
 import type { Game } from '../../sim/game';
+import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
 import { screenToTile, tileToScreen } from '../iso';
 import { generatePlaceholderTextures } from '../placeholderTextures';
+import { buildMode, ghost, moveGhostTo, startMoving } from '../../ui/build';
 import { selectGuest, selectedGuestId } from '../../ui/selection';
+import type { ObjectDrag } from '../CameraController';
 import { WorldRenderer } from '../WorldRenderer';
 
 const CANVAS_COLOR = 0xf6f3ee;
@@ -12,6 +15,7 @@ const CANVAS_COLOR = 0xf6f3ee;
 export class WorldScene extends Phaser.Scene {
   private sim!: Game;
   private world!: WorldRenderer;
+  private build!: BuildOverlay;
 
   constructor() {
     super('WorldScene');
@@ -28,6 +32,7 @@ export class WorldScene extends Phaser.Scene {
     this.world = new WorldRenderer(this);
     this.world.sync(state);
     this.world.syncCharacters(state, this.sim.alpha);
+    this.build = new BuildOverlay(this);
     const unsubs = [
       this.sim.events.on('guestEmote', (e) => this.world.showEmote(e.guestId, e.emote)),
       this.sim.events.on('paid', (e) => this.world.showCoinPopup(e.x, e.y, e.amount)),
@@ -35,8 +40,13 @@ export class WorldScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubs.forEach((u) => u()));
     if (new URLSearchParams(location.search).has('debug')) this.exposeDebugHook();
     const camera = new CameraController(this, WorldRenderer.roomBounds(state));
+    camera.setObjectDrag(this.objectDrag());
     // Debug aid: tap a tile to outline it and send the debug walker there.
     camera.onTap((world) => {
+      if (buildMode.value) {
+        this.onBuildTap(world);
+        return;
+      }
       // A guest under the finger wins; otherwise the tap clears the selection and acts on the tile.
       const guestId = this.world.guestAt(state, world.x, world.y);
       selectGuest(guestId);
@@ -46,6 +56,44 @@ export class WorldScene extends Phaser.Scene {
       this.world.showHighlight(inside ? tile : null);
       if (inside) this.sim.dispatch({ type: 'debugWalkTo', x: tile.x, y: tile.y });
     });
+  }
+
+  /** Build mode: a tap puts the ghost on that tile, or picks up the piece standing there. */
+  private onBuildTap(world: { x: number; y: number }): void {
+    const state = this.sim.state;
+    const tile = screenToTile(world.x, world.y);
+    if (!inBounds(state.grid, tile.x, tile.y)) return;
+    if (ghost.value) {
+      moveGhostTo(tile.x, tile.y);
+      return;
+    }
+    const id = furnitureAt(state, tile.x, tile.y);
+    if (id) startMoving(id);
+  }
+
+  /** Build mode: a one-finger drag that starts on the ghost moves it instead of panning. */
+  private objectDrag(): ObjectDrag {
+    const state = this.sim.state;
+    let grab = { x: 0, y: 0 };
+    return {
+      begin: (world) => {
+        const g = ghost.value;
+        if (!buildMode.value || !g) return false;
+        const tile = screenToTile(world.x, world.y);
+        if (!this.build.ghostContains(g, tile, world)) return false;
+        grab = { x: g.x - tile.x, y: g.y - tile.y };
+        return true;
+      },
+      move: (world) => {
+        const tile = screenToTile(world.x, world.y);
+        const { width, height } = state.grid;
+        moveGhostTo(
+          Math.min(width - 1, Math.max(0, tile.x + grab.x)),
+          Math.min(height - 1, Math.max(0, tile.y + grab.y)),
+        );
+      },
+      end: () => {},
+    };
   }
 
   /** Test hook (?debug): CSS-pixel client position of a tile centre. */
@@ -65,8 +113,11 @@ export class WorldScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     this.sim.update(delta);
+    const g = ghost.value;
+    this.world.setHiddenFurniture(g?.placing.kind === 'move' ? g.placing.id : null);
     this.world.sync(this.sim.state);
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
     this.world.syncSelection(selectedGuestId.value);
+    this.build.sync(this.sim.state, buildMode.value, g);
   }
 }

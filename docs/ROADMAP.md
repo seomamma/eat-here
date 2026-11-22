@@ -113,10 +113,10 @@
 - Placement validation (footprint + reachability). Decor appeal affects nearby guests.
 
 **Acceptance criteria**
-- [ ] Buying deducts money; can't buy without enough money.
-- [ ] Invalid placements (blocking the door, a chair or the oven) are refused with red highlight.
-- [ ] Guests seated near the plant gain decor points (visible in their info card).
-- [ ] Moving tables/chairs works and guests use the new positions.
+- [x] Buying deducts money; can't buy without enough money.
+- [x] Invalid placements (blocking the door, a chair or the oven) are refused with red highlight.
+- [x] Guests seated near the plant gain decor points (visible in their info card).
+- [x] Moving tables/chairs works and guests use the new positions.
 
 ### M8 — Recipe leveling
 **Goal:** "salt on the fries" — level up dishes.

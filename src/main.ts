@@ -6,6 +6,7 @@ import { createInitialState } from './sim/state';
 import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
 import { WorldScene } from './view/scenes/WorldScene';
 import { App } from './ui/App';
+import { bindBuild } from './ui/build';
 import { bindStore } from './ui/store';
 import './ui/styles/tokens.css';
 import './ui/styles/components.css';
@@ -17,6 +18,7 @@ import '@fontsource/inter/800.css';
 const debug = new URLSearchParams(location.search).has('debug');
 const sim = new Game(createInitialState(undefined, { debugWalker: debug }));
 bindStore(sim);
+bindBuild(sim);
 bindLifecycle(sim);
 
 if (debug) {

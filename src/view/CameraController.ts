@@ -24,6 +24,14 @@ export function hudInsets(cssWidth: number, cssHeight: number): { top: number; b
   return cssWidth > cssHeight ? HUD_INSETS_LANDSCAPE : HUD_INSETS_PORTRAIT;
 }
 
+/** Lets the build mode claim a one-finger drag (e.g. on the ghost) before it pans the camera. */
+export interface ObjectDrag {
+  /** Pointer went down at this world position: return true to take over the gesture. */
+  begin(world: Point): boolean;
+  move(world: Point): void;
+  end(): void;
+}
+
 /**
  * Pan (drag), zoom (pinch / wheel) with integer zoom only, clamped to the room.
  *
@@ -46,6 +54,8 @@ export class CameraController {
   private readonly canvas: HTMLCanvasElement;
   private readonly cam: Phaser.Cameras.Scene2D.Camera;
   private tapHandler: ((world: Point) => void) | null = null;
+  private objectDrag: ObjectDrag | null = null;
+  private draggingObject = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -72,6 +82,17 @@ export class CameraController {
   /** Called with the world position of a tap (press and release without dragging). */
   onTap(handler: (world: Point) => void): void {
     this.tapHandler = handler;
+  }
+
+  /** Installs (or clears) the object-drag hook; null = every one-finger drag pans. */
+  setObjectDrag(handler: ObjectDrag | null): void {
+    this.objectDrag?.end();
+    this.draggingObject = false;
+    this.objectDrag = handler;
+  }
+
+  private toWorld(p: Point): Point {
+    return { x: (p.x - this.offsetX) / this.zoom, y: (p.y - this.offsetY) / this.zoom };
   }
 
   /** Re-fits the room into the available area (also on resize / rotation). */
@@ -169,7 +190,12 @@ export class CameraController {
       this.dragging = false;
       this.gestureMoved = false;
       this.dragStart = { x: p.x, y: p.y, offsetX: this.offsetX, offsetY: this.offsetY };
+      if (this.objectDrag?.begin(this.toWorld(p))) {
+        this.draggingObject = true;
+        this.gestureMoved = true;
+      }
     } else if (this.pointers.size === 2) {
+      this.endObjectDrag();
       this.gestureMoved = true;
       const [a, b] = [...this.pointers.values()] as [Point, Point];
       const mx = (a.x + b.x) / 2;
@@ -186,6 +212,10 @@ export class CameraController {
   private readonly onMove = (e: PointerEvent): void => {
     if (!this.pointers.has(e.pointerId)) return;
     this.pointers.set(e.pointerId, this.local(e));
+    if (this.draggingObject) {
+      this.objectDrag?.move(this.toWorld(this.local(e)));
+      return;
+    }
     if (this.pinch && this.pointers.size >= 2) {
       const [a, b] = [...this.pointers.values()] as [Point, Point];
       const mx = (a.x + b.x) / 2;
@@ -213,6 +243,7 @@ export class CameraController {
 
   private readonly onUp = (e: PointerEvent): void => {
     const wasOnly = this.pointers.size === 1 && this.pointers.has(e.pointerId);
+    this.endObjectDrag();
     this.pointers.delete(e.pointerId);
     this.pinch = null;
     if (wasOnly && !this.gestureMoved && this.tapHandler) {
@@ -226,6 +257,12 @@ export class CameraController {
       this.dragStart = { x: rest.x, y: rest.y, offsetX: this.offsetX, offsetY: this.offsetY };
     }
   };
+
+  private endObjectDrag(): void {
+    if (!this.draggingObject) return;
+    this.draggingObject = false;
+    this.objectDrag?.end();
+  }
 
   private readonly onCancel = (e: PointerEvent): void => {
     this.gestureMoved = true; // a cancelled gesture is never a tap
