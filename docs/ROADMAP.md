@@ -194,6 +194,7 @@ Current order: M12 → **M13 art** → M12b → M12c → … (user moved art up)
 | M11b | Recipe levels 1–5 & surroundings | D-036 recipe leveling; outdoor surroundings: street + sidewalk in front of the door, backyard soil, trees and bushes around the building (view-only) |
 | M12 | Facility levels & more furniture | Furniture Lv.1–5 with upgrade UI and visual variants; more tables/chairs/decor (incl. low dividers); money sink |
 | M13 | **Art foundation** (moved up, user request) | Pixel sprites authored as palette-indexed text maps in the repo → `npm run assets:build` (PNG atlas + JSON, own tiny PNG encoder, no deps) → `npm run assets:check`; style per `assets/concepts/character-style-c.webp` with our changes (new young waiter with tomato-red apron, our UI palette, readable at 16×24). Scope: chef, waiter, guests (variants), Nonna/Oliver/Mia, room tiles, walls, door, core furniture (tables, chairs, dome oven, pass), dish icons. Animations: chef **slides the pizza into the oven with a peel** and takes it out, occasional stoking idle; waiter carry pose for 1–3 plates. Rest of the catalog in M13b |
+| M13b | Remaining catalog art | Draw the pieces still on placeholders: the other 12 furniture pieces (+ shop icons from the atlas), staff-room items, outdoor surroundings, selection marker and sparkles, level-trim art variants, coin spin in the pop-up, door open/closed |
 | M12b | Room grows with rank | Rank-ups unlock more space: the room expands (walls move outwards), door and existing furniture stay put (user request) |
 | M12c | **Groups, families & street life** (moved up, user request) | Guests arrive together as visible groups (couples, friends, families **with kids**): walk in together, sit at the same table, order together, leave together; 4-seat tables + kids' high chair. **Passers-by** walk along the sidewalk; guests come from the street and turn in at the door; some passers-by walk a **dog**, stop at the door, show a 💔 and walk on (teaser for the Animal Area) |
 | M14 | Staff growth & kitchen flow | Hiring pool, XP, levels, traits, more staff; waiter carries 1→2→3 plates by level. **Kitchen stations:** a **prep station** (pizzas = prep → bake; garlic bread = oven only, defined per dish in data) and **several chefs** sharing steps through the job queue; fridge as kitchen furniture (prep-speed bonus). **Staff room:** a room/area the player designs (sofa, paintings, pool table…); staff have **energy**, rest there on breaks, a cozier staff room = faster recovery and happier staff → work speed; tired staff just slow down (never quit). "Good employer" moment → later a magazine article (M18). Dishwashing deferred (waiter clears tables) |
@@ -204,6 +205,16 @@ Current order: M12 → **M13 art** → M12b → M12c → … (user moved art up)
 | M19 | Secret recipes | Taste profiles, free experimentation, recipe book |
 | M20 | Ending & completion | Legendary Pizzeria finale, continue-play, 100 % tracker |
 | M21 | Mobile release prep | Capacitor builds, device performance, store assets |
+
+### M13 — Art foundation
+
+- [x] Pipeline: text pixel maps `assets/sprites/**/*.px` + locked palette `assets/palette/world.hex` → `npm run assets:build` (atlas PNG + Phaser JSON + anim manifest in `public/assets/`, own PNG encoder, no deps, idempotent) and `npm run assets:check` (palette, alpha, sizes, naming, feet row), the check and an "atlas is up to date" test run in `npm test` (D-040).
+- [x] Characters (16x24, chef 24x24 for the peel): chef (idle, walk, carry, bake with the peel, take out, stoke), young waiter with tomato-red apron (idle, walk, carry, take order), guests in 4 palette-swapped bodies (idle, walk, sit, eat, raise hand), Nonna Rosa, Oliver, Mia; one soft shadow sprite.
+- [x] Room: 5 floor styles (wood x2, checker, terracotta, herringbone), 4 back-wall styles incl. end caps, low front walls, door frame and mat. Core furniture front/back: chair, small table (red top, white centre), dome brick oven (cold, 2 glow frames, woodpile, copper collar), pass counter.
+- [x] Dish icons, emote bubbles (hand, tasty, love, slow, angry, heart), order bubble frame, coin.
+- [x] View: atlas loaded in the scene preload, static frames aliased onto the placeholder keys (everything undrawn keeps its placeholder), characters animated from the manifest; `?gallery[=prefix,...]` shows every sprite and animation at 1x/2x/4x.
+- [x] Fame bar text fits in portrait 390 and landscape ("4.3k / 10.5k").
+- [ ] Still placeholders: see M13b.
 
 ### M11 — Regulars & Moments
 

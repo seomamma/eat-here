@@ -1,6 +1,6 @@
 # Asset List — MVP (first playable)
 
-> Status: draft v0.1. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
+> Status: draft v0.1. **M13 (final art, hand-authored text maps, D-040):** chef, waiter, guest bodies (4 variants), Nonna Rosa, Oliver, Mia, shadow, floors (5 styles), back walls (4 styles), low walls, door frame/mat, chair_wood, table_small, oven_pizza (+glow, woodpile, copper collar), counter_pass, dish icons (4), emotes (6) + order bubble, coin are FINAL (F). Everything else is still a placeholder (P) until M13b. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
 > Sizes follow ART_DIRECTION.md (isometric, D-025). Furniture: 2 orientations via mirroring. Naming: `<entity>_<anim>_<dir>_<frame>`.
 
 ## 1. Tiles (isometric: floor diamonds 32×16, wall segments 16×48 / front cut-away 16×12)

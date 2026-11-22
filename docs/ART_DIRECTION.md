@@ -48,7 +48,7 @@ Furniture sprites are anchored so the **footprint's top corner** matches the pro
 
 ### World palette (locked, ~32 colors)
 
-All world sprites must use only colors from `assets/palette/world.hex` (to be created in the art milestone). Draft core:
+All world sprites must use only colors from `assets/palette/world.hex` (created in M13 from this table, plus skin ramps, grey hair and copper). Draft core:
 
 | Role | Colors (hex) |
 |---|---|
@@ -123,41 +123,35 @@ Required changes before production (originality §8 + our palette):
 
 - Juice (handled in code, not sprites): squash/stretch on coins, bounce on emotes, sparkles on level up, screen-space "+12" money popups.
 
-## 7. Asset production pipeline (AI-assisted)
+## 7. Asset production pipeline (hand-authored text maps, D-040)
 
-AI image tools produce **"fake pixel art"**: inconsistent pixel sizes, too many colors, soft edges, and drifting style. AI output is therefore **concept/reference material**, and every in-game sprite goes through cleanup. Plan for it.
+AI image tools produce "fake pixel art" (inconsistent pixel sizes, too many colours, soft edges). AI output is **concept/reference material only**; every in-game sprite is drawn by hand as a text pixel map in the repo.
 
 ### Pipeline
 
-1. **Style bible first.** Before any production sprite: one approved **style sheet** (a single image with the chef, waiter, one guest, one table, one oven, floor and wall tiles together, at final size). Every later asset is compared against it.
-2. **Concept generation (AI).** Generate concepts at high resolution with a consistent prompt template (stored in `assets/prompts/`). Always include: isometric view with 2:1 pixel lines, 16×24 character proportions, warm palette, dark brown outline, flat shading, light from top-left, plain background.
-3. **Downscale to grid.** Resize to target size (e.g. 16×24) with **nearest-neighbor** after cropping so 1 "AI pixel" = 1 real pixel.
-4. **Palette lock.** Quantize to the locked world palette (no dithering), using Aseprite's palette remap or a script.
-5. **Manual cleanup in Aseprite** (or free alternatives LibreSprite / Pixelorama): fix outlines, remove orphan pixels, ensure readable silhouette, consistent light direction.
-6. **Transparent background.** Background fully transparent; **no semi-transparent pixels** except the shadow ellipse (which is a separate sprite anyway).
-7. **Animate in Aseprite.** One `.aseprite` file per character with tagged animations (`idle_down`, `walk_side`, …). Feet aligned to the baseline; pivot bottom-center.
-8. **Export.** Aseprite CLI → packed **sprite sheet PNG + JSON atlas** (Phaser-compatible), via an npm script so exports are reproducible.
-9. **Validate (script, `npm run assets:check`).** Checks for each exported asset:
-   - dimensions are multiples of the frame size;
-   - every opaque pixel's color is in the locked palette;
-   - alpha is only 0 or 255;
-   - frame names follow `<entity>_<anim>_<dir>_<n>`;
-   - pivot/baseline row has content (feet present) for character frames.
-10. **In-game review.** View the asset in the debug "asset gallery" scene next to the style sheet at 1×–4× zoom on a real phone before accepting.
+1. **Style bible first.** The approved direction is `assets/concepts/character-style-c.webp` plus the rules in this document; every new asset is compared against it (and against the gallery).
+2. **Concept generation (AI, optional).** Consistent prompt template stored in `assets/prompts/`; never name existing games or feed their screenshots in (section 8). Concepts are references, not sources.
+3. **Author the map.** One `.px` file per entity group in `assets/sprites/` (format: `assets/sprites/README.md`): header with size and pivot, animations per facing, frames as rows of single characters from the locked palette `assets/palette/world.hex`. Characters are 16x24 (chef 24x24), pivot bottom-centre, feet on row 23; floors are 32x16 diamonds with strict 2:1 edges. Drafts may come from the helpers in `assets/author/` (layered patches plus an automatic 1 px outline); after that the `.px` files are edited directly.
+4. **Variants.** Palette swaps (e.g. guest bodies) use `variant` lines, mirrored animations use `mirror`; nothing is recoloured at runtime.
+5. **Build.** `npm run assets:build` packs everything into `public/assets/atlas.png`, `atlas.json` (Phaser JSON hash) and `anims.json` (fps and frame lists per `<anim>_<dir>`). Output is deterministic and committed; re-running produces no diff.
+6. **Validate.** `npm run assets:check` (also part of `npm test`): every pixel is in the palette, alpha is only 0 or 255 (except the shadow sprite), frame sizes match the kind, names follow `<entity>_<anim>_<dir>_<n>`, characters have feet on the baseline row; a test also fails when the committed atlas is stale.
+7. **Review in the gallery.** `?gallery` (or `?gallery=chef,waiter`) shows every sprite and animation at 1x, 2x and 4x on the world background; judge silhouettes at 1x and 2x, then look at the game at default zoom on a phone-sized viewport before accepting.
 
 ### Folder conventions
 
 ```
 assets/
-  source/        .aseprite source files (committed)
+  concepts/      AI concept boards (reference only)
   prompts/       AI prompt templates + chosen concept images
   palette/       world.hex (locked palette)
-public/assets/   exported PNG + JSON atlases (generated, committed)
+  sprites/       .px sprite maps (source of truth)
+  author/        draft generators (one-off helpers, not the source)
+public/assets/   atlas.png, atlas.json, anims.json (generated, committed)
 ```
 
 ### Placeholder art
 
-Until the art milestone, use **flat colored rectangles/circles with outlines** generated in code or a tiny placeholder atlas. Placeholders must already respect the sizes above (16×24 characters, 16×16 tiles) so swapping art requires no code changes.
+Anything not yet drawn (M13b) is generated in code at the real pixel sizes (`src/view/placeholderTextures.ts`, `surroundingsTextures.ts`); the view aliases atlas frames onto the same texture keys, so drawing a piece means adding its `.px` and rebuilding, no code change.
 
 ## 8. Originality rules (mandatory)
 
