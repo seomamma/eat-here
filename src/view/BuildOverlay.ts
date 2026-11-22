@@ -92,6 +92,25 @@ export class BuildOverlay {
     else img.setTint(GHOST_INVALID_TINT);
   }
 
+  /** World-space box around the visible ghost (sprite plus footprint), or null without one. */
+  ghostBounds(
+    ghost: Ghost | null,
+  ): { minX: number; minY: number; maxX: number; maxY: number } | null {
+    if (!ghost || !this.ghostImage?.visible) return null;
+    const b = this.ghostImage.getBounds();
+    let box = { minX: b.x, minY: b.y, maxX: b.right, maxY: b.bottom };
+    for (const t of footprintTiles(ghost.placing.defId, ghost.x, ghost.y, ghost.rot)) {
+      const o = tileToScreen(t.x, t.y);
+      box = {
+        minX: Math.min(box.minX, o.x - ISO_HALF_W),
+        minY: Math.min(box.minY, o.y),
+        maxX: Math.max(box.maxX, o.x + ISO_HALF_W),
+        maxY: Math.max(box.maxY, o.y + 2 * ISO_HALF_H),
+      };
+    }
+    return box;
+  }
+
   /** True when a world point is on the ghost (its footprint or its sprite). */
   ghostContains(ghost: Ghost, tile: Point, world: Point): boolean {
     const onTile = footprintTiles(ghost.placing.defId, ghost.x, ghost.y, ghost.rot).some(

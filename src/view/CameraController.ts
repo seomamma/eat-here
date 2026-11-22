@@ -5,8 +5,8 @@ import type { Bounds, Point } from './iso';
  * HUD space (CSS px) reserved at the top/bottom of the screen; the room is fitted into what
  * remains. Landscape is slimmer so the room is not tiny (D-026). The single place to tune these.
  */
-export const HUD_INSETS_PORTRAIT = { top: 96, bottom: 80 } as const;
-export const HUD_INSETS_LANDSCAPE = { top: 56, bottom: 44 } as const;
+export const HUD_INSETS_PORTRAIT = { top: 96, bottom: 112 } as const;
+export const HUD_INSETS_LANDSCAPE = { top: 56, bottom: 68 } as const;
 /**
  * Portrait only: if the fit-whole-room zoom leaves the room narrower than this fraction of the
  * available width, start one integer zoom step closer (the player pans around the room).

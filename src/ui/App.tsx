@@ -1,3 +1,6 @@
+import { BuildControls } from './components/BuildControls';
+import { MenuPanel } from './components/MenuPanel';
+import { TodayPanel } from './components/TodayPanel';
 import { ActionBar } from './components/ActionBar';
 import { GuestCard } from './components/GuestCard';
 import { NightOverlay } from './components/NightOverlay';
@@ -18,6 +21,9 @@ export function App() {
       <Hud />
       <GuestCard />
       <ActionBar />
+      <BuildControls />
+      <MenuPanel />
+      <TodayPanel />
       <ShopPanel />
       <RecipePanel />
       <Toasts />

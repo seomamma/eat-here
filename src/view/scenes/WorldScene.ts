@@ -5,7 +5,7 @@ import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
 import { screenToTile, tileToScreen } from '../iso';
 import { generatePlaceholderTextures } from '../placeholderTextures';
-import { buildMode, ghost, moveGhostTo, startMoving } from '../../ui/build';
+import { buildMode, ghost, ghostRect, moveGhostTo, startMoving } from '../../ui/build';
 import { selectGuest, selectedGuestId } from '../../ui/selection';
 import type { ObjectDrag } from '../CameraController';
 import { WorldRenderer } from '../WorldRenderer';
@@ -119,5 +119,38 @@ export class WorldScene extends Phaser.Scene {
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
     this.world.syncSelection(selectedGuestId.value);
     this.build.sync(this.sim.state, buildMode.value, g);
+    this.publishGhostRect(g);
+  }
+
+  /**
+   * Tells the UI where the ghost is on screen (CSS px, rounded so the floating controls do not
+   * jitter); the signal is only written when the rounded rectangle changes.
+   */
+  private publishGhostRect(g: typeof ghost.value): void {
+    const box = this.build.ghostBounds(buildMode.value ? g : null);
+    let next: { left: number; top: number; right: number; bottom: number } | null = null;
+    if (box) {
+      const cam = this.cameras.main;
+      const r = this.game.canvas.getBoundingClientRect();
+      const k = this.game.canvas.width / r.width;
+      const toX = (wx: number) => Math.round(r.left + (cam.x + (wx - cam.scrollX) * cam.zoom) / k);
+      const toY = (wy: number) => Math.round(r.top + (cam.y + (wy - cam.scrollY) * cam.zoom) / k);
+      next = {
+        left: toX(box.minX),
+        top: toY(box.minY),
+        right: toX(box.maxX),
+        bottom: toY(box.maxY),
+      };
+    }
+    const cur = ghostRect.peek();
+    const same =
+      cur === next ||
+      (cur !== null &&
+        next !== null &&
+        cur.left === next.left &&
+        cur.top === next.top &&
+        cur.right === next.right &&
+        cur.bottom === next.bottom);
+    if (!same) ghostRect.value = next;
   }
 }

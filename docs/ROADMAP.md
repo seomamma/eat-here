@@ -162,9 +162,9 @@
 - **Menu**: one Menu button opens a grid of shortcut cards (Shop, Market, Recipes, Build, and placeholders for future Staff, Stats, Settings). Our own look (card style, pizza icon) — not a copy of any existing game's menu (ART_DIRECTION §8).
 
 **Acceptance criteria**
-- [ ] Money breakdown totals equal the day's money change (unit tested ledger).
-- [ ] Floating build controls stay on-screen and next to the ghost at all zoom levels, in portrait and landscape.
-- [ ] Every action reachable from the Menu; the bottom of the screen is less cluttered.
+- [x] Money breakdown totals equal the day's money change (unit tested ledger).
+- [x] Floating build controls stay on-screen and next to the ghost at all zoom levels, in portrait and landscape.
+- [x] Every action reachable from the Menu; the bottom of the screen is less cluttered.
 
 ### M10 — MVP polish & playtest
 **Goal:** it feels good to play for 20 minutes.

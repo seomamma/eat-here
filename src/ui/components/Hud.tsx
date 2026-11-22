@@ -1,6 +1,7 @@
 import { STRINGS } from '../../data/strings';
 import { formatHour, weekdayIndex } from '../../sim/time';
 import { RANKS, rankDef } from '../../data/ranks';
+import { todayOpen } from '../build';
 import { day, fame, minuteOfDay, money, phase, rank } from '../store';
 import { Card } from './Card';
 
@@ -84,13 +85,21 @@ export function Hud() {
         </p>
       </Card>
       <Card accent="saffron">
-        <div class="money" role="status" aria-label={STRINGS.moneyLabel}>
+        <button
+          type="button"
+          class="money money-btn"
+          aria-label={`${STRINGS.moneyLabel}: ${amount}. ${STRINGS.today.open}`}
+          aria-expanded={todayOpen.value}
+          onClick={() => {
+            todayOpen.value = !todayOpen.value;
+          }}
+        >
           <CoinIcon />
           {/* Re-keyed on every change so the bump animation restarts. */}
           <span class="money-amount" key={amount}>
             {amount}
           </span>
-        </div>
+        </button>
       </Card>
       <Card accent="saffron" class="fame-card">
         <FameBar />

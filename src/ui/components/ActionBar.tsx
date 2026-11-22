@@ -1,45 +1,9 @@
 import { DAY_CLOSE_MINUTE } from '../../data/balance';
-import { FURNITURE } from '../../data/furniture';
 import { STRINGS } from '../../data/strings';
 import { formatClock } from '../../sim/time';
-import {
-  buildMode,
-  cancelPlacing,
-  confirmPlacing,
-  enterBuild,
-  exitBuild,
-  ghost,
-  openRecipes,
-  openShop,
-  rotateGhost,
-} from '../build';
+import { buildMode, exitBuild, ghost, menuOpen } from '../build';
 import { phase, report } from '../store';
-
-const B = STRINGS.build;
-
-/** Short line above the placement buttons: why it is invalid, a warning, or what it costs. */
-function PlacementHint() {
-  const g = ghost.value;
-  if (!g) return null;
-  const def = FURNITURE[g.placing.defId];
-  let text: string;
-  let tone: 'bad' | 'warn' | 'info';
-  if (!g.result.ok) {
-    text = B.reasons[g.result.reason] ?? g.result.reason;
-    tone = 'bad';
-  } else if (g.orphanChair) {
-    text = B.noTable;
-    tone = 'warn';
-  } else {
-    text = g.placing.kind === 'new' ? B.cost(def.name, def.price) : B.moving(def.name);
-    tone = 'info';
-  }
-  return (
-    <div class={`build-hint build-hint--${tone}`} role="status">
-      {text}
-    </div>
-  );
-}
+import { PizzaSliceIcon } from './MenuIcons';
 
 /** Open / Closing status; replaced by the pause notice while building. */
 function StatusPill() {
@@ -61,48 +25,33 @@ function StatusPill() {
 }
 
 /**
- * Bottom bar: status pill plus Shop / Build in any phase, placement controls while a piece is
- * being placed. Hidden at night and while the day report is open.
+ * Bottom of the screen: status pill and the round Menu button (bottom-centre). While a piece is
+ * being placed the Menu is hidden (the controls float by the ghost). Hidden at night and while
+ * the day report is open.
  */
 export function ActionBar() {
   if (phase.value === 'night' || phase.value === 'report' || report.value) return null;
-  const g = ghost.value;
+  const placing = ghost.value !== null;
   return (
     <div class="bottom-bar">
-      {g && <PlacementHint />}
       <StatusPill />
-      {g ? (
-        <div class="bar-row">
-          <button type="button" class="btn btn--small btn--crust" onClick={rotateGhost}>
-            {B.rotate}
-          </button>
+      {!placing && (
+        <div class="menu-row">
           <button
             type="button"
-            class="btn btn--small btn--basil"
-            disabled={!g.result.ok}
-            onClick={confirmPlacing}
+            class="menu-btn"
+            aria-label={STRINGS.menu.title}
+            aria-expanded={menuOpen.value}
+            onClick={() => {
+              menuOpen.value = !menuOpen.value;
+            }}
           >
-            {B.confirm}
+            <PizzaSliceIcon />
+            <span class="menu-btn-label">{STRINGS.menu.button}</span>
           </button>
-          <button type="button" class="btn btn--small btn--paper" onClick={cancelPlacing}>
-            {B.cancel}
-          </button>
-        </div>
-      ) : (
-        <div class="bar-row">
-          <button type="button" class="btn btn--small btn--saffron" onClick={() => openShop()}>
-            {B.shopButton}
-          </button>
-          <button type="button" class="btn btn--small btn--tomato" onClick={openRecipes}>
-            {B.recipesButton}
-          </button>
-          {buildMode.value ? (
-            <button type="button" class="btn btn--small btn--basil" onClick={exitBuild}>
-              {B.doneButton}
-            </button>
-          ) : (
-            <button type="button" class="btn btn--small btn--sky" onClick={enterBuild}>
-              {B.buildButton}
+          {buildMode.value && (
+            <button type="button" class="btn btn--small btn--basil done-btn" onClick={exitBuild}>
+              {STRINGS.build.doneButton}
             </button>
           )}
         </div>

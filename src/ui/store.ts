@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals';
 import type { IngredientId } from '../data/ingredients';
 import type { RecipeId } from '../data/recipes';
-import type { DayStats } from '../sim/dayStats';
+import type { DayStats, LedgerEntry } from '../sim/dayStats';
 import type { GameState } from '../sim/state';
 import type { MarketState } from '../sim/systems/market';
 import type { Command, CommandResult, Game } from '../sim/game';
@@ -16,6 +16,8 @@ export const money = signal(0);
 export const day = signal(1);
 export const minuteOfDay = signal(0);
 export const phase = signal<DayPhase>('open');
+/** Today's money ledger (copy of `dayStats.ledger.entries`; refreshed whenever money changes). */
+export const ledger = signal<LedgerEntry[]>([]);
 /** Stats of the day that just ended; set while the report modal is shown. */
 export const report = signal<{ day: number; stats: DayStats } | null>(null);
 
@@ -103,6 +105,11 @@ export function bindStore(sim: Game): void {
   minuteOfDay.value = clock.minuteOfDay;
   phase.value = clock.phase;
   report.value = clock.phase === 'report' ? { day: clock.day, stats: sim.state.dayStats } : null;
+  const syncLedger = () => {
+    ledger.value = sim.state.dayStats.ledger.entries.map((e) => ({ ...e }));
+  };
+  syncLedger();
+  sim.events.on('dayStarted', syncLedger);
   const syncPantry = () => {
     inventory.value = { ...sim.state.inventory };
     market.value = structuredClone(sim.state.market);
@@ -118,6 +125,7 @@ export function bindStore(sim: Game): void {
   );
   sim.events.on('moneyChanged', (e) => {
     money.value = e.money;
+    syncLedger();
   });
   sim.events.on('clockChanged', (e) => {
     day.value = e.day;

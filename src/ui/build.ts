@@ -33,6 +33,28 @@ export const ghost = signal<Ghost | null>(null);
 export const shopOpen = signal(false);
 export const shopTab = signal<'furniture' | 'market'>('furniture');
 export const recipesOpen = signal(false);
+/** The Menu hub (grid of shortcut cards) and the money breakdown popover. */
+export const menuOpen = signal(false);
+export const todayOpen = signal(false);
+
+/** Screen rectangle (CSS px, whole numbers) of the ghost; written by the view, null when none. */
+export interface ScreenRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+export const ghostRect = signal<ScreenRect | null>(null);
+
+/** Opens a panel from the Menu: closes the hub first. */
+export type MenuTarget = 'shop' | 'market' | 'recipes' | 'build';
+export function openFromMenu(target: MenuTarget): void {
+  menuOpen.value = false;
+  if (target === 'shop') openShop('furniture');
+  else if (target === 'market') openShop('market');
+  else if (target === 'recipes') openRecipes();
+  else enterBuild();
+}
 
 /** Shop and recipe book share one slot on screen: opening one closes the other. */
 export function openShop(tab: 'furniture' | 'market' = shopTab.peek()): void {
@@ -55,7 +77,11 @@ export function bindBuild(sim: Game): void {
   simRef = sim;
   // Night and the report take over the screen: leave build mode (and let time run again).
   sim.events.on('phaseChanged', (e) => {
-    if (e.phase === 'night' || e.phase === 'report') exitBuild();
+    if (e.phase === 'night' || e.phase === 'report') {
+      exitBuild();
+      menuOpen.value = false;
+      todayOpen.value = false;
+    }
   });
   buildMode.subscribe((on) => {
     if (on) sim.pause(BUILD_PAUSE);
@@ -100,6 +126,7 @@ export function enterBuild(): void {
 export function exitBuild(): void {
   buildMode.value = false;
   ghost.value = null;
+  ghostRect.value = null;
   shopOpen.value = false;
   recipesOpen.value = false;
 }
