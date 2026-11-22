@@ -194,11 +194,11 @@ Order chosen to (1) validate our main differentiator early ("guests you care abo
 | M11b | Recipe levels 1–5 & surroundings | D-036 recipe leveling; outdoor surroundings: street + sidewalk in front of the door, backyard soil, trees and bushes around the building (view-only) |
 | M12 | Facility levels & more furniture | Furniture Lv.1–5 with upgrade UI and visual variants; more tables/chairs/decor (incl. low dividers); money sink |
 | M12b | Room grows with rank | Rank-ups unlock more space: the room expands (walls move outwards), door and existing furniture stay put (user request) |
-| M12c | **Groups & families** (moved up from M15, user request) | Guests arrive together as visible groups (couples, friends, families with kids): walk in together, sit at the same table, order together, leave together; 4-seat tables |
+| M12c | **Groups, families & street life** (moved up, user request) | Guests arrive together as visible groups (couples, friends, families **with kids**): walk in together, sit at the same table, order together, leave together; 4-seat tables + kids' high chair. **Passers-by** walk along the sidewalk; guests come from the street and turn in at the door; some passers-by walk a **dog**, stop at the door, show a 💔 and walk on (teaser for the Animal Area) |
 | M13 | Art foundation | Style bible, palette lock, asset pipeline + `assets:check`, first final sprites (chef, waiter, guests, room, MVP furniture) |
 | M14 | Staff growth | Hiring pool, XP, levels, traits, more staff |
 | M15 | (moved to M12c) | — |
-| M16 | Themed Areas & guest types | Children's Area → families, Animal Area → dog owners with dogs, reading nook → students; appeal tags + guest preferences |
+| M16 | Themed Areas & guest types | **Children's Area** with kids' furniture and toy animations (kids sliding) → achievement **KIDS MENU** (nuggets etc.) → more families; **Animal Area** lets dog walkers in (no more 💔), pet kitchen, exotic pets later; reading nook → students; appeal tags + guest preferences |
 | M17 | Expansion | Bigger room, terrace, Ranks 3–6 content, wages/rent |
 | M18 | Magazine, Mystery Critic & Awards | Moments-driven reviews, critic guest, yearly awards (trophies as decor, better suppliers) |
 | M19 | Secret recipes | Taste profiles, free experimentation, recipe book |
