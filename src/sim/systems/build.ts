@@ -1,5 +1,5 @@
 import { FURNITURE, type FurnitureDefId, type Rot } from '../../data/furniture';
-import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
+import { DOOR_X, DOOR_Y, WAITING_SPOTS } from '../../data/layout';
 import { SHOP_ITEMS, unlockRank } from '../../data/shop';
 import { isGuest, isStaff } from '../characters';
 import {
@@ -133,7 +133,7 @@ export function isInUse(state: GameState, f: Furniture): boolean {
 /** Every tile that must stay reachable from the door, given the furniture layout. */
 export function reachabilityOk(state: GameState, furniture: readonly Furniture[]): boolean {
   const walk = buildWalkGrid(state.grid, furniture);
-  const reached = reachableFrom(walk, { x: DOOR_X, y: state.grid.height - 1 });
+  const reached = reachableFrom(walk, { x: DOOR_X, y: DOOR_Y });
   const ok = (t: TilePos) => reached.has(t.y * walk.width + t.x);
   for (const f of furniture) {
     const kind = FURNITURE[f.defId].kind;
@@ -219,11 +219,12 @@ export function validateMove(
 
 /** Valid tile closest to the room centre for a new piece (rot 0), or null when none fits. */
 export function findFreeSpot(state: GameState, defId: FurnitureDefId): TilePos | null {
-  const cx = (state.grid.width - 1) / 2;
-  const cy = (state.grid.height - 1) / 2;
+  const { room } = state;
+  const cx = (room.x0 + room.x1) / 2;
+  const cy = (room.y0 + room.y1) / 2;
   const candidates: { x: number; y: number; d: number }[] = [];
-  for (let y = 0; y < state.grid.height; y++) {
-    for (let x = 0; x < state.grid.width; x++) {
+  for (let y = room.y0; y <= room.y1; y++) {
+    for (let x = room.x0; x <= room.x1; x++) {
       candidates.push({ x, y, d: Math.abs(x - cx) + Math.abs(y - cy) });
     }
   }

@@ -6,7 +6,7 @@ import {
   type WallStyleId,
 } from '../../data/surfaces';
 import { SURFACE_CAP, SURFACE_FLOOR_RADIUS, SURFACE_WALL_RADIUS } from '../../data/happiness';
-import { inBounds, tileAt, type GridState } from '../grid';
+import { inBounds, tileAt, type GridState, type Room } from '../grid';
 import type { GameState } from '../state';
 
 export type PaintReason =
@@ -54,20 +54,24 @@ export function setWallStyle(state: GameState, id: WallSegmentId, style: WallSty
   else state.styles.wall[id] = style;
 }
 
-/** Back-wall segments of the room: the x = 0 wall (`l<y>`) and the y = 0 wall (`r<x>`). */
-export function wallSegmentIds(grid: Pick<GridState, 'width' | 'height'>): WallSegmentId[] {
+/**
+ * Back-wall segments of the room, derived from its rectangle: the back-left wall along the
+ * x0 edge (`l<y>`) and the back-right wall along the y0 edge (`r<x>`). Ids are absolute
+ * coordinates, so a segment keeps its id (and style) when the room grows.
+ */
+export function wallSegmentIds(room: Readonly<Room>): WallSegmentId[] {
   const out: WallSegmentId[] = [];
-  for (let y = 1; y < grid.height; y++) out.push(`l${y}`);
-  for (let x = 1; x <= grid.width - 2; x++) out.push(`r${x}`);
+  for (let y = room.y0; y <= room.y1; y++) out.push(`l${y}`);
+  for (let x = room.x0; x <= room.x1; x++) out.push(`r${x}`);
   return out;
 }
 
 /** The room tile a wall segment stands next to. */
-export function wallSegmentTile(id: WallSegmentId): TilePoint | null {
+export function wallSegmentTile(room: Readonly<Room>, id: WallSegmentId): TilePoint | null {
   const n = Number(id.slice(1));
   if (!Number.isInteger(n)) return null;
-  if (id.startsWith('l')) return { x: 1, y: n };
-  if (id.startsWith('r')) return { x: n, y: 1 };
+  if (id.startsWith('l')) return { x: room.x0, y: n };
+  if (id.startsWith('r')) return { x: n, y: room.y0 };
   return null;
 }
 
@@ -76,8 +80,8 @@ function isFloorTile(grid: GridState, x: number, y: number): boolean {
   return t === 'floor_wood' || t === 'floor_tile';
 }
 
-function isWallSegment(grid: GridState, id: WallSegmentId): boolean {
-  return wallSegmentIds(grid).includes(id);
+function isWallSegment(room: Room, id: WallSegmentId): boolean {
+  return wallSegmentIds(room).includes(id);
 }
 
 /** Cost and refusal reasons of a paint stroke; a pure query the UI uses too. */
@@ -116,7 +120,7 @@ export function validatePaintWall(
   const seen = new Set<string>();
   let changed = 0;
   for (const id of segments) {
-    if (!isWallSegment(state.grid, id)) return { ok: false, reason: 'unknownSegment' };
+    if (!isWallSegment(state.room, id)) return { ok: false, reason: 'unknownSegment' };
     if (seen.has(id)) continue;
     seen.add(id);
     if (wallStyleOf(state, id) !== style) changed++;
@@ -137,7 +141,7 @@ function finishPaint(state: GameState, price: number, changed: number): PaintRes
  * capped at SURFACE_CAP.
  */
 export function surfacePoints(
-  state: Pick<GameState, 'grid' | 'styles'>,
+  state: Pick<GameState, 'grid' | 'room' | 'styles'>,
   chair: { x: number; y: number },
 ): number {
   let sum = 0;
@@ -148,7 +152,7 @@ export function surfacePoints(
     }
   }
   for (const id of Object.keys(state.styles.wall)) {
-    const t = wallSegmentTile(id);
+    const t = wallSegmentTile(state.room, id);
     if (!t) continue;
     if (Math.max(Math.abs(t.x - chair.x), Math.abs(t.y - chair.y)) <= SURFACE_WALL_RADIUS) {
       sum += WALL_STYLES[wallStyleOf(state, id)].appeal;

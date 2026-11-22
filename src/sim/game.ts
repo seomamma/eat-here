@@ -79,6 +79,9 @@ export class Game {
     this.events.on('giftReceived', () => {
       this.state.dayStats.gifts++;
     });
+    // New floor is walkable: rebuild the walk grid. Nobody's route can be cut by added floor, so
+    // no character needs a new path.
+    this.events.on('roomExpanded', () => this.invalidateWalkGrid());
     this.events.on('guestLeft', (e) => {
       if (e.reason === 'noSeat') this.state.dayStats.guestsLeftNoSeat++;
     });

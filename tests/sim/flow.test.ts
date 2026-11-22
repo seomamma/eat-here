@@ -5,7 +5,7 @@ import { buildWalkGrid, isWalkable } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
 import { isInUse, validateMove, validatePlacement } from '../../src/sim/systems/build';
 import { DAY_TICKS, NIGHT_TICKS } from '../../src/sim/time';
-import { openGame } from './helpers';
+import { OX, OY, openGame } from './helpers';
 
 function runUntil(g: Game, done: () => boolean, max = 6000): void {
   for (let i = 0; i < max && !done(); i++) g.tickOnce();
@@ -79,9 +79,9 @@ describe('characters on tiles', () => {
     const chef = g.state.characters.find((c) => isStaff(c) && c.role === 'chef');
     if (!chef) throw new Error('no chef');
     chef.path = [];
-    chef.x = chef.prevX = 4;
-    chef.y = chef.prevY = 2;
-    expect(validatePlacement(g.state, 'plant_potted', 4, 2, 0)).toEqual({
+    chef.x = chef.prevX = 4 + OX;
+    chef.y = chef.prevY = 2 + OY;
+    expect(validatePlacement(g.state, 'plant_potted', 4 + OX, 2 + OY, 0)).toEqual({
       ok: false,
       reason: 'characterHere',
     });

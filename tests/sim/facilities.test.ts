@@ -9,7 +9,12 @@ import { ledgerTotal } from '../../src/sim/dayStats';
 import { Game } from '../../src/sim/game';
 import type { Furniture } from '../../src/sim/grid';
 import { createInitialState, type GameState } from '../../src/sim/state';
-import { findFreeSpot, isChairUsable, validateBuy } from '../../src/sim/systems/build';
+import {
+  findFreeSpot,
+  isChairUsable,
+  validateBuy as validateBuyAbs,
+} from '../../src/sim/systems/build';
+import { OX, OY } from './helpers';
 import {
   auraPoints,
   sellRefund,
@@ -22,6 +27,17 @@ import { decorPoints, onSeated, seatComfort } from '../../src/sim/systems/happin
 import { floorStyleAt, surfacePoints, wallSegmentIds } from '../../src/sim/systems/surfaces';
 import { spawnGuest } from '../../src/sim/systems/spawner';
 
+/** Coordinates in this file are in the pre-M12b local frame (room tiles 1..8 x 1..11). */
+function validateBuy(
+  s: GameState,
+  defId: FurnitureDefId,
+  x: number,
+  y: number,
+  rot: 0 | 1 | 2 | 3,
+) {
+  return validateBuyAbs(s, defId, x + OX, y + OY, rot);
+}
+
 function put(
   state: GameState,
   defId: FurnitureDefId,
@@ -30,13 +46,20 @@ function put(
   rot: 0 | 1 | 2 | 3 = 0,
   level = 1,
 ): Furniture {
-  const f: Furniture = { id: `t${state.furniture.length}x${x}y${y}`, defId, x, y, rot, level };
+  const f: Furniture = {
+    id: `t${state.furniture.length}x${x}y${y}`,
+    defId,
+    x: x + OX,
+    y: y + OY,
+    rot,
+    level,
+  };
   state.furniture.push(f);
   return f;
 }
 
 function idAt(state: GameState, x: number, y: number): string {
-  const f = state.furniture.find((o) => o.x === x && o.y === y);
+  const f = state.furniture.find((o) => o.x === x + OX && o.y === y + OY);
   if (!f) throw new Error(`no furniture at ${x},${y}`);
   return f.id;
 }
@@ -102,12 +125,14 @@ describe('long table', () => {
       [7, 5, 3],
     ];
     for (const [x, y, rot] of spots) {
-      expect(isChairUsable(s, { id: 'c', defId: 'chair_cushion', x, y, rot, level: 1 })).toBe(true);
+      expect(
+        isChairUsable(s, { id: 'c', defId: 'chair_cushion', x: x + OX, y: y + OY, rot, level: 1 }),
+      ).toBe(true);
     }
     // Facing away from the table is not usable.
-    expect(isChairUsable(s, { id: 'c', defId: 'chair_wood', x: 6, y: 4, rot: 2, level: 1 })).toBe(
-      false,
-    );
+    expect(
+      isChairUsable(s, { id: 'c', defId: 'chair_wood', x: 6 + OX, y: 4 + OY, rot: 2, level: 1 }),
+    ).toBe(false);
   });
 });
 
@@ -224,7 +249,7 @@ describe('aura', () => {
   it('piano gives "music" within radius 3, best source only, level by level', () => {
     const s = createInitialState(1);
     s.furniture = [];
-    const chair = { x: 5, y: 8 };
+    const chair = { x: 5 + OX, y: 8 + OY };
     const piano = put(s, 'piano', 5, 5, 0, 1); // covers (5,5) and (6,5); distance 3
     expect(auraPoints(s.furniture, chair, 'music')).toBe(4);
     piano.level = 5;
@@ -233,8 +258,8 @@ describe('aura', () => {
     put(s, 'piano', 5, 6, 0, 1);
     expect(auraPoints(s.furniture, chair, 'music')).toBe(12);
     // Out of range.
-    expect(auraPoints(s.furniture, { x: 5, y: 9 }, 'music')).toBe(4);
-    expect(auraPoints(s.furniture, { x: 1, y: 11 }, 'music')).toBe(0);
+    expect(auraPoints(s.furniture, { x: 5 + OX, y: 9 + OY }, 'music')).toBe(4);
+    expect(auraPoints(s.furniture, { x: 1 + OX, y: 11 + OY }, 'music')).toBe(0);
     expect(auraPoints(s.furniture, chair, 'toilet')).toBe(0);
   });
 
@@ -284,7 +309,7 @@ describe('sellFurniture', () => {
     g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', ...spot, rot: 0 });
     const plant = g.state.furniture.find((f) => f.defId === 'plant_potted') as Furniture;
     g.dispatch({ type: 'sellFurniture', id: plant.id });
-    expect(validateBuy(g.state, 'plant_potted', spot.x, spot.y, 0)).toEqual({ ok: true });
+    expect(validateBuyAbs(g.state, 'plant_potted', spot.x, spot.y, 0)).toEqual({ ok: true });
   });
 
   it('is refused for a piece in use, the last oven or pass, unknown ids and at night', () => {
@@ -338,9 +363,9 @@ describe('floors and walls', () => {
   it('paintFloor charges per changed tile, updates styles and books it', () => {
     const g = rich(1, 3);
     const tiles = [
-      { x: 3, y: 5 },
-      { x: 4, y: 5 },
-      { x: 4, y: 5 },
+      { x: 3 + OX, y: 5 + OY },
+      { x: 4 + OX, y: 5 + OY },
+      { x: 4 + OX, y: 5 + OY },
     ];
     const before = g.state.money;
     const done: number[] = [];
@@ -349,17 +374,17 @@ describe('floors and walls', () => {
     const cost = 2 * FLOOR_STYLES.terracotta.price;
     expect(g.state.money).toBe(before - cost);
     expect(done).toEqual([cost]);
-    expect(floorStyleAt(g.state, 3, 5)).toBe('terracotta');
-    expect(floorStyleAt(g.state, 5, 5)).toBe('wood');
-    expect(floorStyleAt(g.state, 4, 2)).toBe('checker');
+    expect(floorStyleAt(g.state, 3 + OX, 5 + OY)).toBe('terracotta');
+    expect(floorStyleAt(g.state, 5 + OX, 5 + OY)).toBe('wood');
+    expect(floorStyleAt(g.state, 4 + OX, 2 + OY)).toBe('checker');
     const entry = g.state.dayStats.ledger.entries.find((e) => e.kind === 'furniture');
     expect(entry).toMatchObject({ amount: -cost, count: 2, label: 'floor:terracotta' });
     // Painting a tile back to its default leaves no override behind.
-    g.dispatch({ type: 'paintFloor', tiles: [{ x: 3, y: 5 }], style: 'wood' });
-    expect(g.state.styles.floor['3,5']).toBeUndefined();
+    g.dispatch({ type: 'paintFloor', tiles: [{ x: 3 + OX, y: 5 + OY }], style: 'wood' });
+    expect(g.state.styles.floor[`${3 + OX},${5 + OY}`]).toBeUndefined();
     // Painting the same style again is refused (nothing to pay for).
     expect(
-      g.dispatch({ type: 'paintFloor', tiles: [{ x: 4, y: 5 }], style: 'terracotta' }),
+      g.dispatch({ type: 'paintFloor', tiles: [{ x: 4 + OX, y: 5 + OY }], style: 'terracotta' }),
     ).toEqual({
       ok: false,
       reason: 'noChange',
@@ -368,7 +393,7 @@ describe('floors and walls', () => {
 
   it('refuses without enough money, for locked styles, walls and night; nothing is charged', () => {
     const g = rich(1, 1);
-    const tiles = [{ x: 3, y: 5 }];
+    const tiles = [{ x: 3 + OX, y: 5 + OY }];
     expect(g.dispatch({ type: 'paintFloor', tiles, style: 'herringbone' })).toEqual({
       ok: false,
       reason: 'locked',
@@ -379,15 +404,15 @@ describe('floors and walls', () => {
     });
     g.state.rank = 2;
     expect(
-      g.dispatch({ type: 'paintFloor', tiles: [{ x: 0, y: 5 }], style: 'terracotta' }),
+      g.dispatch({ type: 'paintFloor', tiles: [{ x: 0 + OX, y: 5 + OY }], style: 'terracotta' }),
     ).toEqual({
       ok: false,
       reason: 'notFloor',
     });
     g.state.money = FLOOR_STYLES.terracotta.price * 2 - 1;
     const stroke = [
-      { x: 3, y: 5 },
-      { x: 4, y: 5 },
+      { x: 3 + OX, y: 5 + OY },
+      { x: 4 + OX, y: 5 + OY },
     ];
     expect(g.dispatch({ type: 'paintFloor', tiles: stroke, style: 'terracotta' })).toEqual({
       ok: false,
@@ -405,24 +430,32 @@ describe('floors and walls', () => {
 
   it('paintWall paints segments of the back walls', () => {
     const g = rich(1, 3);
-    const ids = wallSegmentIds(g.state.grid);
-    expect(ids).toContain('l1');
-    expect(ids).toContain('r8');
-    expect(ids).not.toContain('r9');
+    const ids = wallSegmentIds(g.state.room);
+    const [l1, l2, r3, r4, r8, r9] = [
+      `l${1 + OY}`,
+      `l${2 + OY}`,
+      `r${3 + OX}`,
+      `r${4 + OX}`,
+      `r${8 + OX}`,
+      `r${9 + OX}`,
+    ];
+    expect(ids).toContain(l1);
+    expect(ids).toContain(r8);
+    expect(ids).not.toContain(r9);
     const before = g.state.money;
-    expect(g.dispatch({ type: 'paintWall', segments: ['l2', 'r3', 'r4'], style: 'brick' })).toEqual(
-      {
-        ok: true,
-      },
-    );
+    expect(g.dispatch({ type: 'paintWall', segments: [l2, r3, r4], style: 'brick' })).toEqual({
+      ok: true,
+    });
     expect(g.state.money).toBe(before - 3 * WALL_STYLES.brick.price);
-    expect(g.state.styles.wall).toEqual({ l2: 'brick', r3: 'brick', r4: 'brick' });
+    expect(g.state.styles.wall).toEqual({ [l2]: 'brick', [r3]: 'brick', [r4]: 'brick' });
     expect(g.dispatch({ type: 'paintWall', segments: ['x9'], style: 'brick' })).toEqual({
       ok: false,
       reason: 'unknownSegment',
     });
     g.state.rank = 1;
-    expect(g.dispatch({ type: 'paintWall', segments: ['l5'], style: 'blue_tiles' })).toEqual({
+    expect(
+      g.dispatch({ type: 'paintWall', segments: [`l${5 + OY}`], style: 'blue_tiles' }),
+    ).toEqual({
       ok: false,
       reason: 'locked',
     });
@@ -433,18 +466,26 @@ describe('floors and walls', () => {
     s.furniture = [];
     const chair = put(s, 'chair_wood', 5, 5);
     expect(surfacePoints(s, chair)).toBe(0);
-    s.styles.floor['5,5'] = 'terracotta';
-    s.styles.floor['6,5'] = 'terracotta';
+    const fk = (x: number, y: number) => `${x + OX},${y + OY}`;
+    s.styles.floor[fk(5, 5)] = 'terracotta';
+    s.styles.floor[fk(6, 5)] = 'terracotta';
     expect(surfacePoints(s, chair)).toBe(2 * FLOOR_STYLES.terracotta.appeal);
-    s.styles.floor['4,5'] = 'herringbone'; // not 1 tile away from nothing: adjacent, counts
-    for (const key of ['4,4', '5,4', '6,4', '4,6', '5,6', '6,6'])
-      s.styles.floor[key] = 'herringbone';
+    s.styles.floor[fk(4, 5)] = 'herringbone'; // not 1 tile away from nothing: adjacent, counts
+    for (const [x, y] of [
+      [4, 4],
+      [5, 4],
+      [6, 4],
+      [4, 6],
+      [5, 6],
+      [6, 6],
+    ] as const)
+      s.styles.floor[fk(x, y)] = 'herringbone';
     expect(surfacePoints(s, chair)).toBe(SURFACE_CAP);
     // Far from the chair: nothing.
-    expect(surfacePoints(s, { x: 8, y: 10 })).toBe(0);
+    expect(surfacePoints(s, { x: 8 + OX, y: 10 + OY })).toBe(0);
     // Walls near the chair add up to the same cap and count in decor points.
-    const chair2 = { ...chair, x: 2, y: 3 };
-    s.styles.wall = { l3: 'brick', l4: 'brick', r2: 'brick' };
+    const chair2 = { ...chair, x: 2 + OX, y: 3 + OY };
+    s.styles.wall = { [`l${3 + OY}`]: 'brick', [`l${4 + OY}`]: 'brick', [`r${2 + OX}`]: 'brick' };
     expect(surfacePoints(s, chair2)).toBe(3 * WALL_STYLES.brick.appeal);
     expect(decorPoints(s.furniture, chair2, s)).toBe(3);
     put(s, 'statue', 3, 3, 0, 5);

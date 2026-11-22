@@ -7,7 +7,7 @@ import type { Furniture } from '../../src/sim/grid';
 import { serialize } from '../../src/sim/save';
 import { createInitialState, type GameState } from '../../src/sim/state';
 import { validatePlacement } from '../../src/sim/systems/build';
-import { openGame } from './helpers';
+import { OX, OY, openGame } from './helpers';
 
 const AT = 1_700_000_000_000;
 
@@ -19,8 +19,11 @@ function put(
   level = 1,
   rot: 0 | 1 | 2 | 3 = 0,
 ): Furniture {
-  const f: Furniture = { id: `t${x}_${y}`, defId, x, y, rot, level };
-  expect(validatePlacement(state, defId, x, y, rot).ok, `${defId} at ${x},${y}`).toBe(true);
+  // Coordinates are in the pre-M12b local frame (shifted by OX/OY).
+  const f: Furniture = { id: `t${x}_${y}`, defId, x: x + OX, y: y + OY, rot, level };
+  expect(validatePlacement(state, defId, x + OX, y + OY, rot).ok, `${defId} at ${x},${y}`).toBe(
+    true,
+  );
   state.furniture.push(f);
   return f;
 }
@@ -168,15 +171,25 @@ describe('vending machine', () => {
   it('can only be placed where its use spot stays reachable', () => {
     const s = createInitialState(1);
     s.furniture = [];
-    s.furniture.push({ id: 'v', defId: 'vending_machine', x: 8, y: 5, rot: 0, level: 1 });
+    s.furniture.push({
+      id: 'v',
+      defId: 'vending_machine',
+      x: 8 + OX,
+      y: 5 + OY,
+      rot: 0,
+      level: 1,
+    });
     // The spot in front of the machine is (8, 6): blocking it is refused.
-    expect(validatePlacement(s, 'plant_potted', 8, 6, 0)).toEqual({
+    expect(validatePlacement(s, 'plant_potted', 8 + OX, 6 + OY, 0)).toEqual({
       ok: false,
       reason: 'blocksWay',
     });
     // A machine whose spot would be outside the room is refused too.
-    expect(validatePlacement(s, 'toilet', 1, 11, 0)).toEqual({ ok: false, reason: 'blocksWay' });
-    expect(validatePlacement(s, 'toilet', 1, 9, 0).ok).toBe(true);
+    expect(validatePlacement(s, 'toilet', 1 + OX, 11 + OY, 0)).toEqual({
+      ok: false,
+      reason: 'blocksWay',
+    });
+    expect(validatePlacement(s, 'toilet', 1 + OX, 9 + OY, 0).ok).toBe(true);
   });
 });
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
+import { DOOR_X, DOOR_Y } from '../../src/data/layout';
+import { OX, OY } from './helpers';
 
 /** '.' walkable, '#' blocked. */
 function grid(rows: string[]): WalkGrid {
@@ -67,18 +69,18 @@ describe('start room walk grid', () => {
   const w = buildWalkGrid(s.grid, s.furniture);
 
   it('blocks walls and furniture, allows floor and door', () => {
-    expect(isWalkable(w, 0, 5)).toBe(false); // wall
-    expect(isWalkable(w, 3, 6)).toBe(false); // table
-    expect(isWalkable(w, 5, 3)).toBe(false); // counter
-    expect(isWalkable(w, 6, 3)).toBe(false); // counter (2 wide)
-    expect(isWalkable(w, 4, 11)).toBe(true); // door
-    expect(isWalkable(w, 5, 5)).toBe(true);
+    expect(isWalkable(w, 0 + OX, 5 + OY)).toBe(false); // outside (where the wall stands)
+    expect(isWalkable(w, 3 + OX, 6 + OY)).toBe(false); // table
+    expect(isWalkable(w, 5 + OX, 3 + OY)).toBe(false); // counter
+    expect(isWalkable(w, 6 + OX, 3 + OY)).toBe(false); // counter (2 wide)
+    expect(isWalkable(w, DOOR_X, DOOR_Y)).toBe(true); // door
+    expect(isWalkable(w, 5 + OX, 5 + OY)).toBe(true);
   });
 
   it('every path from the door never crosses blocked tiles', () => {
     for (let y = 0; y < s.grid.height; y++) {
       for (let x = 0; x < s.grid.width; x++) {
-        const p = findPath(w, { x: 4, y: 11 }, { x, y });
+        const p = findPath(w, { x: DOOR_X, y: DOOR_Y }, { x, y });
         if (isWalkable(w, x, y)) {
           expect(p).not.toBeNull();
           expect(valid(w, p ?? [])).toBe(true);

@@ -252,6 +252,7 @@ export const STRINGS = {
     title: 'RANK UP!',
     rank: (rank: number) => `Rank ${rank}`,
     unlocked: 'Unlocked',
+    space: 'More space!',
     reward: 'Reward',
     button: 'Yay!',
   },
@@ -276,6 +277,7 @@ export const STRINGS = {
     rank: (name: string) => `Reach ${name}`,
     rankMax: 'Top rank reached!',
     unlocksAt: (rank: number, items: string) => `Unlocks at Rank ${rank}: ${items}`,
+    space: (rank: number, size: string) => `Rank ${rank}: more space (${size})`,
     upgrade: (dish: string, level: number) => `Upgrade ${dish} to Lv.${level}`,
     haveIngredient: (name: string) => `Have ${name}`,
     coins: (have: number, need: number) => `${Math.min(have, need)} / ${need} coins`,
@@ -324,3 +326,12 @@ export const STRINGS = {
     },
   },
 } as const;
+
+/** Size of a room growth for the RANK UP modal and Next Goals, e.g. "+3 columns" or "+2 columns, +2 rows". */
+export function growthText(g: { plusX: number; minusX: number; minusY: number }): string {
+  const cols = g.plusX + g.minusX;
+  const parts: string[] = [];
+  if (cols > 0) parts.push(`+${cols} ${cols === 1 ? 'column' : 'columns'}`);
+  if (g.minusY > 0) parts.push(`+${g.minusY} ${g.minusY === 1 ? 'row' : 'rows'}`);
+  return parts.join(', ');
+}

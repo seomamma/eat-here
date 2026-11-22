@@ -1,7 +1,7 @@
 import { FIRST_GUEST_SEC, SPAWN_CURVE, MAX_GUESTS_ALIVE, TICK_MS } from '../../data/balance';
 import { GUEST_NAMES, GUEST_TYPES, type GuestTypeId } from '../../data/guests';
 import { rankDef } from '../../data/ranks';
-import { DOOR_X } from '../../data/layout';
+import { DOOR_X, DOOR_Y } from '../../data/layout';
 import type { LookId, RegularId } from '../../data/regulars';
 import { isGuest, type Guest } from '../characters';
 import { rngInt, rngPick } from '../rng';
@@ -51,7 +51,7 @@ export interface NewGuest {
 export function createGuest(state: GameState, o: NewGuest): Guest {
   const typeId: GuestTypeId = 'local';
   const x = DOOR_X;
-  const y = state.grid.height - 1;
+  const y = DOOR_Y;
   return {
     id: `guest${state.nextGuestId++}`,
     kind: 'guest',

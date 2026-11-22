@@ -2,7 +2,7 @@ import { GUEST_PAY_SEC } from '../../data/balance';
 import { HAPPINESS_POINTS, LOVE_AT } from '../../data/happiness';
 import { FURNITURE } from '../../data/furniture';
 import { GUEST_TYPES } from '../../data/guests';
-import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
+import { DOOR_X, DOOR_Y, WAITING_SPOTS } from '../../data/layout';
 import { RECIPE_IDS } from '../../data/recipes';
 import { FACING_DIR, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
 import type { Emitter, GameEvents, GuestLeaveReason } from '../events';
@@ -117,7 +117,7 @@ function startLeaving(ctx: GuestContext, g: Guest, reason: GuestLeaveReason): vo
   g.phase = 'leaving';
   g.leaveReason = reason;
   g.errand = null;
-  const door = { x: DOOR_X, y: ctx.state.grid.height - 1 };
+  const door = { x: DOOR_X, y: DOOR_Y };
   if (!planPath(ctx, g, door, { allowStartBlocked: g.seatId !== null })) {
     // No route out (should not happen): drop the guest so it can never get stuck.
     g.path = [];

@@ -147,7 +147,7 @@ function tileDistance(f: Furniture, x: number, y: number): number {
 export function decorPoints(
   furniture: readonly Furniture[],
   chair: Furniture,
-  surfaces?: Pick<GameState, 'grid' | 'styles'>,
+  surfaces?: Pick<GameState, 'grid' | 'room' | 'styles'>,
 ): number {
   let sum = surfaces ? surfacePoints(surfaces, chair) : 0;
   for (const f of furniture) {

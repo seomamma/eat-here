@@ -27,7 +27,9 @@ export class Emitter<Events extends object> {
 export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow' | 'heart';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
+import type { RoomGrowth } from '../data/expansion';
 import type { FurnitureDefId, Rot } from '../data/furniture';
+import type { Room } from '../data/layout';
 import type { IngredientId } from '../data/ingredients';
 import type { MomentCard, MomentReward } from '../data/moments';
 import type { RegularId } from '../data/regulars';
@@ -52,7 +54,16 @@ export interface GameEvents {
     y: number;
   };
   fameChanged: { fame: number; gained: number; rank: number };
-  rankUp: { rank: number; name: string; unlocks: string[]; reward: IngredientId | null };
+  rankUp: {
+    rank: number;
+    name: string;
+    unlocks: string[];
+    reward: IngredientId | null;
+    /** Room growth that came with the rank (M12b), or null. */
+    space: RoomGrowth | null;
+  };
+  /** The room grew (part of a rank-up): `added` is what was actually unlocked. */
+  roomExpanded: { rank: number; added: RoomGrowth; room: Room };
   /** The ingredient inventory changed (market buy, gift, reward, upgrade). */
   inventoryChanged: { ingredient: IngredientId; count: number };
   /** New market offers were rolled (start of a day). */

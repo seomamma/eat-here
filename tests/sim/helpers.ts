@@ -1,3 +1,4 @@
+import { LEGACY_OFFSET } from '../../src/data/layout';
 import { Game } from '../../src/sim/game';
 import { createInitialState } from '../../src/sim/state';
 import { minuteAtTick } from '../../src/sim/time';
@@ -18,3 +19,10 @@ export function openGame(seed?: number): Game {
   };
   return g;
 }
+
+/**
+ * Many tests were written in the pre-M12b coordinate frame (room tiles 1..8 x 1..11). `OX`/`OY`
+ * shift such a coordinate into the current grid: `x + OX`, `y + OY`.
+ */
+export const OX = LEGACY_OFFSET.x;
+export const OY = LEGACY_OFFSET.y;

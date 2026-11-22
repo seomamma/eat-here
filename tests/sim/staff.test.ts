@@ -4,7 +4,7 @@ import { RECIPES } from '../../src/data/recipes';
 import { isGuest, isStaff, type Staff } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, isWalkable } from '../../src/sim/pathfinding';
-import { openGame } from './helpers';
+import { OX, OY, openGame } from './helpers';
 
 const TICKS_PER_SEC = 1000 / TICK_MS;
 
@@ -124,11 +124,11 @@ describe('staff, jobs and orders', () => {
     g.state.characters.push({
       ...waiter,
       id: 'staff3',
-      home: { x: 7, y: 4 },
-      x: 7,
-      y: 4,
-      prevX: 7,
-      prevY: 4,
+      home: { x: 7 + OX, y: 4 + OY },
+      x: 7 + OX,
+      y: 4 + OY,
+      prevX: 7 + OX,
+      prevY: 4 + OY,
     });
     run(g, 600 * TICKS_PER_SEC);
     expect(g.state.tick).toBeGreaterThan(0);

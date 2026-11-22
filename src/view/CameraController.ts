@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { Bounds, Point } from './iso';
+import { prefersReducedMotion } from '../platform/motion';
 
 /**
  * HUD space (CSS px) reserved at the top/bottom of the screen; the room is fitted into what
@@ -13,6 +14,13 @@ export const HUD_INSETS_LANDSCAPE = { top: 70, bottom: 68 } as const;
  */
 export const PORTRAIT_MIN_FILL = 0.8;
 export const MIN_ZOOM = 1;
+/**
+ * Default zoom never goes below this: a character is 16x24 art pixels, and at 1 device pixel per
+ * art pixel it would be tiny. A room too big to fit at this zoom is panned around (M12b).
+ */
+export const MIN_DEFAULT_ZOOM = 2;
+/** Length of the glide to the newly unlocked area after a rank-up (ms). */
+const FOCUS_MS = 900;
 export const MAX_ZOOM = 8;
 /** Wheel delta (px) that amounts to one zoom step. */
 const WHEEL_STEP = 60;
@@ -51,6 +59,7 @@ export class CameraController {
   private dragStart = { x: 0, y: 0, offsetX: 0, offsetY: 0 };
   private pinch: { dist: number; zoom: number; wx: number; wy: number } | null = null;
   private wheelAccum = 0;
+  private anim: { fromX: number; fromY: number; toX: number; toY: number; t: number } | null = null;
   private readonly canvas: HTMLCanvasElement;
   private readonly cam: Phaser.Cameras.Scene2D.Camera;
   private tapHandler: ((world: Point) => void) | null = null;
@@ -60,9 +69,9 @@ export class CameraController {
   constructor(
     private readonly scene: Phaser.Scene,
     /** World-space rectangle the camera may pan over (the room plus some surroundings). */
-    private readonly bounds: Bounds,
+    private bounds: Bounds,
     /** What the default zoom fits and centres: the visible room. */
-    private readonly fitBounds: Bounds = bounds,
+    private fitBounds: Bounds = bounds,
   ) {
     this.cam = scene.cameras.main;
     this.cam.setOrigin(0, 0);
@@ -97,19 +106,89 @@ export class CameraController {
     return { x: (p.x - this.offsetX) / this.zoom, y: (p.y - this.offsetY) / this.zoom };
   }
 
-  /** Re-fits the room into the available area (also on resize / rotation). */
-  fit(): void {
+  /** Default integer zoom: the whole room fits, but never below MIN_DEFAULT_ZOOM (or one step closer when narrow in portrait). */
+  private defaultZoom(): number {
     const a = this.available();
     const fb = this.fitBounds;
     const bw = fb.maxX - fb.minX;
     const bh = fb.maxY - fb.minY;
-    this.zoom = clampZoom(Math.floor(Math.min(a.width / bw, a.height / bh)));
+    let z = clampZoom(Math.floor(Math.min(a.width / bw, a.height / bh)));
     const portrait = this.scene.scale.height > this.scene.scale.width;
-    if (portrait && bw * this.zoom < PORTRAIT_MIN_FILL * a.width)
-      this.zoom = clampZoom(this.zoom + 1);
-    // Centre the room in the available area.
-    this.offsetX = a.left + (a.width - bw * this.zoom) / 2 - fb.minX * this.zoom;
-    this.offsetY = a.top + (a.height - bh * this.zoom) / 2 - fb.minY * this.zoom;
+    if (portrait && bw * z < PORTRAIT_MIN_FILL * a.width) z = clampZoom(z + 1);
+    return Math.max(z, MIN_DEFAULT_ZOOM);
+  }
+
+  /**
+   * Offset that centres `target` in the available area at zoom `z`; when the room is bigger than
+   * the area, the camera centres on `focus` instead (clamped later by `apply`).
+   */
+  private centredOffset(z: number, focus: Bounds | null): Point {
+    const a = this.available();
+    const fb = this.fitBounds;
+    const roomFits = (fb.maxX - fb.minX) * z <= a.width && (fb.maxY - fb.minY) * z <= a.height;
+    const t = roomFits || !focus ? fb : focus;
+    const w = t.maxX - t.minX;
+    const h = t.maxY - t.minY;
+    return {
+      x: a.left + (a.width - w * z) / 2 - t.minX * z,
+      y: a.top + (a.height - h * z) / 2 - t.minY * z,
+    };
+  }
+
+  /** Re-fits the room into the available area (also on resize / rotation). */
+  fit(): void {
+    this.anim = null;
+    this.zoom = this.defaultZoom();
+    const o = this.centredOffset(this.zoom, null);
+    this.offsetX = o.x;
+    this.offsetY = o.y;
+    this.apply();
+  }
+
+  /** The room grew: new pan bounds and fit rectangle. Call `showArea` to move the view there. */
+  setRoomBounds(bounds: Bounds, fitBounds: Bounds): void {
+    this.bounds = bounds;
+    this.fitBounds = fitBounds;
+    this.apply();
+  }
+
+  /**
+   * Glides (or jumps, with reduced motion) to the default view of the grown room; when the room
+   * does not fit on screen the view centres on `area`, the newly unlocked part. The zoom steps
+   * to its integer target at once (around the screen centre), the pan then eases.
+   */
+  showArea(area: Bounds): void {
+    const a = this.available();
+    const z = this.defaultZoom();
+    const cx = a.left + a.width / 2;
+    const cy = a.top + a.height / 2;
+    if (z !== this.zoom) {
+      const wx = (cx - this.offsetX) / this.zoom;
+      const wy = (cy - this.offsetY) / this.zoom;
+      this.zoom = z;
+      this.offsetX = cx - wx * z;
+      this.offsetY = cy - wy * z;
+    }
+    const to = this.centredOffset(z, area);
+    if (prefersReducedMotion()) {
+      this.offsetX = to.x;
+      this.offsetY = to.y;
+      this.apply();
+      return;
+    }
+    this.anim = { fromX: this.offsetX, fromY: this.offsetY, toX: to.x, toY: to.y, t: 0 };
+    this.apply();
+  }
+
+  /** Advances the pan glide; the scene calls it every frame. */
+  update(deltaMs: number): void {
+    const an = this.anim;
+    if (!an) return;
+    an.t = Math.min(1, an.t + deltaMs / FOCUS_MS);
+    const k = 1 - (1 - an.t) * (1 - an.t) * (1 - an.t); // ease out
+    this.offsetX = an.fromX + (an.toX - an.fromX) * k;
+    this.offsetY = an.fromY + (an.toY - an.fromY) * k;
+    if (an.t >= 1) this.anim = null;
     this.apply();
   }
 
@@ -169,6 +248,7 @@ export class CameraController {
 
   /** Changes zoom keeping the world point under canvas position (fx, fy) fixed. */
   private zoomAt(newZoom: number, fx: number, fy: number): void {
+    this.anim = null;
     const z = clampZoom(newZoom);
     const wx = (fx - this.offsetX) / this.zoom;
     const wy = (fy - this.offsetY) / this.zoom;
@@ -186,6 +266,7 @@ export class CameraController {
   }
 
   private readonly onDown = (e: PointerEvent): void => {
+    this.anim = null; // touching the screen ends the glide
     this.canvas.setPointerCapture?.(e.pointerId);
     this.pointers.set(e.pointerId, this.local(e));
     if (this.pointers.size === 1) {

@@ -2,10 +2,17 @@ import { DEFAULT_SEED } from '../data/balance';
 import type { IngredientId } from '../data/ingredients';
 import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { RECIPE_IDS, RECIPES, type RecipeId } from '../data/recipes';
-import { DOOR_X, START_STAFF } from '../data/layout';
+import { DOOR_X, DOOR_Y, START_STAFF } from '../data/layout';
 import type { Character, Staff } from './characters';
 import type { Job, Order } from './systems/jobs';
-import { createGrid, createStartFurniture, type Furniture, type GridState } from './grid';
+import {
+  createGrid,
+  createRoom,
+  createStartFurniture,
+  type Furniture,
+  type GridState,
+  type Room,
+} from './grid';
 import { createDayStats, type DayStats } from './dayStats';
 import { SAVE_VERSION } from './save';
 import { createClock, type Clock } from './time';
@@ -47,7 +54,10 @@ export interface GameState {
   clock: Clock;
   /** Numbers of the current day; reset when the next day starts. */
   dayStats: DayStats;
+  /** Allocated at its final size; tiles outside the room are `outside`. */
   grid: GridState;
+  /** The unlocked floor rectangle (inclusive); grows on rank-up, never shrinks (M12b). */
+  room: Room;
   /** Painted floors and back walls; only tiles/segments that differ from the default are listed. */
   styles: Styles;
   furniture: Furniture[];
@@ -83,12 +93,12 @@ export interface GameState {
 /** Nearest free floor tile to the door (just inside the room). */
 function spawnTile(grid: GridState, furniture: Furniture[]): { x: number; y: number } {
   const walk = buildWalkGrid(grid, furniture);
-  let best = { x: DOOR_X, y: grid.height - 2 };
+  let best = { x: DOOR_X, y: DOOR_Y - 1 };
   let bestD = Infinity;
   for (let y = 0; y < grid.height; y++) {
     for (let x = 0; x < grid.width; x++) {
-      if (!isWalkable(walk, x, y) || (x === DOOR_X && y === grid.height - 1)) continue;
-      const d = Math.abs(x - DOOR_X) + Math.abs(y - (grid.height - 1));
+      if (!isWalkable(walk, x, y) || (x === DOOR_X && y === DOOR_Y)) continue;
+      const d = Math.abs(x - DOOR_X) + Math.abs(y - DOOR_Y);
       if (d < bestD) {
         bestD = d;
         best = { x, y };
@@ -128,6 +138,7 @@ export function createInitialState(
     clock: createClock(),
     dayStats: createDayStats(),
     grid,
+    room: createRoom(),
     styles: createStyles(),
     furniture,
     characters: [...(opts.debugWalker ? [debugWalker(s)] : []), ...createStaff()],

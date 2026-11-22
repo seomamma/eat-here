@@ -1,4 +1,5 @@
 import { signal } from '@preact/signals';
+import type { RoomGrowth } from '../data/expansion';
 import type { IngredientId } from '../data/ingredients';
 import type { RecipeId } from '../data/recipes';
 import type { DayStats, LedgerEntry } from '../sim/dayStats';
@@ -36,9 +37,13 @@ export interface RankUpInfo {
   name: string;
   unlocks: string[];
   reward: IngredientId | null;
+  /** Room growth that came with the rank, or null. */
+  space: RoomGrowth | null;
 }
 /** Rank-ups waiting to be shown (the first one is on screen); the sim is paused while any is. */
 export const rankUps = signal<RankUpInfo[]>([]);
+/** Counts how often the last RANK UP modal was closed; the view reacts (camera shows the new space). */
+export const rankUpsClosed = signal(0);
 
 export interface MomentInfo {
   id: string;
@@ -195,7 +200,7 @@ export function bindStore(sim: Game): void {
       pushToast({ kind: 'notice', text: STRINGS.notice.newInShop(fresh.join(', ')) });
     rankUps.value = [
       ...rankUps.value,
-      { rank: e.rank, name: e.name, unlocks: e.unlocks, reward: e.reward },
+      { rank: e.rank, name: e.name, unlocks: e.unlocks, reward: e.reward, space: e.space },
     ];
     sim.pause(RANK_UP_PAUSE);
   });
@@ -264,7 +269,10 @@ export function dismissMoment(): void {
 /** Closes the RANK UP modal; the sim resumes once the last one is dismissed. */
 export function dismissRankUp(): void {
   rankUps.value = rankUps.value.slice(1);
-  if (rankUps.value.length === 0) simRef?.resume(RANK_UP_PAUSE);
+  if (rankUps.value.length === 0) {
+    simRef?.resume(RANK_UP_PAUSE);
+    rankUpsClosed.value++;
+  }
 }
 
 function refreshGuestCard(sim: Game): void {

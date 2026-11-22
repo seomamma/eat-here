@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../../src/data/furniture';
+import { GRID_HEIGHT, GRID_WIDTH } from '../../src/data/layout';
 import { SHOP_ITEMS } from '../../src/data/shop';
 import { STRINGS } from '../../src/data/strings';
 import { isGuest } from '../../src/sim/characters';
@@ -9,20 +10,36 @@ import {
   findFreeSpot,
   isChairUsable,
   autoFaceRot,
-  validateBuy,
-  validatePlacement,
+  validatePlacement as validateAbs,
+  validateBuy as validateBuyAbs,
 } from '../../src/sim/systems/build';
 import { DAY_TICKS } from '../../src/sim/time';
+import { OX, OY } from './helpers';
+
+/** Placement checks in the pre-M12b local frame (room tiles 1..8 x 1..11): shifted by OX/OY. */
+function validatePlacement(
+  s: GameState,
+  defId: FurnitureDefId,
+  x: number,
+  y: number,
+  rot: Rot,
+  ignore?: string,
+) {
+  return validateAbs(s, defId, x + OX, y + OY, rot, ignore);
+}
+function validateBuy(s: GameState, defId: FurnitureDefId, x: number, y: number, rot: Rot) {
+  return validateBuyAbs(s, defId, x + OX, y + OY, rot);
+}
 
 /** Puts a piece straight into the state (no validation) to build up a scenario. */
 function put(state: GameState, defId: FurnitureDefId, x: number, y: number, rot: Rot = 0): string {
   const id = `t${state.furniture.length}`;
-  state.furniture.push({ id, defId, x, y, rot, level: 1 });
+  state.furniture.push({ id, defId, x: x + OX, y: y + OY, rot, level: 1 });
   return id;
 }
 
 function idAt(state: GameState, x: number, y: number): string {
-  const f = state.furniture.find((o) => o.x === x && o.y === y);
+  const f = state.furniture.find((o) => o.x === x + OX && o.y === y + OY);
   if (!f) throw new Error(`no furniture at ${x},${y}`);
   return f.id;
 }
@@ -40,10 +57,10 @@ describe('validatePlacement', () => {
     for (const [x, y] of [
       [-1, 5],
       [5, -1],
-      [10, 5],
-      [5, 12],
+      [GRID_WIDTH, 5],
+      [5, GRID_HEIGHT],
     ] as const) {
-      expect(reason(validatePlacement(s, 'plant_potted', x, y, 0))).toBe('outOfBounds');
+      expect(reason(validateAbs(s, 'plant_potted', x, y, 0))).toBe('outOfBounds');
     }
   });
 
@@ -161,7 +178,14 @@ describe('isChairUsable', () => {
     ];
     for (const p of spots) {
       for (const rot of [0, 1, 2, 3] as const) {
-        const chair = { id: 'c', defId: 'chair_wood', x: p.x, y: p.y, rot, level: 1 } as const;
+        const chair = {
+          id: 'c',
+          defId: 'chair_wood',
+          x: p.x + OX,
+          y: p.y + OY,
+          rot,
+          level: 1,
+        } as const;
         expect(isChairUsable(s, chair), `${p.x},${p.y} rot ${rot}`).toBe(rot === p.facesTable);
       }
     }
@@ -182,11 +206,11 @@ describe('autoFaceRot', () => {
     const s = createInitialState(1);
     s.furniture = [];
     put(s, 'table_small', 5, 5);
-    expect(autoFaceRot(s.furniture, 5, 4)).toBe(0);
-    expect(autoFaceRot(s.furniture, 4, 5)).toBe(1);
-    expect(autoFaceRot(s.furniture, 5, 6)).toBe(2);
-    expect(autoFaceRot(s.furniture, 6, 5)).toBe(3);
-    expect(autoFaceRot(s.furniture, 8, 8)).toBe(0);
+    expect(autoFaceRot(s.furniture, 5 + OX, 4 + OY)).toBe(0);
+    expect(autoFaceRot(s.furniture, 4 + OX, 5 + OY)).toBe(1);
+    expect(autoFaceRot(s.furniture, 5 + OX, 6 + OY)).toBe(2);
+    expect(autoFaceRot(s.furniture, 6 + OX, 5 + OY)).toBe(3);
+    expect(autoFaceRot(s.furniture, 8 + OX, 8 + OY)).toBe(0);
   });
 
   it('start layout chairs face their tables', () => {
@@ -214,7 +238,7 @@ describe('buyAndPlace', () => {
       g.state.money = 1000;
       g.state.clock.phase = phase;
       expect(
-        g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 }),
+        g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 }),
       ).toEqual({ ok: true });
     }
   });
@@ -223,7 +247,9 @@ describe('buyAndPlace', () => {
     const g = new Game(createInitialState(1));
     g.state.money = 1000;
     g.state.clock.phase = 'night';
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 })).toEqual({
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 }),
+    ).toEqual({
       ok: false,
       reason: 'notNow',
     });
@@ -236,7 +262,9 @@ describe('buyAndPlace', () => {
     g.state.money = price - 1;
     const moneyEvents: number[] = [];
     g.events.on('moneyChanged', (e) => moneyEvents.push(e.money));
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 })).toEqual({
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 }),
+    ).toEqual({
       ok: false,
       reason: 'notEnoughMoney',
     });
@@ -247,12 +275,12 @@ describe('buyAndPlace', () => {
 
   it('is refused on an invalid tile and keeps the money', () => {
     const g = new Game(createInitialState(1));
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 4, y: 11, rot: 0 })).toEqual(
-      {
-        ok: false,
-        reason: 'blocksWay',
-      },
-    );
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 4 + OX, y: 11 + OY, rot: 0 }),
+    ).toEqual({
+      ok: false,
+      reason: 'blocksWay',
+    });
     expect(g.state.money).toBe(300);
   });
 
@@ -262,7 +290,9 @@ describe('buyAndPlace', () => {
     const moneyEvents: number[] = [];
     g.events.on('furniturePlaced', (e) => placed.push(e));
     g.events.on('moneyChanged', (e) => moneyEvents.push(e.money));
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 })).toEqual({
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 }),
+    ).toEqual({
       ok: true,
     });
     expect(g.state.money).toBe(300 - price);
@@ -274,7 +304,9 @@ describe('buyAndPlace', () => {
     expect(new Set(ids).size).toBe(ids.length);
     // The same tile is taken now.
     g.state.money = 1000;
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 })).toEqual({
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 }),
+    ).toEqual({
       ok: false,
       reason: 'overlap',
     });
@@ -284,9 +316,9 @@ describe('buyAndPlace', () => {
   it('rebuilds the walk grid so the new piece blocks paths', () => {
     const g = new Game(createInitialState(1));
     g.tickOnce();
-    g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 });
-    g.dispatch({ type: 'debugWalkTo', x: 7, y: 5 }); // no walker: just must not throw
-    expect(g.state.furniture.some((f) => f.x === 7 && f.y === 5)).toBe(true);
+    g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7 + OX, y: 5 + OY, rot: 0 });
+    g.dispatch({ type: 'debugWalkTo', x: 7 + OX, y: 5 + OY }); // no walker: just must not throw
+    expect(g.state.furniture.some((f) => f.x === 7 + OX && f.y === 5 + OY)).toBe(true);
   });
 });
 
@@ -295,12 +327,14 @@ describe('moveFurniture', () => {
     const g = new Game(createInitialState(1));
     const id = idAt(g.state, 3, 6);
     g.state.clock.phase = 'night';
-    expect(g.dispatch({ type: 'moveFurniture', id, x: 3, y: 8, rot: 0 })).toEqual({
+    expect(g.dispatch({ type: 'moveFurniture', id, x: 3 + OX, y: 8 + OY, rot: 0 })).toEqual({
       ok: false,
       reason: 'notNow',
     });
     g.state.clock.phase = 'open';
-    expect(g.dispatch({ type: 'moveFurniture', id, x: 3, y: 8, rot: 0 })).toEqual({ ok: true });
+    expect(g.dispatch({ type: 'moveFurniture', id, x: 3 + OX, y: 8 + OY, rot: 0 })).toEqual({
+      ok: true,
+    });
   });
 
   it('moves a valid piece and refuses an invalid one', () => {
@@ -308,19 +342,23 @@ describe('moveFurniture', () => {
     const moved: unknown[] = [];
     g.events.on('furnitureMoved', (e) => moved.push(e));
     const id = idAt(g.state, 3, 6);
-    expect(g.dispatch({ type: 'moveFurniture', id, x: 3, y: 8, rot: 0 })).toEqual({ ok: true });
-    expect(g.state.furniture.find((f) => f.id === id)).toMatchObject({ x: 3, y: 8 });
+    expect(g.dispatch({ type: 'moveFurniture', id, x: 3 + OX, y: 8 + OY, rot: 0 })).toEqual({
+      ok: true,
+    });
+    expect(g.state.furniture.find((f) => f.id === id)).toMatchObject({ x: 3 + OX, y: 8 + OY });
     expect(moved).toHaveLength(1);
-    expect(g.dispatch({ type: 'moveFurniture', id, x: 0, y: 8, rot: 0 })).toMatchObject({
+    expect(g.dispatch({ type: 'moveFurniture', id, x: 0 + OX, y: 8 + OY, rot: 0 })).toMatchObject({
       ok: false,
     });
-    expect(g.state.furniture.find((f) => f.id === id)).toMatchObject({ x: 3, y: 8 });
+    expect(g.state.furniture.find((f) => f.id === id)).toMatchObject({ x: 3 + OX, y: 8 + OY });
     expect(g.state.money).toBe(300);
   });
 
   it('refuses unknown ids', () => {
     const g = new Game(createInitialState(1));
-    expect(g.dispatch({ type: 'moveFurniture', id: 'nope', x: 3, y: 8, rot: 0 })).toMatchObject({
+    expect(
+      g.dispatch({ type: 'moveFurniture', id: 'nope', x: 3 + OX, y: 8 + OY, rot: 0 }),
+    ).toMatchObject({
       ok: false,
     });
   });
@@ -354,18 +392,24 @@ describe('after building', () => {
   it('guests use the moved tables and chairs; nobody gets stuck', () => {
     const g = new Game(createInitialState(1));
     const [c1, c2, t1] = [idAt(g.state, 2, 6), idAt(g.state, 4, 6), idAt(g.state, 3, 6)];
-    expect(g.dispatch({ type: 'moveFurniture', id: c1, x: 1, y: 9, rot: 1 }).ok).toBe(true);
-    expect(g.dispatch({ type: 'moveFurniture', id: c2, x: 3, y: 9, rot: 3 }).ok).toBe(true);
-    expect(g.dispatch({ type: 'moveFurniture', id: t1, x: 2, y: 9, rot: 0 }).ok).toBe(true);
+    expect(g.dispatch({ type: 'moveFurniture', id: c1, x: 1 + OX, y: 9 + OY, rot: 1 }).ok).toBe(
+      true,
+    );
+    expect(g.dispatch({ type: 'moveFurniture', id: c2, x: 3 + OX, y: 9 + OY, rot: 3 }).ok).toBe(
+      true,
+    );
+    expect(g.dispatch({ type: 'moveFurniture', id: t1, x: 2 + OX, y: 9 + OY, rot: 0 }).ok).toBe(
+      true,
+    );
     const day = playDay(g);
     expect(g.state.clock.phase).toBe('report');
     expect(day.served).toBeGreaterThan(5);
     const old = [
-      [2, 6],
-      [4, 6],
+      [2 + OX, 6 + OY],
+      [4 + OX, 6 + OY],
     ];
     expect(day.seatedAt.some((p) => old.some(([x, y]) => p.x === x && p.y === y))).toBe(false);
-    expect(day.seatedAt.some((p) => p.y === 9)).toBe(true);
+    expect(day.seatedAt.some((p) => p.y === 9 + OY)).toBe(true);
     expect(g.state.characters.filter(isGuest)).toHaveLength(0);
   });
 
@@ -373,7 +417,8 @@ describe('after building', () => {
     const g = new Game(createInitialState(1));
     // Move table 1 away: its two chairs become orphans.
     expect(
-      g.dispatch({ type: 'moveFurniture', id: idAt(g.state, 3, 6), x: 7, y: 5, rot: 0 }).ok,
+      g.dispatch({ type: 'moveFurniture', id: idAt(g.state, 3, 6), x: 7 + OX, y: 5 + OY, rot: 0 })
+        .ok,
     ).toBe(true);
     const orphans = [idAt(g.state, 2, 6), idAt(g.state, 4, 6)];
     for (const f of g.state.furniture) {
@@ -391,9 +436,9 @@ describe('after building', () => {
     const g = new Game(createInitialState(1));
     g.state.money = 1000;
     // Chair (2,6) is within radius 2 of (2,8); chairs at (5,8)/(7,8) are 3+ tiles away.
-    expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 2, y: 8, rot: 0 }).ok).toBe(
-      true,
-    );
+    expect(
+      g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 2 + OX, y: 8 + OY, rot: 0 }).ok,
+    ).toBe(true);
     const day = playDay(g);
     const near = idAt(g.state, 2, 6);
     const nearHits = day.decor.filter((d) => d.chairId === near);

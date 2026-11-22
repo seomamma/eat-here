@@ -3,7 +3,8 @@ import { RANKS } from '../../data/ranks';
 import { RECIPES } from '../../data/recipes';
 import { unlocksAtRank } from '../../data/shop';
 import { regularDef } from '../../data/regulars';
-import { STRINGS } from '../../data/strings';
+import { growthAtRank } from '../../data/expansion';
+import { STRINGS, growthText } from '../../data/strings';
 import type { Goal } from '../../sim/systems/goals';
 import { goals } from '../store';
 
@@ -24,6 +25,7 @@ function GoalRow(props: { goal: Goal }) {
     case 'rank': {
       const span = g.target - g.base;
       const unlocks = unlocksAtRank(g.rank);
+      const space = growthAtRank(g.rank);
       return (
         <li class="goal">
           <span class="goal-text">{G.rank(RANKS[g.rank - 1]?.name ?? '')}</span>
@@ -32,6 +34,7 @@ function GoalRow(props: { goal: Goal }) {
           {unlocks.length > 0 && (
             <span class="goal-sub">{G.unlocksAt(g.rank, unlocks.join(', '))}</span>
           )}
+          {space && <span class="goal-sub">{G.space(g.rank, growthText(space))}</span>}
         </li>
       );
     }

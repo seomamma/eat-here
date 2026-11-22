@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DOOR_X } from '../data/layout';
+import type { Room } from '../data/layout';
 import { FURNITURE } from '../data/furniture';
 import { isGuest, isStaff, type Character, type IsoDir } from '../sim/characters';
 import type { GuestEmote } from '../sim/events';
@@ -126,6 +127,9 @@ const SPARKLE_COUNT = 8;
 const SPARKLE_MS = 750;
 const SPARKLE_REACH_PX = [8, 16] as const;
 const SPARKLE_STATIC_MS = 500;
+/** New floor after a room expansion: bursts on this many tiles, this far apart (ms). */
+const NEW_FLOOR_SPARKLES = 9;
+const NEW_FLOOR_SPARKLE_GAP_MS = 90;
 /** Sparkle anchors above a guest's feet and above the oven's footprint centre (px). */
 const SPARKLE_ABOVE_PX = 14;
 const OVEN_SPARKLE_ABOVE_PX = 16;
@@ -148,7 +152,10 @@ interface Effect {
 
 /** Syncs Phaser game objects from GameState. Read-only: never mutates state. */
 export class WorldRenderer {
-  private tilesBuilt = false;
+  /** Room rectangle the floors and walls were built for. */
+  private builtRoomKey = '';
+  /** Static floor and wall images, destroyed and rebuilt when the room grows. */
+  private tileObjects: Phaser.GameObjects.Image[] = [];
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
   /** Soft shadow under each character, and the cook time (ticks) a chef started with. */
@@ -229,14 +236,15 @@ export class WorldRenderer {
     return t % STOKE_PERIOD_TICKS < STOKE_TICKS ? 'stoke' : 'idle';
   }
 
-  /**
-   * Screen-space bounds of the visible room: interior floor plus the full-height back walls.
-   * Wall tiles (grid edge) are only the walls' footprint and are not part of the visible room.
-   */
-  static roomBounds(state: GameState): Bounds {
-    const { width, height } = state.grid;
-    const b = tileRectBounds(1, 1, width - 1, height);
+  /** Screen-space bounds of a room rectangle: its floor plus the full-height back walls. */
+  static boundsOfRoom(room: Readonly<Room>): Bounds {
+    const b = tileRectBounds(room.x0, room.y0, room.x1 + 1, room.y1 + 1);
     return { ...b, minY: b.minY - WALL_BACK_RISE };
+  }
+
+  /** Screen-space bounds of the visible room (the unlocked rectangle plus its back walls). */
+  static roomBounds(state: GameState): Bounds {
+    return WorldRenderer.boundsOfRoom(state.room);
   }
 
   setHiddenFurniture(id: string | null): void {
@@ -244,9 +252,12 @@ export class WorldRenderer {
   }
 
   sync(state: GameState): void {
-    if (!this.tilesBuilt) {
+    const roomKey = `${state.room.x0},${state.room.y0},${state.room.x1},${state.room.y1}`;
+    if (roomKey !== this.builtRoomKey) {
+      // First build, or the room grew: lay out floors and walls again.
+      this.destroyTiles();
       this.buildTiles(state);
-      this.tilesBuilt = true;
+      this.builtRoomKey = roomKey;
     }
     this.syncSurfaces(state);
     this.syncFurniture(state);
@@ -671,6 +682,19 @@ export class WorldRenderer {
     });
   }
 
+  /** The freshly unlocked floor glitters: sparkle bursts on an even sample of the new tiles. */
+  sparklesOnTiles(tiles: readonly { x: number; y: number }[]): void {
+    const count = Math.min(NEW_FLOOR_SPARKLES, tiles.length);
+    for (let i = 0; i < count; i++) {
+      const t = tiles[Math.floor(((i + 0.5) * tiles.length) / count)];
+      if (!t) continue;
+      const o = tileToScreen(t.x + 0.5, t.y + 0.5);
+      const burst = () => this.showSparkles(Math.round(o.x), Math.round(o.y));
+      if (prefersReducedMotion()) burst();
+      else this.scene.time.delayedCall(i * NEW_FLOOR_SPARKLE_GAP_MS, burst);
+    }
+  }
+
   /** Sparkles over a guest's head (gifts). */
   sparklesAtGuest(guestId: string): void {
     const sprite = this.characters.get(guestId);
@@ -722,8 +746,23 @@ export class WorldRenderer {
     return this.scene.add.image(x, y, key).setOrigin(0, 0).setDepth(depth);
   }
 
+  /** Like `put`, for the static room (floors, walls, door) that `destroyTiles` removes again. */
+  private putTile(x: number, y: number, key: string, depth: number): Phaser.GameObjects.Image {
+    const img = this.put(x, y, key, depth);
+    this.tileObjects.push(img);
+    return img;
+  }
+
+  private destroyTiles(): void {
+    for (const img of this.tileObjects) img.destroy();
+    this.tileObjects = [];
+    this.floorImages.clear();
+    this.wallImages.clear();
+  }
+
   private buildTiles(state: GameState): void {
     const { width, height, tiles } = state.grid;
+    const room = state.room;
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const tile = tiles[y * width + x];
@@ -733,69 +772,74 @@ export class WorldRenderer {
           case 'floor_tile':
             this.floorImages.set(
               `${x},${y}`,
-              this.put(o.x - 16, o.y, floorTexKey(floorStyleAt(state, x, y), x, y), DEPTH_FLOOR),
+              this.putTile(
+                o.x - 16,
+                o.y,
+                floorTexKey(floorStyleAt(state, x, y), x, y),
+                DEPTH_FLOOR,
+              ),
             );
-            this.frontLeftWall(state, x, y, o);
+            this.frontLeftWall(room, x, y, o);
             break;
           case 'door':
-            this.put(o.x - 16, o.y, TEX.doorMat, DEPTH_FLOOR);
-            this.put(o.x - 16, o.y - 24, TEX.doorFrame, depthKey(x, y) + DEPTH_FRONT_BIAS);
-            break;
-          case 'wall':
-            this.wall(state, x, y, o);
+            this.putTile(o.x - 16, o.y, TEX.doorMat, DEPTH_FLOOR);
+            this.putTile(o.x - 16, o.y - 24, TEX.doorFrame, depthKey(x, y) + DEPTH_FRONT_BIAS);
             break;
           default:
             break;
         }
       }
     }
+    this.buildWalls(state, room);
   }
 
   /**
-   * Wall tiles are only footprints: they are drawn as a wall segment standing on the edge of the
-   * adjacent interior tile. Back walls (x = 0 and y = 0) are full height, the x = width - 1 side
-   * is a low cut-away wall. The y = height - 1 side is handled by frontLeftWall.
+   * Walls are derived from the room rectangle: full-height back walls on the x0 edge (`l<y>`)
+   * and the y0 edge (`r<x>`), a low cut-away wall along the x1 edge. Each stands on the edge of
+   * the room tile next to it; the y1 edge is handled by frontLeftWall.
    */
-  private wall(state: GameState, x: number, y: number, o: Point): void {
-    const { width } = state.grid;
-    if (x === 0 && y >= 1) {
-      // Back-left wall, standing on the top-left edge of tile (1, y).
-      const end = y === state.grid.height - 1;
+  private buildWalls(state: GameState, room: Readonly<Room>): void {
+    for (let y = room.y0; y <= room.y1; y++) {
+      // Back-left wall, standing on the top-left edge of tile (x0, y).
+      const end = y === room.y1;
       const id = `l${y}`;
+      const o = tileToScreen(room.x0 - 1, y);
       this.wallImages.set(id, {
-        img: this.put(
-          -16 * y,
-          8 * y - 33,
+        img: this.putTile(
+          o.x,
+          o.y - 33,
           wallTexKey('l', end, wallStyleOf(state, id)),
-          DEPTH_BACK_WALL + depthKey(x, y),
+          DEPTH_BACK_WALL + depthKey(room.x0 - 1, y),
         ),
         side: 'l',
         end,
       });
-    } else if (y === 0 && x >= 1 && x <= width - 2) {
-      // Back-right wall, standing on the top-right edge of tile (x, 1).
-      const end = x === width - 2;
+      // Front-right low wall, standing on the bottom-right edge of tile (x1, y).
+      const f = tileToScreen(room.x1 + 1, y);
+      this.putTile(f.x - 16, f.y - 4, TEX.wallFrontR, depthKey(room.x1 + 1, y) + DEPTH_FRONT_BIAS);
+    }
+    for (let x = room.x0; x <= room.x1; x++) {
+      // Back-right wall, standing on the top-right edge of tile (x, y0).
+      const end = x === room.x1;
       const id = `r${x}`;
+      const o = tileToScreen(x, room.y0 - 1);
       this.wallImages.set(id, {
-        img: this.put(
-          16 * x - 16,
-          8 * x - 33,
+        img: this.putTile(
+          o.x - 16,
+          o.y - 33,
           wallTexKey('r', end, wallStyleOf(state, id)),
-          DEPTH_BACK_WALL + depthKey(x, y),
+          DEPTH_BACK_WALL + depthKey(x, room.y0 - 1),
         ),
         side: 'r',
         end,
       });
-    } else if (x === width - 1 && y >= 1) {
-      // Front-right low wall, standing on the bottom-right edge of tile (width - 2, y).
-      this.put(o.x - 16, o.y - 4, TEX.wallFrontR, depthKey(x, y) + DEPTH_FRONT_BIAS);
     }
   }
 
   /** Low wall along the outer front-left edge of the bottom row (the door tile is the gap). */
-  private frontLeftWall(state: GameState, x: number, y: number, o: Point): void {
-    if (y !== state.grid.height - 1 || x === DOOR_X) return;
-    this.put(o.x - 16, o.y + 4, TEX.wallFrontL, depthKey(x, y) + DEPTH_FRONT_BIAS);
+  private frontLeftWall(room: Readonly<Room>, x: number, y: number, o: Point): void {
+    if (y !== room.y1 || x === DOOR_X) return;
+    this.putTile(o.x - 16, o.y + 4, TEX.wallFrontL, depthKey(x, y) + DEPTH_FRONT_BIAS);
   }
 
   /** Cold oven, or one of two flickering baking frames. */

@@ -3,9 +3,11 @@ import { furnitureAt, inBounds, tileAt } from '../../sim/grid';
 import type { Game } from '../../sim/game';
 import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
-import { screenToTile, tileToScreen } from '../iso';
+import { screenToTile, tileRectBounds, tileToScreen, type Bounds } from '../iso';
+import { addedTiles } from '../../sim/systems/expansion';
+import { rankUpsClosed } from '../../ui/store';
 import { installArtAliases, preloadArt } from '../art';
-import { generatePlaceholderTextures } from '../placeholderTextures';
+import { WALL_BACK_RISE, generatePlaceholderTextures } from '../placeholderTextures';
 import { SurroundingsRenderer } from '../SurroundingsRenderer';
 import { GROUND_BG_COLOR, generateSurroundingsTextures } from '../surroundingsTextures';
 import {
@@ -30,6 +32,10 @@ export class WorldScene extends Phaser.Scene {
   private sim!: Game;
   private world!: WorldRenderer;
   private build!: BuildOverlay;
+  private surroundings!: SurroundingsRenderer;
+  private camera!: CameraController;
+  /** Room growth waiting for the RANK UP modal to close before the camera shows it. */
+  private pendingExpansion: { tiles: { x: number; y: number }[]; area: Bounds } | null = null;
 
   constructor() {
     super('WorldScene');
@@ -48,8 +54,9 @@ export class WorldScene extends Phaser.Scene {
     installArtAliases(this.textures);
     generatePlaceholderTextures(this.textures);
     generateSurroundingsTextures(this.textures);
-    new SurroundingsRenderer(this);
     const state = this.sim.state;
+    this.surroundings = new SurroundingsRenderer(this);
+    this.surroundings.sync(state.room);
     this.world = new WorldRenderer(this);
     this.world.sync(state);
     this.world.syncCharacters(state, this.sim.alpha);
@@ -70,6 +77,8 @@ export class WorldScene extends Phaser.Scene {
       SurroundingsRenderer.panBounds(WorldRenderer.roomBounds(state)),
       WorldRenderer.roomBounds(state),
     );
+    this.camera = camera;
+    this.watchExpansion(camera);
     camera.setObjectDrag(this.objectDrag());
     // Debug aid: tap a tile to outline it and send the debug walker there.
     camera.onTap((world) => {
@@ -85,6 +94,50 @@ export class WorldScene extends Phaser.Scene {
       const inside = inBounds(state.grid, tile.x, tile.y);
       this.world.showHighlight(inside ? tile : null);
       if (inside) this.sim.dispatch({ type: 'debugWalkTo', x: tile.x, y: tile.y });
+    });
+  }
+
+  /**
+   * A rank-up grows the room: the pan bounds follow at once, but the camera only glides to the
+   * new area (and the new floor sparkles) after the player closes the RANK UP modal.
+   */
+  private watchExpansion(camera: CameraController): void {
+    const off = this.sim.events.on('roomExpanded', (e) => {
+      const { room, added } = e;
+      const before = {
+        x0: room.x0 + added.minusX,
+        y0: room.y0 + added.minusY,
+        x1: room.x1 - added.plusX,
+        y1: room.y1,
+      };
+      const tiles = addedTiles(before, room);
+      let area: Bounds | null = null;
+      for (const t of tiles) {
+        const b = tileRectBounds(t.x, t.y, t.x + 1, t.y + 1);
+        area = area
+          ? {
+              minX: Math.min(area.minX, b.minX),
+              minY: Math.min(area.minY, b.minY),
+              maxX: Math.max(area.maxX, b.maxX),
+              maxY: Math.max(area.maxY, b.maxY),
+            }
+          : b;
+      }
+      const roomBounds = WorldRenderer.boundsOfRoom(room);
+      camera.setRoomBounds(SurroundingsRenderer.panBounds(roomBounds), roomBounds);
+      if (area)
+        this.pendingExpansion = { tiles, area: { ...area, minY: area.minY - WALL_BACK_RISE } };
+    });
+    const unsub = rankUpsClosed.subscribe(() => {
+      const p = this.pendingExpansion;
+      if (!p) return;
+      this.pendingExpansion = null;
+      camera.showArea(p.area);
+      this.world.sparklesOnTiles(p.tiles);
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      off();
+      unsub();
     });
   }
 
@@ -106,7 +159,7 @@ export class WorldScene extends Phaser.Scene {
     const style = paintStyle.value;
     const state = this.sim.state;
     if (style?.kind === 'wall') {
-      const segment = wallSegmentAt(world.x, world.y, state.grid);
+      const segment = wallSegmentAt(world.x, world.y, state.room);
       return segment ? { segment } : null;
     }
     const tile = screenToTile(world.x, world.y);
@@ -139,10 +192,10 @@ export class WorldScene extends Phaser.Scene {
           return;
         }
         const tile = screenToTile(world.x, world.y);
-        const { width, height } = state.grid;
+        const { room } = state;
         moveGhostTo(
-          Math.min(width - 1, Math.max(0, tile.x + grab.x)),
-          Math.min(height - 1, Math.max(0, tile.y + grab.y)),
+          Math.min(room.x1, Math.max(room.x0, tile.x + grab.x)),
+          Math.min(room.y1, Math.max(room.y0, tile.y + grab.y)),
         );
       },
       end: () => {
@@ -169,9 +222,11 @@ export class WorldScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     this.sim.update(delta);
+    this.camera.update(delta);
     const g = ghost.value;
     this.world.setHiddenFurniture(g?.placing.kind === 'move' ? g.placing.id : null);
     this.world.sync(this.sim.state);
+    this.surroundings.sync(this.sim.state.room);
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
     this.world.syncSelection(selectedGuestId.value);
     const selected = this.sim.state.furniture.find((f) => f.id === selectedPiece.value) ?? null;

@@ -6,7 +6,8 @@ import { isGuest } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, findPath, isWalkable } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
-import { openGame } from './helpers';
+import { OX, OY, openGame } from './helpers';
+import { DOOR_X, DOOR_Y } from '../../src/data/layout';
 
 const TICKS_PER_HOUR = (3600 * 1000) / TICK_MS;
 
@@ -159,9 +160,10 @@ describe('findPath with blocked goal', () => {
   it('reaches a chair only when allowed, and never walks through other furniture', () => {
     const s = createInitialState();
     const walk = buildWalkGrid(s.grid, s.furniture);
-    const chair = { x: 2, y: 6 };
-    expect(findPath(walk, { x: 4, y: 10 }, chair)).toBeNull();
-    const path = findPath(walk, { x: 4, y: 10 }, chair, { allowGoalBlocked: true });
+    const chair = { x: 2 + OX, y: 6 + OY };
+    const from = { x: 4 + OX, y: 10 + OY };
+    expect(findPath(walk, from, chair)).toBeNull();
+    const path = findPath(walk, from, chair, { allowGoalBlocked: true });
     expect(path?.at(-1)).toEqual(chair);
     for (const t of path?.slice(0, -1) ?? []) expect(isWalkable(walk, t.x, t.y)).toBe(true);
   });
@@ -169,9 +171,10 @@ describe('findPath with blocked goal', () => {
   it('can start from a blocked tile when allowed', () => {
     const s = createInitialState();
     const walk = buildWalkGrid(s.grid, s.furniture);
-    expect(findPath(walk, { x: 2, y: 6 }, { x: 4, y: 11 })).toBeNull();
-    const path = findPath(walk, { x: 2, y: 6 }, { x: 4, y: 11 }, { allowStartBlocked: true });
-    expect(path?.[0]).toEqual({ x: 2, y: 6 });
+    const start = { x: 2 + OX, y: 6 + OY };
+    expect(findPath(walk, start, { x: DOOR_X, y: DOOR_Y })).toBeNull();
+    const path = findPath(walk, start, { x: DOOR_X, y: DOOR_Y }, { allowStartBlocked: true });
+    expect(path?.[0]).toEqual(start);
     for (const t of path?.slice(1) ?? []) expect(isWalkable(walk, t.x, t.y)).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ import {
 } from '../../src/sim/save';
 import { createInitialState, type GameState } from '../../src/sim/state';
 import { findFreeSpot } from '../../src/sim/systems/build';
+import { OX, OY } from './helpers';
 
 const AT = 1_700_000_000_000;
 
@@ -313,11 +314,14 @@ describe('migrate', () => {
     a.dispatch({ type: 'buyAndPlace', defId: 'toilet', ...spot, rot: 0 });
     const toilet = a.state.furniture.find((f) => f.defId === 'toilet');
     a.dispatch({ type: 'upgradeFurniture', id: toilet?.id ?? '' });
-    a.dispatch({ type: 'paintFloor', tiles: [{ x: 5, y: 6 }], style: 'terracotta' });
-    a.dispatch({ type: 'paintWall', segments: ['l4'], style: 'brick' });
+    a.dispatch({ type: 'paintFloor', tiles: [{ x: 5 + OX, y: 6 + OY }], style: 'terracotta' });
+    a.dispatch({ type: 'paintWall', segments: [`l${4 + OY}`], style: 'brick' });
     step(a, 600);
     const b = new Game(load(serialize(a.state, AT)));
-    expect(b.state.styles).toEqual({ floor: { '5,6': 'terracotta' }, wall: { l4: 'brick' } });
+    expect(b.state.styles).toEqual({
+      floor: { [`${5 + OX},${6 + OY}`]: 'terracotta' },
+      wall: { [`l${4 + OY}`]: 'brick' },
+    });
     expect(b.state.furniture.find((f) => f.defId === 'toilet')?.level).toBe(2);
     step(a, 1500);
     step(b, 1500);

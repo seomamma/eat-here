@@ -5,9 +5,17 @@ import {
   type Rot,
   type UseSpot,
 } from '../data/furniture';
-import { GRID_HEIGHT, GRID_WIDTH, START_FURNITURE, startTile, type TileType } from '../data/layout';
+import {
+  GRID_HEIGHT,
+  GRID_WIDTH,
+  START_FURNITURE,
+  START_ROOM,
+  startTile,
+  type Room,
+  type TileType,
+} from '../data/layout';
 
-export type { TileType };
+export type { Room, TileType };
 
 export interface GridState {
   width: number;
@@ -31,6 +39,15 @@ export function createGrid(): GridState {
     for (let x = 0; x < GRID_WIDTH; x++) tiles.push(startTile(x, y));
   }
   return { width: GRID_WIDTH, height: GRID_HEIGHT, tiles };
+}
+
+/** The unlocked room of a new game (a copy: state owns and grows it). */
+export function createRoom(): Room {
+  return { ...START_ROOM };
+}
+
+export function inRoom(room: Readonly<Room>, x: number, y: number): boolean {
+  return x >= room.x0 && x <= room.x1 && y >= room.y0 && y <= room.y1;
 }
 
 export function createStartFurniture(): Furniture[] {

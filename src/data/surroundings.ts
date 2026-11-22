@@ -1,10 +1,13 @@
 /**
  * Outdoor area around the building (M11b). View-only decoration: it is not part of the sim grid
- * or pathfinding. Tile coordinates are the sim grid's (x to the lower-right, y to the lower-left)
- * and may lie outside the grid: x < 0 / y < 0 is behind the back walls, y >= GRID_HEIGHT is the
- * door side (sidewalk, then street), x >= GRID_WIDTH is beside the low cut-away wall.
+ * or pathfinding. Tile coordinates are the sim grid's (x to the lower-right, y to the lower-left).
+ * Everything is computed around the current room rectangle (M12b): behind the back walls
+ * (x < x0 / y < y0), beside the low cut-away wall (x > x1) and on the door side (y > y1: sidewalk,
+ * then street, which stay in front of the door edge). When the room grows the ring is laid out
+ * again; ground and props depend only on absolute tile coordinates and the room, so what stays
+ * outside keeps its look.
  */
-import { GRID_HEIGHT, GRID_WIDTH } from './layout';
+import { DOOR_X, DOOR_Y, type Room } from './layout';
 
 export type GroundKind = 'grass' | 'soil' | 'sidewalk' | 'asphalt' | 'asphalt_line';
 
@@ -44,31 +47,40 @@ export const SURROUNDINGS = {
   cameraMarginPx: { left: 96, right: 96, top: 72, bottom: 104 },
 } as const;
 
-/** Tile rectangle [x0, x1] x [y0, y1] (inclusive) that holds ground, without the road extension. */
-export function groundRect(): { x0: number; x1: number; y0: number; y1: number } {
+/**
+ * Tile rectangle [x0, x1] x [y0, y1] (inclusive) that holds ground, without the road extension.
+ * The ring is measured from the walls' footprint (one tile outside the room).
+ */
+export function groundRect(room: Readonly<Room>): {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+} {
   return {
-    x0: -SURROUNDINGS.left,
-    x1: GRID_WIDTH - 1 + SURROUNDINGS.right,
-    y0: -SURROUNDINGS.back,
-    y1: GRID_HEIGHT - 1 + SURROUNDINGS.sidewalk + SURROUNDINGS.street + SURROUNDINGS.farSide,
+    x0: room.x0 - 1 - SURROUNDINGS.left,
+    x1: room.x1 + 1 + SURROUNDINGS.right,
+    y0: room.y0 - 1 - SURROUNDINGS.back,
+    y1: room.y1 + SURROUNDINGS.sidewalk + SURROUNDINGS.street + SURROUNDINGS.farSide,
   };
 }
 
 /** True for tiles that lie inside the room (floor under the building's walls). */
-export function isRoomTile(x: number, y: number): boolean {
-  return x >= 1 && x <= GRID_WIDTH - 2 && y >= 1 && y <= GRID_HEIGHT - 1;
+export function isRoomTile(room: Readonly<Room>, x: number, y: number): boolean {
+  return x >= room.x0 && x <= room.x1 && y >= room.y0 && y <= room.y1;
 }
 
-/** First and last row of the sidewalk / street on the door side. */
-const SIDEWALK_Y = GRID_HEIGHT;
+/** First and last row of the sidewalk / street on the door side (the door row never moves). */
+const SIDEWALK_Y = DOOR_Y + 1;
 const STREET_Y = SIDEWALK_Y + SURROUNDINGS.sidewalk;
 const STREET_CENTRE_Y = STREET_Y + Math.floor(SURROUNDINGS.street / 2);
 const STREET_END_Y = STREET_Y + SURROUNDINGS.street - 1;
+const FAR_SIDE_Y = STREET_END_Y + 1;
 
 /** What the ground at a tile is, or null when nothing is drawn there (inside the room, or off the map). */
-export function groundKind(x: number, y: number): GroundKind | null {
-  if (isRoomTile(x, y)) return null;
-  const { x0, x1, y0, y1 } = groundRect();
+export function groundKind(room: Readonly<Room>, x: number, y: number): GroundKind | null {
+  if (isRoomTile(room, x, y)) return null;
+  const { x0, x1, y0, y1 } = groundRect(room);
   const extra = SURROUNDINGS.roadExtra;
   if (y >= SIDEWALK_Y && y < SIDEWALK_Y + SURROUNDINGS.sidewalk) {
     return x >= x0 - extra && x <= x1 + extra ? 'sidewalk' : null;
@@ -79,51 +91,94 @@ export function groundKind(x: number, y: number): GroundKind | null {
   }
   if (x < x0 || x > x1 || y < y0 || y > y1) return null;
   // Soil right around the building (not on the door side), grass further out.
-  const dx = Math.max(1 - x, x - (GRID_WIDTH - 2), 0);
-  const dy = Math.max(1 - y, 0);
+  const dx = Math.max(room.x0 - x, x - room.x1, 0);
+  const dy = Math.max(room.y0 - y, 0);
   return y < SIDEWALK_Y && Math.max(dx, dy) <= SURROUNDINGS.soilBand ? 'soil' : 'grass';
 }
 
-/** Hand-placed props. Keep trees at least 2 tiles away from the walls so crowns only peek over. */
-export const SURROUNDING_PROPS: readonly SurroundingProp[] = [
-  // Back-left side: trees behind the left wall, bushes and flowers in the grass.
-  { kind: 'tree_round', x: -2, y: 3 },
-  { kind: 'tree_tall', x: -3, y: 8 },
-  { kind: 'tree_round', x: -2, y: 11 },
-  { kind: 'bush', x: -1, y: 6 },
-  { kind: 'bush_flowers', x: -1, y: 9 },
-  { kind: 'flower_red', x: -3, y: 5 },
-  { kind: 'flower_yellow', x: -2, y: 6 },
-  { kind: 'flower_white', x: -4, y: 10 },
-  { kind: 'flower_red', x: -3, y: 12 },
-  // Back-right side.
-  { kind: 'tree_tall', x: 2, y: -3 },
-  { kind: 'tree_round', x: 7, y: -2 },
-  { kind: 'bush', x: 4, y: -1 },
-  { kind: 'bush_flowers', x: 9, y: -1 },
-  { kind: 'flower_yellow', x: 5, y: -3 },
-  { kind: 'flower_white', x: 9, y: -3 },
-  { kind: 'flower_red', x: 1, y: -2 },
-  // Right side (beside the low wall): a hedge in the soil strip, trees further out.
-  { kind: 'bush', x: 10, y: 3 },
-  { kind: 'bush_flowers', x: 10, y: 5 },
-  { kind: 'bush', x: 10, y: 7 },
-  { kind: 'bush', x: 10, y: 10 },
-  { kind: 'tree_tall', x: 12, y: 1 },
-  { kind: 'tree_round', x: 12, y: 8 },
-  { kind: 'flower_red', x: 11, y: 4 },
-  { kind: 'flower_yellow', x: 11, y: 9 },
-  { kind: 'flower_white', x: 13, y: 5 },
-  // Door side: lamp posts and a bench on the sidewalk (the door gap at DOOR_X stays clear).
-  { kind: 'lamp', x: 2, y: 12 },
-  { kind: 'bench', x: 6, y: 12 },
-  { kind: 'lamp', x: 9, y: 12 },
-  { kind: 'lamp', x: -3, y: 12 },
-  // Grass strip across the street.
-  { kind: 'bush', x: 1, y: 17 },
-  { kind: 'bush_flowers', x: 5, y: 17 },
-  { kind: 'tree_round', x: 8, y: 17 },
-  { kind: 'flower_red', x: 3, y: 16 },
-  { kind: 'flower_yellow', x: 7, y: 16 },
-  { kind: 'flower_white', x: 10, y: 16 },
-];
+/** Deterministic pseudo-random number in [0, 1) from tile coordinates and a salt. */
+function tileHash(x: number, y: number, salt: number): number {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(salt, 2147483647);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
+/** A tile whose hash beats every neighbour within `radius` (so such tiles are never closer than that). */
+function isPeak(x: number, y: number, salt: number, radius: number, min: number): boolean {
+  const v = tileHash(x, y, salt);
+  if (v < min) return false;
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if ((dx !== 0 || dy !== 0) && tileHash(x + dx, y + dy, salt) >= v) return false;
+    }
+  }
+  return true;
+}
+
+/** Tuning of the scattered plants: hash thresholds (higher = rarer) and the keep-out distance of trees. */
+const SCATTER = {
+  tree: { salt: 1, radius: 2, min: 0.45 },
+  bush: { salt: 2, radius: 1, min: 0.6 },
+  flower: { salt: 3, chance: 0.045 },
+  /** Trees stay at least this many tiles from the walls so crowns only peek over. */
+  treeWallGap: 2,
+  /** Door side: a lamp post every this many tiles, offset from the door column; benches near it. */
+  lampEvery: 7,
+  lampOffset: -2,
+  benchOffsets: [2, 16],
+} as const;
+
+/** Bounding box of the ring around the room in which props may stand. */
+function ringTileOk(room: Readonly<Room>, x: number, y: number): boolean {
+  const kind = groundKind(room, x, y);
+  return kind === 'grass' || kind === 'soil';
+}
+
+/**
+ * Props around a room: lamps and benches on the sidewalk (the door gap stays clear), and trees,
+ * bushes and flowers scattered over the grass and soil by coordinate hash, so growing the room
+ * only removes what the new floor covers (or crowds against a wall) and adds props in the newly
+ * exposed ring. Pure and deterministic.
+ */
+export function surroundingProps(room: Readonly<Room>): SurroundingProp[] {
+  const out: SurroundingProp[] = [];
+  const { x0, x1, y0, y1 } = groundRect(room);
+  // Door side: lamp posts and benches on the sidewalk; never in front of the door.
+  for (let x = x0; x <= x1; x++) {
+    if ((x - DOOR_X - SCATTER.lampOffset) % SCATTER.lampEvery === 0 && x !== DOOR_X) {
+      out.push({ kind: 'lamp', x, y: SIDEWALK_Y });
+    }
+  }
+  for (const o of SCATTER.benchOffsets) {
+    const x = DOOR_X + o;
+    if (x >= x0 && x + 1 <= x1) out.push({ kind: 'bench', x, y: SIDEWALK_Y });
+  }
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if (!ringTileOk(room, x, y)) continue;
+      // Distance from the walls (0 right next to them), measured towards the open sides.
+      const gap = Math.max(room.x0 - x, x - room.x1, room.y0 - y, 1) - 1;
+      const doorSide = y >= SIDEWALK_Y;
+      if (
+        (doorSide || gap >= SCATTER.treeWallGap) &&
+        isPeak(x, y, SCATTER.tree.salt, SCATTER.tree.radius, SCATTER.tree.min)
+      ) {
+        out.push({ kind: tileHash(x, y, 9) < 0.5 ? 'tree_round' : 'tree_tall', x, y });
+      } else if (isPeak(x, y, SCATTER.bush.salt, SCATTER.bush.radius, SCATTER.bush.min)) {
+        out.push({ kind: tileHash(x, y, 8) < 0.4 ? 'bush_flowers' : 'bush', x, y });
+      } else if (tileHash(x, y, SCATTER.flower.salt) < SCATTER.flower.chance) {
+        const v = tileHash(x, y, 7);
+        out.push({
+          kind: v < 0.4 ? 'flower_red' : v < 0.75 ? 'flower_yellow' : 'flower_white',
+          x,
+          y,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** Row on the door side where the far grass strip starts (for tests and the view). */
+export const FAR_SIDE_FIRST_Y = FAR_SIDE_Y;

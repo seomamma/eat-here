@@ -12,6 +12,8 @@ import {
   tileAt,
 } from '../../src/sim/grid';
 import { createInitialState } from '../../src/sim/state';
+import { DOOR_X, DOOR_Y, GRID_HEIGHT, GRID_WIDTH, START_ROOM } from '../../src/data/layout';
+import { OX, OY } from './helpers';
 
 describe('occupancy', () => {
   it('maps a 1x1 piece to a single tile', () => {
@@ -38,29 +40,29 @@ describe('canPlace', () => {
   const s = createInitialState();
 
   it('accepts free floor', () => {
-    expect(canPlace(s, 'plant_potted', 1, 10)).toBe(true);
-    expect(canPlace(s, 'counter_pass', 6, 10)).toBe(true);
+    expect(canPlace(s, 'plant_potted', 1 + OX, 10 + OY)).toBe(true);
+    expect(canPlace(s, 'counter_pass', 6 + OX, 10 + OY)).toBe(true);
   });
 
   it('rejects walls, door and out of bounds', () => {
-    expect(canPlace(s, 'plant_potted', 0, 5)).toBe(false);
-    expect(canPlace(s, 'plant_potted', 4, 0)).toBe(false);
-    expect(canPlace(s, 'plant_potted', 4, 11)).toBe(false); // door
-    expect(canPlace(s, 'plant_potted', -1, 5)).toBe(false);
-    expect(canPlace(s, 'plant_potted', 10, 5)).toBe(false);
-    expect(canPlace(s, 'plant_potted', 5, 12)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 0 + OX, 5 + OY)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 4 + OX, 0 + OY)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 4 + OX, 11 + OY)).toBe(false); // door
+    expect(canPlace(s, 'plant_potted', -1 + OX, 5 + OY)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 10 + OX, 5 + OY)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 5 + OX, 12 + OY)).toBe(false);
   });
 
   it('rejects a 2x1 that sticks into a wall or out of the grid', () => {
-    expect(canPlace(s, 'oven_pizza', 8, 5)).toBe(false); // x=9 is wall
-    expect(canPlace(s, 'oven_pizza', 9, 5)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 8 + OX, 5 + OY)).toBe(false); // x=9 is wall
+    expect(canPlace(s, 'oven_pizza', 9 + OX, 5 + OY)).toBe(false);
   });
 
   it('rejects overlap with existing furniture, including partial 2x1 overlap', () => {
-    expect(canPlace(s, 'plant_potted', 3, 6)).toBe(false); // table
-    expect(canPlace(s, 'plant_potted', 3, 1)).toBe(false); // second tile of oven
-    expect(canPlace(s, 'counter_pass', 4, 1)).toBe(true);
-    expect(canPlace(s, 'counter_pass', 3, 1)).toBe(false);
+    expect(canPlace(s, 'plant_potted', 3 + OX, 6 + OY)).toBe(false); // table
+    expect(canPlace(s, 'plant_potted', 3 + OX, 1 + OY)).toBe(false); // second tile of oven
+    expect(canPlace(s, 'counter_pass', 4 + OX, 1 + OY)).toBe(true);
+    expect(canPlace(s, 'counter_pass', 3 + OX, 1 + OY)).toBe(false);
   });
 });
 
@@ -93,14 +95,14 @@ describe('rotation', () => {
 
   it('checks canPlace against the rotated footprint', () => {
     // x = 8 is the last floor column: a horizontal 2x1 sticks into the wall, a vertical one fits.
-    expect(canPlace(s, 'oven_pizza', 8, 5, 0)).toBe(false);
-    expect(canPlace(s, 'oven_pizza', 8, 5, 1)).toBe(true);
-    // A vertical oven at (4, 10) would cover the door tile (4, 11).
-    expect(canPlace(s, 'oven_pizza', 4, 10, 1)).toBe(false);
-    expect(canPlace(s, 'oven_pizza', 6, 10, 1)).toBe(true);
+    expect(canPlace(s, 'oven_pizza', 8 + OX, 5 + OY, 0)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 8 + OX, 5 + OY, 1)).toBe(true);
+    // A vertical oven at (4, 10) (local) would cover the door tile (4, 11).
+    expect(canPlace(s, 'oven_pizza', 4 + OX, 10 + OY, 1)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 6 + OX, 10 + OY, 1)).toBe(true);
     // Overlap with the existing table at (3, 6) only when the rotated tiles touch it.
-    expect(canPlace(s, 'oven_pizza', 3, 5, 1)).toBe(false);
-    expect(canPlace(s, 'oven_pizza', 3, 5, 0)).toBe(true);
+    expect(canPlace(s, 'oven_pizza', 3 + OX, 5 + OY, 1)).toBe(false);
+    expect(canPlace(s, 'oven_pizza', 3 + OX, 5 + OY, 0)).toBe(true);
   });
 
   it('rotates use spots and facings', () => {
@@ -173,8 +175,9 @@ describe('initial layout', () => {
     s.furniture.filter((f) => FURNITURE[f.defId].kind === kind).length;
 
   it('has the expected pieces', () => {
-    expect(s.grid.width).toBe(10);
-    expect(s.grid.height).toBe(12);
+    expect(s.grid.width).toBe(GRID_WIDTH);
+    expect(s.grid.height).toBe(GRID_HEIGHT);
+    expect(s.room).toEqual(START_ROOM);
     expect(count('table')).toBe(2);
     expect(count('chair')).toBe(4);
     expect(count('oven')).toBe(1);
@@ -195,13 +198,15 @@ describe('initial layout', () => {
     }
   });
 
-  it('has a single door in the bottom row and walls around the room', () => {
+  it('has a single door on the front edge; everything outside the room rectangle is outside', () => {
     expect(s.grid.tiles.filter((t) => t === 'door')).toHaveLength(1);
-    expect(tileAt(s.grid, 4, 11)).toBe('door');
-    for (let x = 0; x < 10; x++) expect(tileAt(s.grid, x, 0)).toBe('wall');
-    for (let y = 0; y < 12; y++) {
-      expect(tileAt(s.grid, 0, y)).toBe('wall');
-      expect(tileAt(s.grid, 9, y)).toBe('wall');
+    expect(tileAt(s.grid, DOOR_X, DOOR_Y)).toBe('door');
+    expect(DOOR_Y).toBe(s.room.y1);
+    for (let y = 0; y < s.grid.height; y++) {
+      for (let x = 0; x < s.grid.width; x++) {
+        const inside = x >= s.room.x0 && x <= s.room.x1 && y >= s.room.y0 && y <= s.room.y1;
+        expect(tileAt(s.grid, x, y) === 'outside', `${x},${y}`).toBe(!inside);
+      }
     }
   });
 

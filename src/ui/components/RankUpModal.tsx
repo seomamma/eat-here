@@ -1,4 +1,4 @@
-import { STRINGS } from '../../data/strings';
+import { STRINGS, growthText } from '../../data/strings';
 import { dismissRankUp, rankUps } from '../store';
 import { INGREDIENTS } from '../../data/ingredients';
 import { Card } from './Card';
@@ -53,6 +53,14 @@ export function RankUpModal() {
                     {info.unlocks.map((u) => (
                       <li key={u}>{u}</li>
                     ))}
+                  </ul>
+                </div>
+              )}
+              {info.space && (
+                <div class="rankup-unlocks">
+                  <p class="rankup-unlocked">{S.space}</p>
+                  <ul>
+                    <li>{growthText(info.space)}</li>
                   </ul>
                 </div>
               )}

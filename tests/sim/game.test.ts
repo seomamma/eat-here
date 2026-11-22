@@ -3,6 +3,8 @@ import { DEFAULT_SEED, MAX_TICKS_PER_UPDATE, TICK_MS } from '../../src/data/bala
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, isWalkable } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
+import { DOOR_Y } from '../../src/data/layout';
+import { OX, OY } from './helpers';
 
 describe('Game loop', () => {
   it('accumulates real time into fixed ticks and exposes alpha', () => {
@@ -60,7 +62,7 @@ describe('debugWalkTo', () => {
     const walk = buildWalkGrid(g.state.grid, g.state.furniture);
     const arrived: string[] = [];
     g.events.on('walkerArrived', (e) => arrived.push(e.id));
-    expect(g.dispatch({ type: 'debugWalkTo', x: 7, y: 2 })).toEqual({ ok: true });
+    expect(g.dispatch({ type: 'debugWalkTo', x: 7 + OX, y: 2 + OY })).toEqual({ ok: true });
     const w = g.state.characters[0];
     if (!w) throw new Error('no walker');
     for (let i = 0; i < 400 && w.path.length > 0; i++) {
@@ -69,8 +71,8 @@ describe('debugWalkTo', () => {
       expect(isWalkable(walk, Math.floor(w.x), Math.floor(w.y))).toBe(true);
       expect(isWalkable(walk, Math.ceil(w.x), Math.ceil(w.y))).toBe(true);
     }
-    expect(w.x).toBe(7);
-    expect(w.y).toBe(2);
+    expect(w.x).toBe(7 + OX);
+    expect(w.y).toBe(2 + OY);
     expect(arrived).toEqual(['debug1']);
   });
 
@@ -78,8 +80,8 @@ describe('debugWalkTo', () => {
     const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const before = JSON.stringify(g.state);
     for (const [x, y] of [
-      [0, 5], // wall
-      [3, 6], // table
+      [0 + OX, 5 + OY], // outside (where the wall stands)
+      [3 + OX, 6 + OY], // table
       [-1, 3],
       [99, 99],
     ] as const) {
@@ -95,14 +97,14 @@ describe('debugWalkTo', () => {
     const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const w = g.state.characters[0];
     if (!w) throw new Error('no walker');
-    g.dispatch({ type: 'debugWalkTo', x: 8, y: 8 });
+    g.dispatch({ type: 'debugWalkTo', x: 8 + OX, y: 8 + OY });
     for (let i = 0; i < 5; i++) g.tickOnce();
     const { x, y } = w;
-    g.dispatch({ type: 'debugWalkTo', x: 1, y: 10 });
+    g.dispatch({ type: 'debugWalkTo', x: 1 + OX, y: 10 + OY });
     g.tickOnce();
     expect(Math.abs(w.x - x) + Math.abs(w.y - y)).toBeLessThanOrEqual(1);
     for (let i = 0; i < 400 && w.path.length > 0; i++) g.tickOnce();
-    expect([w.x, w.y]).toEqual([1, 10]);
+    expect([w.x, w.y]).toEqual([1 + OX, 10 + OY]);
   });
 
   it('sets facing from the movement direction', () => {
@@ -123,6 +125,6 @@ describe('debugWalkTo', () => {
     const walk = buildWalkGrid(s.grid, s.furniture);
     const w = s.characters[0];
     expect(w && isWalkable(walk, w.x, w.y)).toBe(true);
-    expect(w?.y).toBe(s.grid.height - 2);
+    expect(w?.y).toBe(DOOR_Y - 1);
   });
 });

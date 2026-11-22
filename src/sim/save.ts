@@ -4,12 +4,15 @@ import { REGULAR_IDS } from '../data/regulars';
 import { MAX_FURNITURE_LEVEL } from '../data/furniture';
 import { FLOOR_STYLES, WALL_STYLES } from '../data/surfaces';
 import { RECIPE_IDS } from '../data/recipes';
+import { growthAtRank } from '../data/expansion';
+import { GRID_HEIGHT, GRID_WIDTH, LEGACY_OFFSET, START_ROOM, type TileType } from '../data/layout';
+import { expandRoom } from './systems/expansion';
 import type { GameState } from './state';
 import { createInventory, rollMarket } from './systems/market';
 import { createCounters, createRegularStates } from './systems/regulars';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** Coins paid for each removed common ingredient when upgrading a v3 save (old market minimum). */
 const COMMON_REFUND = 40;
@@ -112,6 +115,57 @@ export const MIGRATIONS: Migrations = {
         )
       : state.characters;
     return { ...state, furniture, characters, styles: { floor: {}, wall: {} } };
+  },
+  // v5 -> v6: the room grows with rank (M12b, D-038). The old 10x12 grid moves into the bigger
+  // allocated grid by LEGACY_OFFSET, and every coordinate in the save is translated once. The
+  // room is the starting room grown by every expansion up to the saved rank.
+  5: (state) => {
+    const { x: ox, y: oy } = LEGACY_OFFSET;
+    const shiftPos = (p: unknown): unknown =>
+      isObj(p) && isNum(p.x) && isNum(p.y) ? { ...p, x: p.x + ox, y: p.y + oy } : p;
+    const furniture = Array.isArray(state.furniture)
+      ? state.furniture.map((f: unknown) => shiftPos(f))
+      : state.furniture;
+    const characters = Array.isArray(state.characters)
+      ? state.characters.map((c: unknown) => {
+          if (!isObj(c)) return c;
+          const out: Record<string, unknown> = { ...c };
+          for (const k of ['x', 'prevX']) if (isNum(c[k])) out[k] = c[k] + ox;
+          for (const k of ['y', 'prevY']) if (isNum(c[k])) out[k] = c[k] + oy;
+          if (Array.isArray(c.path)) out.path = c.path.map(shiftPos);
+          for (const k of ['target', 'home', 'waitSpot']) if (k in c) out[k] = shiftPos(c[k]);
+          return out;
+        })
+      : state.characters;
+    const styles = isObj(state.styles) ? state.styles : { floor: {}, wall: {} };
+    const floor: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(isObj(styles.floor) ? styles.floor : {})) {
+      const [x, y] = k.split(',').map(Number);
+      floor[`${(x as number) + ox},${(y as number) + oy}`] = v;
+    }
+    const wall: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(isObj(styles.wall) ? styles.wall : {})) {
+      const n = Number(k.slice(1));
+      wall[`${k[0]}${n + (k[0] === 'l' ? oy : ox)}`] = v;
+    }
+    // Old tiles move; the old wall footprints are no longer stored (walls are derived).
+    const old = isObj(state.grid) ? state.grid : { width: 0, height: 0, tiles: [] };
+    const ow = old.width as number;
+    const tiles: TileType[] = new Array<TileType>(GRID_WIDTH * GRID_HEIGHT).fill('outside');
+    (old.tiles as string[]).forEach((t, i) => {
+      if (t === 'wall') return;
+      tiles[(Math.floor(i / ow) + oy) * GRID_WIDTH + (i % ow) + ox] = t as TileType;
+    });
+    const next = {
+      grid: { width: GRID_WIDTH, height: GRID_HEIGHT, tiles },
+      room: { ...START_ROOM },
+    };
+    const rank = isInt(state.rank) ? state.rank : 1;
+    for (let r = 2; r <= rank; r++) {
+      const growth = growthAtRank(r);
+      if (growth) expandRoom(next, growth);
+    }
+    return { ...state, ...next, furniture, characters, styles: { floor, wall } };
   },
 };
 
@@ -221,6 +275,21 @@ export function validateState(s: Record<string, unknown>): string | null {
     return 'bad:grid';
   if (grid.tiles.length !== (grid.width as number) * (grid.height as number))
     return 'bad:grid.tiles';
+  const room = s.room;
+  if (
+    !isObj(room) ||
+    !isInt(room.x0) ||
+    !isInt(room.y0) ||
+    !isInt(room.x1) ||
+    !isInt(room.y1) ||
+    room.x0 < 0 ||
+    room.y0 < 0 ||
+    room.x1 >= (grid.width as number) ||
+    room.y1 >= (grid.height as number) ||
+    room.x0 > room.x1 ||
+    room.y0 > room.y1
+  )
+    return 'bad:room';
 
   if (!Array.isArray(s.furniture)) return 'bad:furniture';
   for (const f of s.furniture as unknown[]) {

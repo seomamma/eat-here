@@ -1,7 +1,9 @@
 import { MAX_RANK, RANKS, rankDef } from '../../data/ranks';
 import { RECIPES } from '../../data/recipes';
 import { unlocksAtRank } from '../../data/shop';
+import { growthAtRank } from '../../data/expansion';
 import { addIngredient } from './market';
+import { expandRoom } from './expansion';
 import type { Emitter, GameEvents } from '../events';
 import type { GameState } from '../state';
 
@@ -22,11 +24,15 @@ export function checkRankUp(state: GameState, events: Emitter<GameEvents>): void
     state.rank = next.rank;
     for (const id of next.recipes) state.recipes[id].unlocked = true;
     if (next.reward) addIngredient(state, events, next.reward);
+    const growth = growthAtRank(next.rank);
+    const added = growth ? expandRoom(state, growth) : null;
+    if (added) events.emit('roomExpanded', { rank: next.rank, added, room: { ...state.room } });
     events.emit('rankUp', {
       rank: next.rank,
       name: next.name,
       unlocks: unlockNames(next.rank),
       reward: next.reward,
+      space: added,
     });
   }
 }

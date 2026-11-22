@@ -2,6 +2,7 @@
  * Headless balance runner (M10): plays N days for several seeds with a simple scripted player
  * and reports money / fame / rank curves. Pure sim, no DOM. Run with `npm run balance`.
  */
+import { DOOR_X } from '../src/data/layout';
 import { DECOR_RADIUS } from '../src/data/happiness';
 import { FURNITURE, type FurnitureDefId } from '../src/data/furniture';
 import type { IngredientId } from '../src/data/ingredients';
@@ -70,8 +71,8 @@ function bestDecorSpot(
   const { state } = game;
   const chairs = state.furniture.filter((f) => FURNITURE[f.defId].kind === 'chair');
   let best: { x: number; y: number; score: number } | null = null;
-  for (let y = 0; y < state.grid.height; y++) {
-    for (let x = 0; x < state.grid.width; x++) {
+  for (let y = state.room.y0; y <= state.room.y1; y++) {
+    for (let x = state.room.x0; x <= state.room.x1; x++) {
       if (!validateBuy({ ...state, money: 1e9, rank: 9 }, defId, x, y, 0).ok) continue;
       const score = chairs.filter(
         (c) => Math.max(Math.abs(c.x - x), Math.abs(c.y - y)) <= radius,
@@ -86,10 +87,10 @@ function bestDecorSpot(
 function doorSpot(game: Game, defId: FurnitureDefId): { x: number; y: number } | null {
   const { state } = game;
   let best: { x: number; y: number; d: number } | null = null;
-  for (let y = 1; y < state.grid.height - 2; y++) {
-    for (let x = 1; x < state.grid.width - 1; x++) {
+  for (let y = state.room.y0; y <= state.room.y1 - 2; y++) {
+    for (let x = state.room.x0; x <= state.room.x1; x++) {
       if (!validateBuy({ ...state, money: 1e9, rank: 9 }, defId, x, y, 0).ok) continue;
-      const d = Math.abs(x - 4) + Math.abs(y - (state.grid.height - 3));
+      const d = Math.abs(x - DOOR_X) + Math.abs(y - (state.room.y1 - 2));
       if (!best || d < best.d) best = { x, y, d };
     }
   }
@@ -145,8 +146,8 @@ function buySet(
   const total = FURNITURE[tableDef].price + chairs * FURNITURE[chairDef].price;
   if (state.money < total + reserve) return false;
   let best: { x: number; y: number; rot: Rot; n: number } | null = null;
-  for (let y = 2; y < state.grid.height - 2; y++) {
-    for (let x = 1; x < state.grid.width - 1; x++) {
+  for (let y = state.room.y0 + 1; y <= state.room.y1 - 2; y++) {
+    for (let x = state.room.x0; x <= state.room.x1; x++) {
       for (const rot of tableDef === 'table_long' ? ([0, 1] as const) : ([0] as const)) {
         if (!validateBuy({ ...state, money: 1e9, rank: 9 }, tableDef, x, y, rot).ok) continue;
         state.furniture.push({ id: '__probe', defId: tableDef, x, y, rot, level: 1 });

@@ -31,6 +31,8 @@ export class BuildOverlay {
   private paintKey = '';
   private tintKey = '';
   private gridBuilt = false;
+  private gridRoomKey = '';
+  private room: GameState['room'] = { x0: 0, y0: 0, x1: 0, y1: 0 };
 
   constructor(private readonly scene: Phaser.Scene) {
     this.grid = scene.add.graphics().setDepth(DEPTH_GRID).setVisible(false);
@@ -71,6 +73,12 @@ export class BuildOverlay {
     stroke: PaintStroke | null = null,
   ): void {
     this.grid.setVisible(active);
+    this.room = state.room;
+    const roomKey = `${state.room.x0},${state.room.y0},${state.room.x1},${state.room.y1}`;
+    if (roomKey !== this.gridRoomKey) {
+      this.gridRoomKey = roomKey;
+      this.gridBuilt = false; // the room grew: draw the grid again
+    }
     if (active && !this.gridBuilt) this.buildGrid(state);
     this.syncPaint(active ? stroke : null);
     if (!active || !ghost) {
@@ -130,7 +138,7 @@ export class BuildOverlay {
     this.paint.fillStyle(BASIL, PAINT_ALPHA);
     for (const t of stroke.tiles) this.diamond(this.paint, t.x, t.y, true);
     for (const id of stroke.segments) {
-      const q = wallQuad(id).map((p) => new Phaser.Math.Vector2(p.x, p.y));
+      const q = wallQuad(id, this.room).map((p) => new Phaser.Math.Vector2(p.x, p.y));
       if (q.length > 0) this.paint.fillPoints(q, true);
     }
   }

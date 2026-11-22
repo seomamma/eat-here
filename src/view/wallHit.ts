@@ -1,4 +1,6 @@
+import type { Room } from '../data/layout';
 import type { WallSegmentId } from '../data/surfaces';
+import { tileToScreen } from './iso';
 
 /** Back-wall segments are 16 px wide strips; these match the images WorldRenderer places. */
 const SEG_W = 16;
@@ -14,11 +16,21 @@ interface Strip {
   side: 'l' | 'r';
 }
 
-function stripOf(id: WallSegmentId): Strip | null {
+/**
+ * Image position of a segment. `l<n>` is the back-left wall beside row n, standing on the wall
+ * tile (x0 - 1, n); `r<n>` the back-right wall beside column n, on the wall tile (n, y0 - 1).
+ */
+function stripOf(id: WallSegmentId, room: Readonly<Room>): Strip | null {
   const n = Number(id.slice(1));
   if (!Number.isInteger(n)) return null;
-  if (id.startsWith('l')) return { ix: -SEG_W * n, iy: 8 * n + IMG_TOP, side: 'l' };
-  if (id.startsWith('r')) return { ix: SEG_W * n - SEG_W, iy: 8 * n + IMG_TOP, side: 'r' };
+  if (id.startsWith('l')) {
+    const o = tileToScreen(room.x0 - 1, n);
+    return { ix: o.x, iy: o.y + IMG_TOP, side: 'l' };
+  }
+  if (id.startsWith('r')) {
+    const o = tileToScreen(n, room.y0 - 1);
+    return { ix: o.x - SEG_W, iy: o.y + IMG_TOP, side: 'r' };
+  }
   return null;
 }
 
@@ -28,8 +40,8 @@ function topAt(side: 'l' | 'r', tx: number): number {
 }
 
 /** Corner points of the wall face of a segment (for the paint preview). */
-export function wallQuad(id: WallSegmentId): { x: number; y: number }[] {
-  const s = stripOf(id);
+export function wallQuad(id: WallSegmentId, room: Readonly<Room>): { x: number; y: number }[] {
+  const s = stripOf(id, room);
   if (!s) return [];
   const a = topAt(s.side, 0);
   const b = topAt(s.side, SEG_W - 1);
@@ -41,19 +53,21 @@ export function wallQuad(id: WallSegmentId): { x: number; y: number }[] {
   ];
 }
 
-/** The back-wall segment under a world point, or null. `width`/`height` = grid size. */
-export function wallSegmentAt(
-  wx: number,
-  wy: number,
-  grid: { width: number; height: number },
-): WallSegmentId | null {
-  const side = wx < 0 ? 'l' : 'r';
-  const n = side === 'l' ? Math.ceil(-wx / SEG_W) : Math.floor(wx / SEG_W) + 1;
-  if (side === 'l' ? n < 1 || n > grid.height - 1 : n < 1 || n > grid.width - 2) return null;
-  const id = `${side}${n}`;
-  const s = stripOf(id);
-  if (!s) return null;
-  const tx = Math.min(SEG_W - 1, Math.max(0, Math.floor(wx - s.ix)));
-  const top = s.iy + topAt(side, tx);
-  return wy >= top && wy <= top + WALL_FACE_H ? id : null;
+/**
+ * The back-wall segment under a world point, or null. Left-wall strips sit left of the wall
+ * tile column's screen x, right-wall strips to its right; the room says which ids exist.
+ */
+export function wallSegmentAt(wx: number, wy: number, room: Readonly<Room>): WallSegmentId | null {
+  // Candidate strips: the left wall column is the one whose image spans wx, same for the right.
+  const cands: WallSegmentId[] = [];
+  for (let y = room.y0; y <= room.y1; y++) cands.push(`l${y}`);
+  for (let x = room.x0; x <= room.x1; x++) cands.push(`r${x}`);
+  for (const id of cands) {
+    const s = stripOf(id, room);
+    if (!s || wx < s.ix || wx >= s.ix + SEG_W) continue;
+    const tx = Math.min(SEG_W - 1, Math.max(0, Math.floor(wx - s.ix)));
+    const top = s.iy + topAt(s.side, tx);
+    if (wy >= top && wy <= top + WALL_FACE_H) return id;
+  }
+  return null;
 }
