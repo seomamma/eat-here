@@ -1,8 +1,13 @@
 import Phaser from 'phaser';
 import { FURNITURE, type FurnitureDefId } from '../data/furniture';
+import { TILE_H, TILE_W } from './iso';
 
-/** Tile size in world pixels (ART_DIRECTION §3). */
-export const TILE = 16;
+/**
+ * Isometric placeholder art, generated pixel by pixel (no anti-aliasing, strict 2:1 diagonals).
+ *
+ * Every shape is rasterised by sampling pixel centres against lines of slope 1/2, which gives
+ * exact 2-px-across / 1-px-down steps and tiles seamlessly. Sizes follow ART_DIRECTION §3.
+ */
 
 /** World palette subset (ART_DIRECTION §4). */
 const C = {
@@ -17,228 +22,539 @@ const C = {
   cream1: '#F3E6CF',
   cream2: '#E3D0AE',
   cream3: '#C7B08A',
+  tomato1: '#9E1F1F',
   tomato2: '#D93A2B',
   tomato3: '#F0664A',
   basil1: '#244D2B',
   basil2: '#3E7A3A',
   basil3: '#6FAE4E',
+  basil4: '#A9D46F',
+  cheese1: '#C98A2E',
   cheese2: '#EDB94A',
   cheese3: '#FBE29A',
+  cool1: '#2F3F5C',
   cool2: '#4A6A8F',
   cool3: '#8FB3D0',
   cool4: '#DCE9F2',
 } as const;
 
-type Ctx = CanvasRenderingContext2D;
-type Draw = (r: (color: string, x: number, y: number, w: number, h: number) => void) => void;
-
-/** Creates a canvas texture of exact pixel size and draws it with 1px-precise rects. */
-function make(
-  textures: Phaser.Textures.TextureManager,
-  key: string,
-  w: number,
-  h: number,
-  draw: Draw,
-): void {
-  if (textures.exists(key)) return;
-  const tex = textures.createCanvas(key, w, h);
-  if (!tex) throw new Error(`Could not create texture ${key}`);
-  const ctx: Ctx = tex.getContext();
-  draw((color, x, y, rw, rh) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, rw, rh);
-  });
-  tex.refresh();
-}
-
-/** Filled rect with a 1px outline. */
-function box(
-  r: Parameters<Draw>[0],
-  fill: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): void {
-  r(C.outline, x, y, w, h);
-  r(fill, x + 1, y + 1, w - 2, h - 2);
-}
+/** Back (full height) wall segment: 16 wide, 48 tall including the 8 px diagonal rise. */
+export const WALL_BACK_W = 16;
+export const WALL_BACK_H = 48;
+/** Wall face rows below the top contour; the highest wall pixel sits this far above the floor edge. */
+export const WALL_BACK_RISE = 41;
+/** Low cut-away wall segment: 16 wide, 12 tall including the 8 px diagonal rise. */
+export const WALL_LOW_W = 16;
+export const WALL_LOW_H = 12;
+/** Door frame sprite size. */
+export const DOOR_FRAME_W = 16;
+export const DOOR_FRAME_H = 40;
 
 export const TEX = {
   floorWood: ['floor_wood_0', 'floor_wood_1'],
   floorTile: 'floor_tile',
+  doorMat: 'door_mat',
+  doorFrame: 'door_frame',
   wallBackL: 'wall_back_l',
-  wallBack: 'wall_back',
+  wallBackLEnd: 'wall_back_l_end',
   wallBackR: 'wall_back_r',
-  wallSideL: 'wall_side_l',
-  wallSideR: 'wall_side_r',
-  door: 'door',
+  wallBackREnd: 'wall_back_r_end',
+  wallFrontL: 'wall_front_l',
+  wallFrontR: 'wall_front_r',
+  tileHighlight: 'tile_highlight',
 } as const;
 
-function woodFloor(variant: number): Draw {
-  return (r) => {
-    r(C.wood3, 0, 0, 16, 16);
-    // Subtle plank seams and highlights; the variant shifts them.
-    const s = variant ? 6 : 0;
-    r(C.wood2, 0, 7, 16, 1);
-    r(C.wood2, (4 + s) % 16, 8, 1, 8);
-    r(C.wood2, (11 + s) % 16, 0, 1, 7);
-    r(C.wood4, (2 + s) % 14, 3, 2, 1);
-    r(C.wood4, (8 + s) % 14, 11, 3, 1);
-  };
+type Pixel = string | null;
+
+/** Pixel buffer with hex colours; null = transparent. */
+class Raster {
+  readonly px: Pixel[];
+  constructor(
+    readonly w: number,
+    readonly h: number,
+  ) {
+    this.px = new Array<Pixel>(w * h).fill(null);
+  }
+  get(x: number, y: number): Pixel {
+    return x < 0 || y < 0 || x >= this.w || y >= this.h ? null : (this.px[y * this.w + x] ?? null);
+  }
+  set(x: number, y: number, c: Pixel): void {
+    if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.px[y * this.w + x] = c;
+  }
 }
 
-function backWall(left: boolean, right: boolean): Draw {
-  return (r) => {
-    r(C.cream1, 0, 0, 16, 16);
-    r(C.cream2, 0, 8, 16, 1); // plaster shade line
-    // Brick base.
-    r(C.brick2, 0, 10, 16, 6);
-    r(C.brick1, 0, 12, 16, 1);
-    r(C.brick1, 0, 15, 16, 1);
-    r(C.brick1, 4, 10, 1, 2);
-    r(C.brick1, 12, 10, 1, 2);
-    r(C.brick1, 8, 13, 1, 2);
-    r(C.brick3, 0, 10, 16, 1);
-    r(C.outline, 0, 9, 16, 1); // cap line between plaster and brick
-    r(C.outline, 0, 0, 16, 1); // top edge
-    if (left) r(C.outline, 0, 0, 1, 16);
-    if (right) r(C.outline, 15, 0, 1, 16);
-  };
+function hexToRgb(c: string): [number, number, number] {
+  const n = parseInt(c.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-function sideWall(isLeft: boolean): Draw {
-  return (r) => {
-    // Wall top (cap) on the outside, inner face towards the room.
-    r(C.cream1, 0, 0, 16, 16);
-    const faceX = isLeft ? 11 : 0;
-    r(C.cream3, faceX, 0, 5, 16);
-    r(C.cream2, isLeft ? 10 : 5, 0, 1, 16);
-    r(C.brick2, faceX, 10, 5, 6);
-    r(C.brick1, faceX, 12, 5, 1);
-    r(C.brick1, faceX, 15, 5, 1);
-    r(C.outline, isLeft ? 0 : 15, 0, 1, 16); // outer edge
-    r(C.outline, isLeft ? 15 : 0, 0, 1, 16); // inner edge
-  };
+/** Uploads a raster as an exact-size canvas texture (alpha is only ever 0 or 255). */
+function upload(textures: Phaser.Textures.TextureManager, key: string, r: Raster): void {
+  if (textures.exists(key)) return;
+  const tex = textures.createCanvas(key, r.w, r.h);
+  if (!tex) throw new Error(`Could not create texture ${key}`);
+  const ctx = tex.getContext();
+  const img = ctx.createImageData(r.w, r.h);
+  r.px.forEach((c, i) => {
+    if (!c) return;
+    const [R, G, B] = hexToRgb(c);
+    img.data.set([R, G, B, 255], i * 4);
+  });
+  ctx.putImageData(img, 0, 0);
+  tex.refresh();
 }
 
-const drawFloorTile: Draw = (r) => {
-  r(C.cool4, 0, 0, 16, 16);
-  r(C.cool3, 0, 0, 8, 8);
-  r(C.cool3, 8, 8, 8, 8);
-  r(C.cool2, 0, 15, 16, 1);
-  r(C.cool2, 15, 0, 1, 16);
+function fromFn(w: number, h: number, fn: (x: number, y: number) => Pixel): Raster {
+  const r = new Raster(w, h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) r.set(x, y, fn(x, y));
+  return r;
+}
+
+/** Cheap deterministic hash for speckles (no RNG state; art only). */
+function hash(a: number, b: number, c: number): number {
+  let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) % 1000;
+}
+
+// ---------------------------------------------------------------------------------------
+// Floors: 32x16 diamonds
+// ---------------------------------------------------------------------------------------
+
+/** Tile-local coordinates (i along x, j along y, both 0..1) of a 32x16 diamond pixel, or null outside. */
+function diamondUV(px: number, py: number): { i: number; j: number } | null {
+  const X = px + 0.5 - TILE_W / 2;
+  const Y = py + 0.5;
+  const i = (X / 16 + Y / 8) / 2;
+  const j = (Y / 8 - X / 16) / 2;
+  return i >= 0 && i < 1 && j >= 0 && j < 1 ? { i, j } : null;
+}
+
+function woodFloor(variant: number): Raster {
+  return fromFn(TILE_W, TILE_H, (px, py) => {
+    const uv = diamondUV(px, py);
+    if (!uv) return null;
+    const ii = Math.floor(uv.i * 16);
+    const jj = Math.floor(uv.j * 16);
+    const plank = Math.floor(jj / 4);
+    if (jj % 4 === 0) return C.wood2; // seam between planks (runs along x)
+    // Butt joint: staggered per plank, shifted by variant.
+    if (ii === (plank * 5 + variant * 7) % 16) return C.wood2;
+    const n = hash(px, py, variant);
+    if (n < 25) return C.wood4;
+    if (n > 960) return C.wood2;
+    return C.wood3;
+  });
+}
+
+const drawFloorTile = (): Raster =>
+  fromFn(TILE_W, TILE_H, (px, py) => {
+    const uv = diamondUV(px, py);
+    if (!uv) return null;
+    const ii = Math.floor(uv.i * 16);
+    const jj = Math.floor(uv.j * 16);
+    if (ii % 8 === 0 || jj % 8 === 0) return C.cool3; // grout
+    return (Math.floor(ii / 8) + Math.floor(jj / 8)) % 2 === 0 ? C.cool4 : C.cool3;
+  });
+
+/** Door mat on the threshold tile: stone border, red mat. */
+const drawDoorMat = (): Raster =>
+  fromFn(TILE_W, TILE_H, (px, py) => {
+    const uv = diamondUV(px, py);
+    if (!uv) return null;
+    const ii = Math.floor(uv.i * 16);
+    const jj = Math.floor(uv.j * 16);
+    if (ii < 3 || ii > 12 || jj < 3 || jj > 12) return C.cool3;
+    if (ii < 4 || ii > 11 || jj < 4 || jj > 11) return C.cool1;
+    return jj % 4 === 0 ? C.brick3 : C.brick2;
+  });
+
+/** 1px diamond outline for the debug tap highlight. */
+const drawHighlight = (): Raster => {
+  const inside = (x: number, y: number) => diamondUV(x, y) !== null;
+  return fromFn(TILE_W, TILE_H, (px, py) => {
+    if (!inside(px, py)) return null;
+    const edge =
+      !inside(px - 1, py) || !inside(px + 1, py) || !inside(px, py - 1) || !inside(px, py + 1);
+    return edge ? C.tomato3 : null;
+  });
 };
 
-const drawDoor: Draw = (r) => {
-  r(C.wood3, 0, 0, 16, 16);
-  r(C.wood2, 0, 0, 16, 1);
-  // Doorway threshold + welcome mat so the door reads clearly.
-  box(r, C.cool2, 1, 0, 14, 16);
-  r(C.cool3, 3, 2, 10, 12);
-  box(r, C.brick2, 3, 6, 10, 8);
-  r(C.brick3, 5, 8, 6, 1);
-  r(C.brick3, 5, 11, 6, 1);
-  r(C.cheese2, 12, 1, 1, 1); // doorknob glint
-};
+// ---------------------------------------------------------------------------------------
+// Walls
+// ---------------------------------------------------------------------------------------
 
-const FURNITURE_DRAW: Record<FurnitureDefId, { w: number; h: number; draw: Draw }> = {
-  // 16x20: top surface + front face + legs. Bottom edge = footprint bottom.
-  table_small: {
-    w: 16,
-    h: 20,
-    draw: (r) => {
-      r(C.outline, 2, 14, 3, 6);
-      r(C.wood2, 3, 14, 1, 5);
-      r(C.outline, 11, 14, 3, 6);
-      r(C.wood2, 12, 14, 1, 5);
-      box(r, C.wood2, 0, 11, 16, 5); // front apron
-      box(r, C.wood4, 0, 2, 16, 11); // top surface
-      r(C.tomato2, 3, 4, 10, 7); // cloth
-      r(C.tomato3, 3, 4, 10, 1);
-      r(C.cream1, 7, 6, 2, 2); // little plate
-    },
-  },
-  // 16x16: backrest + seat + legs.
-  chair_wood: {
-    w: 16,
-    h: 16,
-    draw: (r) => {
-      r(C.outline, 3, 12, 3, 4);
-      r(C.outline, 10, 12, 3, 4);
-      r(C.wood2, 4, 12, 1, 3);
-      r(C.wood2, 11, 12, 1, 3);
-      box(r, C.wood2, 3, 1, 10, 6); // backrest
-      box(r, C.wood3, 2, 6, 12, 7); // seat
-      r(C.wood4, 3, 7, 10, 1);
-    },
-  },
-  // 32x24: brick oven with a glowing mouth.
-  oven_pizza: {
-    w: 32,
-    h: 24,
-    draw: (r) => {
-      box(r, C.brick3, 0, 2, 32, 8); // top
-      box(r, C.brick2, 0, 9, 32, 15); // front face
-      r(C.brick1, 1, 14, 30, 1);
-      r(C.brick1, 1, 19, 30, 1);
-      r(C.brick1, 8, 10, 1, 4);
-      r(C.brick1, 22, 10, 1, 4);
-      r(C.brick1, 4, 15, 1, 4);
-      r(C.brick1, 27, 15, 1, 4);
-      box(r, C.outline, 9, 11, 14, 12); // mouth
-      r(C.wood1, 10, 12, 12, 10);
-      r(C.tomato2, 12, 16, 8, 6);
-      r(C.cheese2, 14, 18, 4, 4);
-      r(C.cheese3, 15, 20, 2, 2);
-      r(C.cream3, 12, 4, 8, 3); // chimney plate
-    },
-  },
-  // 32x24: serving counter (sprite is shorter than the oven).
-  counter_pass: {
-    w: 32,
-    h: 24,
-    draw: (r) => {
-      box(r, C.cream2, 0, 8, 32, 8); // top surface
-      r(C.cream1, 1, 9, 30, 1);
-      box(r, C.wood3, 0, 15, 32, 9); // front face
-      r(C.wood2, 1, 17, 14, 5);
-      r(C.wood2, 17, 17, 14, 5);
-      r(C.outline, 15, 16, 2, 8);
-      r(C.cheese3, 5, 5, 6, 4); // warming plates
-      r(C.cream3, 5, 8, 6, 1);
-      r(C.cream1, 20, 6, 7, 3);
-    },
-  },
-  // 16x24: potted plant.
-  plant_potted: {
-    w: 16,
-    h: 24,
-    draw: (r) => {
-      box(r, C.basil2, 3, 1, 10, 9);
-      box(r, C.basil3, 1, 5, 7, 7);
-      box(r, C.basil3, 8, 4, 7, 8);
-      r(C.basil1, 6, 7, 1, 3);
-      box(r, C.brick2, 3, 14, 10, 10);
-      r(C.brick3, 4, 15, 8, 1);
-      r(C.outline, 4, 13, 8, 1);
-    },
-  },
+/**
+ * Back wall segment. `side` 'r' runs along the y = 0 edge (top contour falls to the right),
+ * 'l' along the x = 0 edge (rises to the right). The right wall is the darker one (light from
+ * the top-left). `end` draws a vertical outline on the segment's free end.
+ */
+function backWall(side: 'l' | 'r', end: boolean): Raster {
+  const right = side === 'r';
+  const cap = right ? C.cream2 : C.cream1;
+  const face = right ? C.cream3 : C.cream2;
+  const faceShade = right ? '#B09A74' : C.cream3;
+  const brick = right ? C.brick1 : C.brick2;
+  const brickHi = right ? C.brick2 : C.brick3;
+  const mortar = right ? '#5E2217' : C.brick1;
+  return fromFn(WALL_BACK_W, WALL_BACK_H, (tx, ty) => {
+    const top = right ? Math.floor(tx / 2) : Math.floor((WALL_BACK_W - 1 - tx) / 2);
+    const d = ty - top;
+    if (d < 0 || d > WALL_BACK_RISE - 1) return null;
+    if (end && tx === (right ? WALL_BACK_W - 1 : 0)) return C.outline;
+    if (d === 0 || d === WALL_BACK_RISE - 1) return C.outline;
+    if (d <= 2) return cap;
+    if (d === 3) return faceShade;
+    if (d === 30) return C.wood2; // chair rail
+    if (d === 31) return C.wood1;
+    if (d > 31) {
+      const row = d - 32; // 0..7
+      if (row === 0) return brickHi;
+      if (row % 4 === 3) return mortar;
+      const off = Math.floor(row / 4) % 2 === 0 ? 0 : 4;
+      return (tx + off) % 8 === 0 ? mortar : brick;
+    }
+    // Plaster with faint vertical panelling.
+    return tx % 8 === 0 ? faceShade : face;
+  });
+}
+
+/** Low cut-away wall segment: 1px cap, 2px face, outline. 'l' = front-left edge, 'r' = front-right. */
+function lowWall(side: 'l' | 'r'): Raster {
+  const left = side === 'l';
+  const face = left ? C.brick2 : C.brick1;
+  return fromFn(WALL_LOW_W, WALL_LOW_H, (tx, ty) => {
+    const top = left ? Math.floor(tx / 2) : 7 - Math.floor(tx / 2);
+    const d = ty - top;
+    if (d < 0 || d > 4) return null;
+    if (d === 0 || d === 4) return C.outline;
+    if (d === 1) return left ? C.cream1 : C.cream2;
+    return d === 2 ? (left ? C.brick3 : C.brick2) : face;
+  });
+}
+
+/** Door frame: two posts and a lintel standing on the front-left wall line (door tile gap). */
+function doorFrame(): Raster {
+  const r = new Raster(DOOR_FRAME_W, DOOR_FRAME_H);
+  const base = (tx: number) => 32 + Math.floor(tx / 2); // lowest pixel row of the wall line
+  const height = 27;
+  const fill = new Raster(DOOR_FRAME_W, DOOR_FRAME_H);
+  for (let tx = 0; tx < DOOR_FRAME_W; tx++) {
+    const post = tx < 4 || tx >= DOOR_FRAME_W - 4;
+    for (let ty = base(tx) - height; ty <= base(tx); ty++) {
+      const lintel = ty <= base(tx) - height + 3;
+      if (post || lintel)
+        fill.set(tx, ty, lintel ? C.wood3 : tx % 4 === 0 || tx % 4 === 3 ? C.wood1 : C.wood2);
+    }
+  }
+  // Outline silhouette; lintel top highlight.
+  for (let ty = 0; ty < DOOR_FRAME_H; ty++) {
+    for (let tx = 0; tx < DOOR_FRAME_W; tx++) {
+      const c = fill.get(tx, ty);
+      if (!c) continue;
+      const edge =
+        !fill.get(tx - 1, ty) ||
+        !fill.get(tx + 1, ty) ||
+        !fill.get(tx, ty - 1) ||
+        !fill.get(tx, ty + 1);
+      r.set(tx, ty, edge ? C.outline : c);
+    }
+  }
+  return r;
+}
+
+// ---------------------------------------------------------------------------------------
+// Furniture: isometric boxes
+// ---------------------------------------------------------------------------------------
+
+type Face = 'top' | 'left' | 'right';
+
+interface Part {
+  /** Footprint sub-rectangle in tile units (i along x, j along y). */
+  i0: number;
+  j0: number;
+  i1: number;
+  j1: number;
+  /** Bottom and top elevation in px. */
+  z0: number;
+  z1: number;
+  top: string;
+  left: string;
+  right: string;
+  /**
+   * Optional decal for side faces: `a` is the pixel distance along the face from its back end
+   * (0..), `e` the elevation above the part's bottom in px. Return a colour or undefined.
+   */
+  decal?: (face: Face, a: number, e: number) => string | undefined;
+}
+
+/** Shorthand for a wood-ish box. */
+function part(p: Omit<Part, 'decal'> & { decal?: Part['decal'] }): Part {
+  return p;
+}
+
+/** Rasterises painter-ordered boxes with a per-part 1px outline. `o` = top corner pixel. */
+function boxes(w: number, h: number, ox: number, oy: number, parts: Part[]): Raster {
+  const r = new Raster((w + h) * 16, oy + (w + h) * 8);
+  const sorted = [...parts].sort((a, b) => a.i0 + a.j0 + a.z0 / 64 - (b.i0 + b.j0 + b.z0 / 64));
+  for (const p of sorted) {
+    const mask = new Raster(r.w, r.h);
+    const col = new Raster(r.w, r.h);
+    for (let py = 0; py < r.h; py++) {
+      for (let px = 0; px < r.w; px++) {
+        const X = px + 0.5 - ox;
+        const Y = py + 0.5 - oy;
+        // Top face at elevation z1.
+        const Yt = Y + p.z1;
+        const it = (X / 16 + Yt / 8) / 2;
+        const jt = (Yt / 8 - X / 16) / 2;
+        let c: string | undefined;
+        if (it >= p.i0 && it < p.i1 && jt >= p.j0 && jt < p.j1) {
+          c = p.decal?.('top', it, jt) ?? p.top;
+        } else {
+          // Left face: plane j = j1 (faces the lower-left).
+          const il = X / 16 + p.j1;
+          const el = (il + p.j1) * 8 - Y;
+          if (il >= p.i0 && il < p.i1 && el >= p.z0 && el < p.z1) {
+            c = p.decal?.('left', (il - p.i0) * 16, el - p.z0) ?? p.left;
+          } else {
+            // Right face: plane i = i1 (faces the lower-right).
+            const jr = p.i1 - X / 16;
+            const er = (p.i1 + jr) * 8 - Y;
+            if (jr >= p.j0 && jr < p.j1 && er >= p.z0 && er < p.z1) {
+              c = p.decal?.('right', (jr - p.j0) * 16, er - p.z0) ?? p.right;
+            }
+          }
+        }
+        if (c) {
+          mask.set(px, py, c);
+          col.set(px, py, c);
+        }
+      }
+    }
+    for (let py = 0; py < r.h; py++) {
+      for (let px = 0; px < r.w; px++) {
+        const c = mask.get(px, py);
+        if (!c) continue;
+        const edge =
+          !mask.get(px - 1, py) ||
+          !mask.get(px + 1, py) ||
+          !mask.get(px, py - 1) ||
+          !mask.get(px, py + 1);
+        r.set(px, py, edge ? C.outline : c);
+      }
+    }
+  }
+  return r;
+}
+
+/** Wood legs at the four corners of a [i0,i1] x [j0,j1] area. */
+function legs(i0: number, j0: number, i1: number, j1: number, z1: number, t = 0.14): Part[] {
+  const mk = (i: number, j: number): Part =>
+    part({
+      i0: i,
+      j0: j,
+      i1: i + t,
+      j1: j + t,
+      z0: 0,
+      z1,
+      top: C.wood3,
+      left: C.wood2,
+      right: C.wood1,
+    });
+  return [mk(i0, j0), mk(i1 - t, j0), mk(i0, j1 - t), mk(i1 - t, j1 - t)];
+}
+
+type FurnitureArt = (ox: number, oy: number) => Raster;
+
+const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
+  table_small: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      ...legs(0.12, 0.12, 0.88, 0.88, 9),
+      part({
+        i0: 0.06,
+        j0: 0.06,
+        i1: 0.94,
+        j1: 0.94,
+        z0: 9,
+        z1: 12,
+        top: C.tomato3,
+        left: C.tomato2,
+        right: C.tomato1,
+      }),
+      // Little plate on the cloth.
+      part({
+        i0: 0.38,
+        j0: 0.38,
+        i1: 0.62,
+        j1: 0.62,
+        z0: 12,
+        z1: 13,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+    ]),
+  chair_wood: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      ...legs(0.2, 0.2, 0.8, 0.8, 5, 0.12),
+      part({
+        i0: 0.16,
+        j0: 0.16,
+        i1: 0.84,
+        j1: 0.84,
+        z0: 5,
+        z1: 8,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+      }),
+      // Backrest on the -x side (faces +x).
+      part({
+        i0: 0.16,
+        j0: 0.16,
+        i1: 0.3,
+        j1: 0.84,
+        z0: 8,
+        z1: 18,
+        top: C.wood4,
+        left: C.wood3,
+        right: C.wood2,
+      }),
+    ]),
+  oven_pizza: (ox, oy) =>
+    boxes(2, 1, ox, oy, [
+      part({
+        i0: 0,
+        j0: 0,
+        i1: 2,
+        j1: 1,
+        z0: 0,
+        z1: 14,
+        top: C.brick3,
+        left: C.brick2,
+        right: C.brick1,
+        decal: (face, a, e) => {
+          if (face === 'top') return undefined;
+          if (face === 'left') {
+            // Glowing mouth on the +y face the chef stands in front of.
+            const dx = Math.abs(a - 16);
+            if (dx < 7 && e < 9 && e >= 1) {
+              if (dx < 4 && e < 6) return e < 3 ? C.cheese3 : e < 4.5 ? C.cheese2 : C.tomato2;
+              return C.outline;
+            }
+          }
+          return Math.floor(e) % 4 === 3 ? C.brick1 : undefined;
+        },
+      }),
+      // Chimney block.
+      part({
+        i0: 0.75,
+        j0: 0.3,
+        i1: 1.25,
+        j1: 0.7,
+        z0: 14,
+        z1: 22,
+        top: C.cream2,
+        left: C.brick2,
+        right: C.brick1,
+      }),
+    ]),
+  counter_pass: (ox, oy) =>
+    boxes(2, 1, ox, oy, [
+      part({
+        i0: 0,
+        j0: 0.1,
+        i1: 2,
+        j1: 0.9,
+        z0: 0,
+        z1: 11,
+        top: C.cream1,
+        left: C.wood3,
+        right: C.wood2,
+        decal: (face, a, e) => {
+          if (face === 'left' && e > 2 && e < 9 && a % 16 > 2 && a % 16 < 14) return C.wood2;
+          return undefined;
+        },
+      }),
+      // Warming plates on top.
+      part({
+        i0: 0.25,
+        j0: 0.3,
+        i1: 0.65,
+        j1: 0.7,
+        z0: 11,
+        z1: 13,
+        top: C.cheese3,
+        left: C.cheese2,
+        right: C.cheese1,
+      }),
+      part({
+        i0: 1.2,
+        j0: 0.3,
+        i1: 1.7,
+        j1: 0.7,
+        z0: 11,
+        z1: 12,
+        top: C.cream1,
+        left: C.cream2,
+        right: C.cream3,
+      }),
+    ]),
+  plant_potted: (ox, oy) =>
+    boxes(1, 1, ox, oy, [
+      part({
+        i0: 0.25,
+        j0: 0.25,
+        i1: 0.75,
+        j1: 0.75,
+        z0: 0,
+        z1: 8,
+        top: C.brick3,
+        left: C.brick2,
+        right: C.brick1,
+      }),
+      part({
+        i0: 0.12,
+        j0: 0.12,
+        i1: 0.88,
+        j1: 0.88,
+        z0: 8,
+        z1: 18,
+        top: C.basil4,
+        left: C.basil3,
+        right: C.basil2,
+      }),
+      part({
+        i0: 0.3,
+        j0: 0.3,
+        i1: 0.7,
+        j1: 0.7,
+        z0: 18,
+        z1: 22,
+        top: C.basil4,
+        left: C.basil3,
+        right: C.basil2,
+      }),
+    ]),
 };
 
 /** Generates every placeholder texture at real pixel sizes. Idempotent. */
 export function generatePlaceholderTextures(textures: Phaser.Textures.TextureManager): void {
-  make(textures, TEX.floorWood[0], 16, 16, woodFloor(0));
-  make(textures, TEX.floorWood[1], 16, 16, woodFloor(1));
-  make(textures, TEX.floorTile, 16, 16, drawFloorTile);
-  make(textures, TEX.wallBackL, 16, 16, backWall(true, false));
-  make(textures, TEX.wallBack, 16, 16, backWall(false, false));
-  make(textures, TEX.wallBackR, 16, 16, backWall(false, true));
-  make(textures, TEX.wallSideL, 16, 16, sideWall(true));
-  make(textures, TEX.wallSideR, 16, 16, sideWall(false));
-  make(textures, TEX.door, 16, 16, drawDoor);
+  upload(textures, TEX.floorWood[0], woodFloor(0));
+  upload(textures, TEX.floorWood[1], woodFloor(1));
+  upload(textures, TEX.floorTile, drawFloorTile());
+  upload(textures, TEX.doorMat, drawDoorMat());
+  upload(textures, TEX.doorFrame, doorFrame());
+  upload(textures, TEX.wallBackL, backWall('l', false));
+  upload(textures, TEX.wallBackLEnd, backWall('l', true));
+  upload(textures, TEX.wallBackR, backWall('r', false));
+  upload(textures, TEX.wallBackREnd, backWall('r', true));
+  upload(textures, TEX.wallFrontL, lowWall('l'));
+  upload(textures, TEX.wallFrontR, lowWall('r'));
+  upload(textures, TEX.tileHighlight, drawHighlight());
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {
-    const spec = FURNITURE_DRAW[defId];
-    make(textures, defId, spec.w, spec.h, spec.draw);
+    const [ox, oy] = FURNITURE[defId].spriteOrigin;
+    upload(textures, defId, FURNITURE_ART[defId](ox, oy));
   }
 }

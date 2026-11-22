@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { render, h } from 'preact';
 import { createInitialState } from './sim/state';
+import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
 import { WorldScene } from './view/scenes/WorldScene';
 import { App } from './ui/App';
 import './ui/styles/tokens.css';
@@ -11,15 +12,21 @@ import '@fontsource/inter/800.css';
 
 const state = createInitialState();
 
+const host = document.getElementById('game');
+if (!host) throw new Error('#game container missing');
+const initial = deviceCanvasSize(host);
+
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#F6F3EE',
   pixelArt: true,
   roundPixels: true,
-  scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+  // Canvas is sized in device pixels and kept in sync by attachDeviceCanvas (D-026).
+  scale: { mode: Phaser.Scale.NONE, width: initial.width, height: initial.height },
   scene: [],
 });
+attachDeviceCanvas(game, host);
 game.scene.add('WorldScene', WorldScene, true, { state });
 
 const ui = document.getElementById('ui');

@@ -66,3 +66,23 @@
   font-weight: 800;
   font-size: 14px;
 }
+
+/* Short (landscape phone) screens: compact top card so it fits the slim HUD inset. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .top-center {
+    padding: 6px 12px;
+  }
+  .card {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 14px;
+  }
+  .card-title {
+    font-size: 18px;
+  }
+  .card-subtitle {
+    margin: 0;
+    font-size: 13px;
+  }
+}
