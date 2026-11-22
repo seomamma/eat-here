@@ -186,16 +186,16 @@
 
 ## Phase B — Make it ours (order agreed after MVP sign-off)
 
-Order chosen to (1) validate our main differentiator early ("guests you care about"), (2) give money a purpose (money piles up after ~day 7), (3) pay down placeholder art before content multiplies.
+Current order: M12 → **M13 art** → M12b → M12c → … (user moved art up). Original reasoning: (1) validate our main differentiator early ("guests you care about"), (2) give money a purpose (money piles up after ~day 7), (3) pay down placeholder art before content multiplies.
 
 | # | Milestone | Content |
 |---|---|---|
 | M11 | **Regulars & Moments** | Moments engine (data-driven trigger → card → reward), named regulars with unlock conditions, weekday visits, "The usual!" bonus, friendship hearts, story beats, "new regular" popup + jingle, Guests book in Menu, Next Goals card |
 | M11b | Recipe levels 1–5 & surroundings | D-036 recipe leveling; outdoor surroundings: street + sidewalk in front of the door, backyard soil, trees and bushes around the building (view-only) |
 | M12 | Facility levels & more furniture | Furniture Lv.1–5 with upgrade UI and visual variants; more tables/chairs/decor (incl. low dividers); money sink |
+| M13 | **Art foundation** (moved up, user request) | Pixel sprites authored as palette-indexed text maps in the repo → `npm run assets:build` (PNG atlas + JSON, own tiny PNG encoder, no deps) → `npm run assets:check`; style per `assets/concepts/character-style-c.webp` with our changes (new young waiter with tomato-red apron, our UI palette, readable at 16×24). Scope: chef, waiter, guests (variants), Nonna/Oliver/Mia, room tiles, walls, door, core furniture (tables, chairs, dome oven, pass), dish icons. Rest of the catalog in M13b |
 | M12b | Room grows with rank | Rank-ups unlock more space: the room expands (walls move outwards), door and existing furniture stay put (user request) |
 | M12c | **Groups, families & street life** (moved up, user request) | Guests arrive together as visible groups (couples, friends, families **with kids**): walk in together, sit at the same table, order together, leave together; 4-seat tables + kids' high chair. **Passers-by** walk along the sidewalk; guests come from the street and turn in at the door; some passers-by walk a **dog**, stop at the door, show a 💔 and walk on (teaser for the Animal Area) |
-| M13 | Art foundation | Style bible, palette lock, asset pipeline + `assets:check`, first final sprites (chef, waiter, guests, room, MVP furniture) |
 | M14 | Staff growth | Hiring pool, XP, levels, traits, more staff |
 | M15 | (moved to M12c) | — |
 | M16 | Themed Areas & guest types | **Children's Area** with kids' furniture and toy animations (kids sliding) → achievement **KIDS MENU** (nuggets etc.) → more families; **Animal Area** lets dog walkers in (no more 💔), pet kitchen, exotic pets later; reading nook → students; appeal tags + guest preferences |

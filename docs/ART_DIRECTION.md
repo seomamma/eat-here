@@ -100,7 +100,7 @@ Chunky retro pixel: ~6–8 colors per character, 1 px outline, 1–2 px eyes, no
 `assets/concepts/character-style-c.webp` is an AI concept board the user generated; it is the **direction** for M13 art, not a usable asset (it goes through the §7 pipeline). What we keep: chunky retro characters with large heads, 1–2 px eyes, clear role silhouettes (chef = tall white hat + red neckerchief, guests = simple casual clothes), warm wood furniture, red tables with a white center, the dome-shaped brick pizza oven, cream walls with a brick base.
 
 Required changes before production (originality §8 + our palette):
-- **Waiter must be redesigned** — the grey-haired waiter in a navy vest with a clipboard is too close to a character in the user's very first reference image (someone else's artwork). Give our waiter their own look (e.g. younger, tomato-red apron, different hair).
+- **Waiter redesigned (agreed with the user):** a **younger waiter with a tomato-red apron** and their own hairstyle, instead of the grey-haired navy-vest look on the board (kept clearly distinct from the user's first reference image).
 - UI accents stay **our** food palette (tomato, basil, saffron, crust, sky) — not the purple/teal shadows on the board.
 - Check readability at the real 16×24 frame on a phone; the board is drawn larger.
 - Prompt + board are archived here for provenance (§8 rule 2).
