@@ -184,7 +184,10 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 - **What:** the **full** `GameState` (D-032) — it is plain data, including guests, paths, jobs and orders, so a reload continues exactly where you left off.
 - **When:** autosave every in-game hour, after every purchase/upgrade/placement, at the start of each day, and immediately when the app/tab is hidden (`visibilitychange`, Capacitor `appStateChange`).
 - **Versioning:** each save has `version`; `migrate()` upgrades old saves step by step (`v1 → v2 → …`). Unit-tested with fixture saves.
-- One save slot in MVP; keep a `backup` copy of the previous save to recover from corruption.
+- Two slots, `main` and `backup`. A write first copies `main` to `backup` (only if `main` still validates, so a corrupt `main` never replaces a good backup), then writes `main`. Loading tries `main`, then `backup` (the title screen/game then shows a "We restored your last good save." notice); both unreadable = no save. Storage errors (quota, blocked) never throw; autosave shows a "couldn't save" toast.
+- **Format:** `{ format: 'eat-here-save', version, savedAt, state }`, currently version 1 (`SAVE_VERSION` in `sim/save.ts`; `migrate()` runs `MIGRATIONS[n]` for each step n → n+1, then the state shape is validated). Anything that is not in `GameState` is runtime only and rebuilt on load: the walk grid cache, pause reasons (a loaded game starts unpaused; a save made in the `report` phase reopens the report), sim speed, the UI signals.
+- **Open RANK UP modal:** the rank, unlocks and reward are already in state when the modal opens, so only the celebration is lost: on load the pending modal is dropped, not re-shown.
+- **Flow:** the title screen runs before any sim exists; Continue/New Game then builds `Game` + Phaser world from the chosen state. New Game writes the fresh state at once (the previous pizzeria moves to `backup`).
 
 ## 9. Lifecycle & pause
 

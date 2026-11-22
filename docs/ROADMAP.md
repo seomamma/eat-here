@@ -150,10 +150,10 @@
 - Full-state autosave (D-032): every in-game hour, after purchases/upgrades, at day start and when the app is hidden; versioned saves with migration; backup slot.
 
 **Acceptance criteria**
-- [ ] Close the browser mid-day and reopen → the game continues from the same moment (guests, staff, money, furniture, inventory).
-- [ ] A purchase made just before closing the tab is still there after reopening.
-- [ ] Corrupt main save → loads backup with a friendly notice.
-- [ ] Unit tests: round-trip save/load, migration from a v1 fixture.
+- [x] Close the browser mid-day and reopen → the game continues from the same moment (guests, staff, money, furniture, inventory).
+- [x] A purchase made just before closing the tab is still there after reopening.
+- [x] Corrupt main save → loads backup with a friendly notice.
+- [x] Unit tests: round-trip save/load, migration from a v1 fixture.
 
 ### M9b — UI polish: money breakdown, in-place confirm, Menu (D-033)
 **Goal:** friendlier everyday UI before the MVP polish pass.
