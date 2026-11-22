@@ -143,6 +143,22 @@ Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left 
 | **Nonna Rosa** | a Margherita **Lv.3** is served | Fridays (lunch) | Margherita | 2♥: gives Buffalo Mozzarella · 4♥: "She says it tastes like Napoli" (+fame) |
 | **Oliver** | 10 Pepperoni served (after Rank 2) | Tuesdays (dinner) | Pepperoni | 2♥: "Oliver greets the chef by name" · 3♥: "Oliver brought a date!" (2nd named guest, sits with him if a 2-seat table is free) · 5♥: "Oliver and Mia are celebrating something…" (+tip bonus) |
 
+### Vision notes v2 — building & dishes (ideas after M10, under discussion)
+
+**Main focus after the MVP: building out and designing the restaurant.** A rich, pixel-perfect build catalog is the heart of the fun.
+- **Functional items** with guest interactions: vending machine (small passive income, guests use it while waiting), piano (music aura → happiness; later a pianist), salad bar (self-serve side dish), wifi corner (laptop guests/students stay longer and order more).
+- **Decorations:** flowers, dividers, pillars, statues, lamps, paintings.
+- **Flooring and wallpaper** painted per tile/wall segment.
+- **Sections/Areas:** Animal Area (later its own pet kitchen → special pet food), Children's Area (toys with animations, kids sliding) → achievement **"Kids Menu"** unlocks kid-friendly dishes (e.g. nuggets).
+- Implementation: data-driven `interactionSpots` on furniture (guests visit them while waiting/after eating), appeal tags, area recognition (see Themed Areas).
+
+**Dishes & special guests**
+- Dishes level 1→5. New dishes are earned by collecting ingredients (from happy guests, regulars, the market).
+- A dish at Lv.5 plus a special **topping item** becomes **"super delicious"** (e.g. Kebab Pizza + Feta) and attracts a matching **special guest** (a named VIP who only comes for that dish).
+- Regulars sometimes bring **exclusive ingredients**.
+
+**Guardrails (Kairosoft-likeness check).** Genre mechanics are free to use, but a game that *feels* like a clone loses the comparison to the masters of that formula. For each new feature ask: *does it make guests' stories and the room richer, or does it only add numbers?* Keep one currency (coins) + collectible ingredients + hearts; **no second "rare coin"/medal currency**. Our identity = guests you care about (regulars, moments), cozy (no grind), retro world + modern UI, themed areas as social spaces, and possibly a **Swedish-pizzeria flavor** (Kebabpizza, Hawaii, Vesuvio, Capricciosa…) as a unique hook.
+
 **Next Goals card** (pillar 5): a compact card in the Menu (and a small "!" pulse on the Menu button when a goal is newly reached) listing 3 goals: next rank (fame x/y), a recipe/upgrade goal, a regular hint or hearts goal.
 
 ## 5. Staff
