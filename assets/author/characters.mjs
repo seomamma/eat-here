@@ -155,7 +155,7 @@ const TORSO = {
     back: ['nmmCCmml', 'nmmmmmml', 'nmmmmmml', 'nmmmmmml', 'nmmmmmml', 'wwwwwwww'],
   },
   chef: {
-    front: ['Whmmmmhi', 'Whhmmhhi', 'Whhmhhhi', 'Whhhhhhi', 'Whhmhhhi', 'wwwwwwww'],
+    front: ['Wmmmmmmi', 'Whmmmmhi', 'Whhmmhhi', 'Whhmhhhi', 'Whhhhhhi', 'wwwwwwww'],
     back: ['WhhCChhi', 'Whhhhhhi', 'Whhhhhhi', 'Whhhhhhi', 'Whhhhhhi', 'wwwwwwww'],
   },
   waiter: {
@@ -168,8 +168,6 @@ const TORSO = {
     back: ['vuuCCuut', 'vuuuuuut', 'xuuuuuuw', 'xtuuuutw', 'xwwwwwww', 'xwwwwwww'],
   },
 };
-
-const SKIN = { A: 'A', B: 'B', C: 'C' };
 
 /** Per character: recolour maps for the reference letters. */
 export const LOOKS = {
@@ -189,7 +187,6 @@ function render(spec, facing, pose = {}) {
   const g = new Grid(spec.W, 24);
   const map = spec.map ?? {};
   const dy = pose.dy ?? 0;
-  const front = facing === 'front';
   const [pBase, pHi] = spec.pants;
   const [sBase, sHi] = spec.shoes;
   const [s1, s2, s3] = spec.sleeve; // hi, base, lo
