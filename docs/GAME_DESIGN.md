@@ -15,6 +15,19 @@ A cozy, pixel-art **pizzeria management sim** for mobile. You start with a tiny 
 3. **Alive and charming.** Guests react with emotes, wander, sit, eat, and remember you. Small animations everywhere.
 4. **Retro world, modern UI.** Tiny pixel characters in a warm world, framed by clean, bold, modern interface cards.
 
+### Differentiation: "guests you care about" (vision note, from discovery after M2)
+
+There are thousands of management sims. Our hook is that **the restaurant remembers its guests** and small stories happen around them while the management game keeps running.
+
+Candidate tagline: *"Build a restaurant. Serve your guests. Become part of their stories."*
+
+Three differentiators (all post-MVP, built on systems we already plan):
+1. **Guests you actually care about.** Named regulars with a favorite dish, visit day and small relationships that evolve over visits (e.g. *Oliver* comes every Tuesday for his usual; after five visits he greets the chef; one day he brings his girlfriend; later they celebrate something here; one day he comes alone again 💔). Story beats are short, data-driven scripts triggered by visit counts/conditions — no generative AI, no big narrative system. Tone stays cozy: bittersweet at most.
+2. **Decor that matters.** Not only "+5 from a plant": furniture gets **appeal tags** (cozy, romantic, view, lively…) and guest types have **preferences** (couples want a romantic corner, students want lively seats, window tables are popular). Fits the data-driven furniture model.
+3. **Small moments worth sharing.** Rare, charming events: a proposal at a table, the chef dropping a pizza, a good review causing a queue outside. Implemented as an event table with conditions + cooldowns.
+
+Earliest test of the hook: the first Regulars milestone — "Oliver comes back, says *The usual, please!*, and we get a bonus for remembering his favorite." If players smile at that, we double down.
+
 ### Target audience
 
 Adults (roughly born in the 1980s) who grew up with 2D pixel games and love management / time-management-style games, but want a relaxing time-killer they feel attached to. Short sessions (5–15 min) on the phone, with a reason to come back ("one more day", "just level my Margherita").

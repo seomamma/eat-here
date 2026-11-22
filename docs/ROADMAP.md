@@ -166,3 +166,5 @@
 | M20 Mobile release prep | Capacitor builds, performance on devices, store assets, settings |
 
 Phase B order may change based on MVP playtest feedback.
+
+**Proposal (not yet approved):** move **M13 Regulars** to right after MVP sign-off, before M11 art, because "guests you care about" is our main differentiator (GAME_DESIGN §1) and should be validated early — then a small **web demo** (e.g. itch.io) for friends/early players and short dev-clips to test interest before months of content work.
