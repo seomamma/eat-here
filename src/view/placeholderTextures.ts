@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { FURNITURE, type FurnitureDefId } from '../data/furniture';
+import { RECIPE_IDS, type RecipeId } from '../data/recipes';
+import { STAFF, type StaffRole } from '../data/staff';
 import { TILE_H, TILE_W } from './iso';
 
 /**
@@ -68,9 +70,16 @@ export const TEX = {
 export const CHAR_W = 16;
 export const CHAR_H = 24;
 export type CharFacing = 'front' | 'back';
-export type CharAnim = 'idle' | 'walk' | 'sit' | 'eat';
-export const CHAR_ANIMS: readonly CharAnim[] = ['idle', 'walk', 'sit', 'eat'];
-export const CHAR_FRAME_COUNT: Record<CharAnim, number> = { idle: 2, walk: 4, sit: 1, eat: 2 };
+export type CharAnim = 'idle' | 'walk' | 'sit' | 'eat' | 'carry' | 'cook';
+export const CHAR_ANIMS: readonly CharAnim[] = ['idle', 'walk', 'sit', 'eat', 'carry', 'cook'];
+export const CHAR_FRAME_COUNT: Record<CharAnim, number> = {
+  idle: 2,
+  walk: 4,
+  sit: 1,
+  eat: 2,
+  carry: 4,
+  cook: 2,
+};
 
 /**
  * Colour variants: 0 = debug walker, 1..3 = guest variants 0..2 (shirt dark/mid/light, hair).
@@ -79,6 +88,9 @@ export const CHAR_FRAME_COUNT: Record<CharAnim, number> = { idle: 2, walk: 4, si
 interface CharPalette {
   shirt: readonly [string, string, string];
   hair: string;
+  /** Front apron / vest colour (default cream). */
+  apron?: string;
+  role?: StaffRole;
 }
 const CHAR_PALETTES: readonly CharPalette[] = [
   { shirt: [C.tomato1, C.tomato2, C.tomato3], hair: C.wood1 },
@@ -86,7 +98,17 @@ const CHAR_PALETTES: readonly CharPalette[] = [
   { shirt: [C.basil1, C.basil2, C.basil3], hair: C.cheese1 },
   { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.outline },
 ];
-export const CHAR_VARIANT_COUNT = CHAR_PALETTES.length;
+const STAFF_ROLES = Object.keys(STAFF) as StaffRole[];
+const GUEST_AND_DEBUG_COUNT = CHAR_PALETTES.length;
+/** Staff palettes follow the debug walker and guests, in the order of the STAFF data. */
+const ALL_PALETTES: readonly CharPalette[] = [
+  ...CHAR_PALETTES,
+  ...STAFF_ROLES.map((role) => ({ ...STAFF[role].palette, role })),
+];
+export const CHAR_VARIANT_COUNT = ALL_PALETTES.length;
+export function staffVariant(role: StaffRole): number {
+  return GUEST_AND_DEBUG_COUNT + STAFF_ROLES.indexOf(role);
+}
 
 export function charTexKey(
   variant: number,
@@ -98,7 +120,11 @@ export function charTexKey(
 }
 
 /** Emote bubbles and coin (16x16 / 7x7). */
-export const EMOTE_TEX = { angry: 'emote_angry', happy: 'emote_happy' } as const;
+export const EMOTE_TEX = {
+  angry: 'emote_angry',
+  happy: 'emote_happy',
+  hand: 'emote_hand',
+} as const;
 export const COIN_TEX = 'coin';
 export const EMOTE_SIZE = 16;
 export const COIN_SIZE = 7;
@@ -313,14 +339,14 @@ function characterFrame(
   anim: CharAnim,
   frame: number,
 ): Raster {
-  const pal = CHAR_PALETTES[variant] ?? (CHAR_PALETTES[0] as CharPalette);
+  const pal = ALL_PALETTES[variant] ?? (ALL_PALETTES[0] as CharPalette);
   const [shirt1, shirt2, shirt3] = pal.shirt;
   const fill = new Raster(CHAR_W, CHAR_H);
   const rect = (x0: number, y0: number, x1: number, y1: number, c: string) => {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) fill.set(x, y, c);
   };
   const front = facing === 'front';
-  const walking = anim === 'walk';
+  const walking = anim === 'walk' || anim === 'carry';
   const sitting = anim === 'sit' || anim === 'eat';
   // Upper body drops 1 px on contact frames (walk 0/2) and on the second idle frame (breathing).
   // Seated: the whole body sits lower (legs are folded under the table).
@@ -353,11 +379,21 @@ function characterFrame(
   rect(4, 10 + bob, 11, torsoEnd, shirt2);
   rect(3, 11 + bob, 3, torsoEnd - 1, shirt3);
   rect(12, 11 + bob, 12, torsoEnd - 1, shirt1);
-  if (front) rect(6, 13 + bob, 10, torsoEnd, C.cream1); // apron
+  const apron = pal.apron ?? C.cream1;
+  if (pal.role === 'waiter')
+    rect(5, 11 + bob, 10, torsoEnd, apron); // dark vest (both sides)
+  else if (front) rect(6, 13 + bob, 10, torsoEnd, apron);
   if (anim === 'eat' && frame === 1) {
     // Hand with food raised to the mouth.
     rect(9, 10 + bob, 11, 11 + bob, C.wood4);
     rect(10, 9 + bob, 11, 9 + bob, C.cheese2);
+  } else if (anim === 'carry') {
+    // Arms held out in front, carrying a dish (drawn as an overlay by the view).
+    rect(2, 13 + bob, 3, 14 + bob, C.wood4);
+    rect(12, 13 + bob, 13, 14 + bob, C.wood4);
+  } else if (anim === 'cook') {
+    // Stirring / tending the oven: one hand moves up and down in front.
+    rect(11, 12 + bob - frame, 12, 13 + bob - frame, C.wood4);
   } else if (sitting) {
     // Hands resting on the table edge.
     rect(3, 19, 4, 19, C.wood4);
@@ -374,6 +410,11 @@ function characterFrame(
     rect(4, 2 + bob, 11, 8 + bob, pal.hair);
     rect(5, 9 + bob, 10, 9 + bob, C.wood2);
   }
+  if (pal.role === 'chef') {
+    // Tall chef hat: puffy top plus a band over the forehead.
+    rect(5, 0 + bob, 10, 2 + bob, C.cream1);
+    rect(4, 3 + bob, 11, 3 + bob, C.cream1);
+  }
   // Outline: every filled pixel touching transparency.
   const r = new Raster(CHAR_W, CHAR_H);
   for (let y = 0; y < CHAR_H; y++) {
@@ -389,7 +430,7 @@ function characterFrame(
 }
 
 /** 16x16 speech bubble with a tail, pixel face inside. */
-function emoteBubble(kind: 'angry' | 'happy'): Raster {
+function emoteBubble(kind: 'angry' | 'happy' | 'hand'): Raster {
   const bg = kind === 'angry' ? C.tomato2 : C.cheese3;
   const fg = kind === 'angry' ? C.cream1 : C.outline;
   const r = new Raster(EMOTE_SIZE, EMOTE_SIZE);
@@ -410,7 +451,30 @@ function emoteBubble(kind: 'angry' | 'happy'): Raster {
     r.set(x, y, C.outline);
   r.set(8, 11, bg);
   r.set(7, 11, bg);
-  if (kind === 'angry') {
+  if (kind === 'hand') {
+    // Raised hand: four fingers, palm and thumb (silhouette).
+    for (const [x, y] of [
+      [5, 4],
+      [5, 5],
+      [7, 3],
+      [7, 4],
+      [7, 5],
+      [9, 3],
+      [9, 4],
+      [9, 5],
+      [11, 4],
+      [11, 5],
+      [4, 8],
+      [3, 7],
+      [3, 6],
+    ] as const)
+      r.set(x, y, fg);
+    for (let y = 6; y <= 9; y++) for (let x = 5; x <= 11; x++) r.set(x, y, fg);
+    r.set(4, 7, fg);
+    r.set(6, 5, fg);
+    r.set(8, 5, fg);
+    r.set(10, 5, fg);
+  } else if (kind === 'angry') {
     // Slanted brows and a grim mouth.
     for (const [x, y] of [
       [4, 4],
@@ -448,6 +512,120 @@ function emoteBubble(kind: 'angry' | 'happy'): Raster {
     ] as const)
       r.set(x, y, fg);
   }
+  return r;
+}
+
+/** Dish icons (12x12) and the order bubble that frames them (18x19). */
+export const DISH_SIZE = 12;
+export const ORDER_BUBBLE_W = 18;
+export const ORDER_BUBBLE_H = 19;
+export const DISH_TEX: Record<RecipeId, string> = {
+  marinara: 'dish_marinara',
+  margherita: 'dish_margherita',
+  garlic_bread: 'dish_garlic_bread',
+  pepperoni: 'dish_pepperoni',
+};
+export const ORDER_BUBBLE_TEX: Record<RecipeId, string> = {
+  marinara: 'order_marinara',
+  margherita: 'order_margherita',
+  garlic_bread: 'order_garlic_bread',
+  pepperoni: 'order_pepperoni',
+};
+
+function dishIcon(id: RecipeId): Raster {
+  const fill = new Raster(DISH_SIZE, DISH_SIZE);
+  if (id === 'garlic_bread') {
+    for (const y0 of [2, 6]) {
+      for (let y = y0; y < y0 + 3; y++) for (let x = 1; x <= 10; x++) fill.set(x, y, C.wood4);
+      for (const x of [3, 6, 9]) for (let y = y0; y < y0 + 3; y++) fill.set(x, y, C.cheese2);
+      fill.set(4, y0 + 1, C.basil3);
+      fill.set(8, y0 + 1, C.basil3);
+    }
+  } else {
+    // Round pizza: crust ring, sauce/cheese and toppings.
+    const base = id === 'marinara' ? C.tomato2 : C.cheese2;
+    for (let y = 0; y < DISH_SIZE; y++) {
+      for (let x = 0; x < DISH_SIZE; x++) {
+        const d = Math.hypot(x - 5.5, y - 5.5);
+        if (d <= 5.6) fill.set(x, y, d > 4.4 ? C.wood3 : base);
+      }
+    }
+    const spots: Record<string, [string, [number, number][]]> = {
+      marinara: [
+        C.basil3,
+        [
+          [4, 4],
+          [7, 6],
+          [5, 7],
+        ],
+      ],
+      margherita: [
+        C.tomato2,
+        [
+          [4, 3],
+          [7, 4],
+          [4, 7],
+          [7, 7],
+        ],
+      ],
+      pepperoni: [
+        C.brick2,
+        [
+          [4, 3],
+          [7, 4],
+          [4, 7],
+          [7, 7],
+          [6, 5],
+        ],
+      ],
+    };
+    const [c, pts] = spots[id] ?? [C.basil3, []];
+    for (const [x, y] of pts) {
+      fill.set(x, y, c);
+      if (id === 'pepperoni') fill.set(x + 1, y, c);
+    }
+    if (id === 'margherita') {
+      fill.set(5, 5, C.basil3);
+      fill.set(6, 6, C.basil3);
+    }
+  }
+  const r = new Raster(DISH_SIZE, DISH_SIZE);
+  for (let y = 0; y < DISH_SIZE; y++) {
+    for (let x = 0; x < DISH_SIZE; x++) {
+      const c = fill.get(x, y);
+      if (!c) continue;
+      const edge =
+        !fill.get(x - 1, y) || !fill.get(x + 1, y) || !fill.get(x, y - 1) || !fill.get(x, y + 1);
+      r.set(x, y, edge ? C.outline : c);
+    }
+  }
+  return r;
+}
+
+/** Speech bubble (cream) with the dish inside and a tail pointing at the guest. */
+function orderBubble(id: RecipeId): Raster {
+  const r = new Raster(ORDER_BUBBLE_W, ORDER_BUBBLE_H);
+  for (let y = 0; y <= 15; y++) {
+    for (let x = 0; x <= 17; x++) {
+      if ((x === 0 || x === 17) && (y === 0 || y === 15)) continue;
+      const edge = x === 0 || x === 17 || y === 0 || y === 15;
+      r.set(x, y, edge ? C.outline : C.cream1);
+    }
+  }
+  for (const [x, y] of [
+    [8, 16],
+    [9, 16],
+    [8, 17],
+  ] as const)
+    r.set(x, y, C.outline);
+  r.set(8, 15, C.cream1);
+  r.set(9, 15, C.cream1);
+  const icon = dishIcon(id);
+  for (let y = 0; y < DISH_SIZE; y++)
+    for (let x = 0; x < DISH_SIZE; x++) {
+      const c = icon.get(x, y);
+      if (c) r.set(x + 3, y + 2, c);
+    }
   return r;
 }
 
@@ -571,6 +749,58 @@ function legs(i0: number, j0: number, i1: number, j1: number, z1: number, t = 0.
   return [mk(i0, j0), mk(i1 - t, j0), mk(i0, j1 - t), mk(i1 - t, j1 - t)];
 }
 
+export type OvenGlow = 'off' | 0 | 1;
+/** Baking frames alternate (flicker); 'off' is a cold, dim mouth. */
+export const OVEN_TEX = {
+  off: 'oven_pizza',
+  bake: ['oven_pizza_bake_0', 'oven_pizza_bake_1'],
+} as const;
+
+function ovenArt(ox: number, oy: number, glow: OvenGlow): Raster {
+  return boxes(2, 1, ox, oy, [
+    part({
+      i0: 0,
+      j0: 0,
+      i1: 2,
+      j1: 1,
+      z0: 0,
+      z1: 14,
+      top: C.brick3,
+      left: C.brick2,
+      right: C.brick1,
+      decal: (face, a, e) => {
+        if (face === 'top') return undefined;
+        if (face === 'left') {
+          // Mouth on the +y face the chef stands in front of.
+          const dx = Math.abs(a - 16);
+          if (dx < 7 && e < 9 && e >= 1) {
+            if (dx < 4 && e < 6) {
+              if (glow === 'off') return e < 2 ? C.tomato1 : C.outline;
+              const flick = glow === 1 ? 1 : 0;
+              if (e < 3 + flick) return C.cheese3;
+              return e < 4.5 + flick ? C.cheese2 : glow === 1 ? C.tomato3 : C.tomato2;
+            }
+            return C.outline;
+          }
+        }
+        return Math.floor(e) % 4 === 3 ? C.brick1 : undefined;
+      },
+    }),
+    // Chimney block.
+    part({
+      i0: 0.75,
+      j0: 0.3,
+      i1: 1.25,
+      j1: 0.7,
+      z0: 14,
+      z1: 22,
+      top: C.cream2,
+      left: C.brick2,
+      right: C.brick1,
+    }),
+  ]);
+}
+
 type FurnitureArt = (ox: number, oy: number) => Raster;
 
 const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
@@ -628,44 +858,7 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.wood2,
       }),
     ]),
-  oven_pizza: (ox, oy) =>
-    boxes(2, 1, ox, oy, [
-      part({
-        i0: 0,
-        j0: 0,
-        i1: 2,
-        j1: 1,
-        z0: 0,
-        z1: 14,
-        top: C.brick3,
-        left: C.brick2,
-        right: C.brick1,
-        decal: (face, a, e) => {
-          if (face === 'top') return undefined;
-          if (face === 'left') {
-            // Glowing mouth on the +y face the chef stands in front of.
-            const dx = Math.abs(a - 16);
-            if (dx < 7 && e < 9 && e >= 1) {
-              if (dx < 4 && e < 6) return e < 3 ? C.cheese3 : e < 4.5 ? C.cheese2 : C.tomato2;
-              return C.outline;
-            }
-          }
-          return Math.floor(e) % 4 === 3 ? C.brick1 : undefined;
-        },
-      }),
-      // Chimney block.
-      part({
-        i0: 0.75,
-        j0: 0.3,
-        i1: 1.25,
-        j1: 0.7,
-        z0: 14,
-        z1: 22,
-        top: C.cream2,
-        left: C.brick2,
-        right: C.brick1,
-      }),
-    ]),
+  oven_pizza: (ox, oy) => ovenArt(ox, oy, 'off'),
   counter_pass: (ox, oy) =>
     boxes(2, 1, ox, oy, [
       part({
@@ -770,7 +963,15 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   }
   upload(textures, EMOTE_TEX.angry, emoteBubble('angry'));
   upload(textures, EMOTE_TEX.happy, emoteBubble('happy'));
+  upload(textures, EMOTE_TEX.hand, emoteBubble('hand'));
   upload(textures, COIN_TEX, coin());
+  for (const id of RECIPE_IDS) {
+    upload(textures, DISH_TEX[id], dishIcon(id));
+    upload(textures, ORDER_BUBBLE_TEX[id], orderBubble(id));
+  }
+  const [ovx, ovy] = FURNITURE.oven_pizza.spriteOrigin;
+  upload(textures, OVEN_TEX.bake[0], ovenArt(ovx, ovy, 0));
+  upload(textures, OVEN_TEX.bake[1], ovenArt(ovx, ovy, 1));
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {
     const [ox, oy] = FURNITURE[defId].spriteOrigin;
     upload(textures, defId, FURNITURE_ART[defId](ox, oy));

@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { DOOR_X } from '../data/layout';
 import { FURNITURE } from '../data/furniture';
-import { isGuest, type Character, type IsoDir } from '../sim/characters';
+import { isGuest, isStaff, type Character, type IsoDir } from '../sim/characters';
 import type { GuestEmote } from '../sim/events';
-import { rotatedFootprint } from '../sim/grid';
+import { footprintTiles, furnitureAt, rotatedFootprint, type Furniture } from '../sim/grid';
 import type { GameState } from '../sim/state';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
 import { interpolatePosition } from './interpolate';
@@ -12,10 +12,14 @@ import {
   CHAR_FRAME_COUNT,
   CHAR_VARIANT_COUNT,
   COIN_TEX,
+  DISH_TEX,
   EMOTE_TEX,
+  ORDER_BUBBLE_TEX,
+  OVEN_TEX,
   TEX,
   WALL_BACK_RISE,
   charTexKey,
+  staffVariant,
   type CharAnim,
   type CharFacing,
 } from './placeholderTextures';
@@ -27,6 +31,20 @@ const DEPTH_BACK_WALL = -10000;
 const DEPTH_FRONT_BIAS = 0.5;
 /** Debug overlays on top of the world. */
 const DEPTH_OVERLAY = 1_000_000;
+/**
+ * Furniture sorts a bit behind characters on the same x + y diagonal: someone standing in
+ * front of a multi-tile piece (e.g. the chef at the oven) must be drawn over it.
+ */
+const DEPTH_FURNITURE_BIAS = -0.1;
+/** Dishes sit just in front of the furniture they stand on. */
+const DEPTH_DISH_BIAS = 0.05;
+/** Dish icon heights above the tile centre: pass counter top, table top (px). */
+const PASS_TOP_PX = 8;
+const TABLE_TOP_PX = 9;
+/** Carried dish: bottom of the icon this far above the character's feet. */
+const CARRY_LIFT_PX = 4;
+/** Oven flicker period while baking. */
+const OVEN_FLICKER_MS = 220;
 
 /** Animation speed (ART_DIRECTION §6: 8 fps loops; idle breathing is slower). */
 const WALK_FPS = 8;
@@ -47,15 +65,30 @@ function animKey(variant: number, facing: CharFacing, anim: CharAnim): string {
 /** Seated guests sit just in front of their chair (same tile) and a bit higher than standing. */
 const DEPTH_SEATED_BIAS = 0.25;
 const SEATED_LIFT_PX = 2;
+/** Grid step of a screen facing (a seated guest looks at the table this way). */
+const STEP_OF_DIR: Record<IsoDir, { x: number; y: number }> = {
+  dr: { x: 1, y: 0 },
+  dl: { x: 0, y: 1 },
+  ul: { x: -1, y: 0 },
+  ur: { x: 0, y: -1 },
+};
 /** Eating uses a slower loop than walking. */
 const EAT_FPS = 2;
+const COOK_FPS = 3;
 
 /** Palette index of a character: 0 = debug walker, guest variants follow. */
 function paletteOf(c: Character): number {
-  return isGuest(c) ? (c.variant % (CHAR_VARIANT_COUNT - 1)) + 1 : 0;
+  if (isStaff(c)) return staffVariant(c.role);
+  return isGuest(c) ? (c.variant % GUEST_VARIANTS) + 1 : 0;
 }
+/** Guest palettes are variants 1..3 (0 = debug walker, then staff). */
+const GUEST_VARIANTS = 3;
 
 function animOf(c: Character): CharAnim {
+  if (isStaff(c)) {
+    if (c.path.length > 0) return c.carrying ? 'carry' : 'walk';
+    return c.phase === 'working' && c.action === 'cook' ? 'cook' : 'idle';
+  }
   if (c.path.length > 0) return 'walk';
   if (isGuest(c)) {
     if (c.phase === 'eating') return 'eat';
@@ -91,6 +124,9 @@ export class WorldRenderer {
   private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
   private highlight: Phaser.GameObjects.Image | null = null;
   private effects: Effect[] = [];
+  /** Persistent state-driven overlays: status bubbles above guests and dish icons. */
+  private readonly bubbles = new Map<string, Phaser.GameObjects.Image>();
+  private readonly dishes = new Map<string, Phaser.GameObjects.Image>();
 
   constructor(private readonly scene: Phaser.Scene) {
     this.createAnimations();
@@ -102,6 +138,8 @@ export class WorldRenderer {
       idle: IDLE_FPS,
       sit: IDLE_FPS,
       eat: EAT_FPS,
+      carry: WALK_FPS,
+      cook: COOK_FPS,
     };
     for (let v = 0; v < CHAR_VARIANT_COUNT; v++) {
       for (const facing of ['front', 'back'] as const) {
@@ -173,6 +211,8 @@ export class WorldRenderer {
         this.characters.delete(id);
       }
     }
+    this.syncBubbles(state);
+    this.syncDishes(state);
     const now = this.scene.time.now;
     this.effects = this.effects.filter((e) => {
       const alive = e.update(now);
@@ -181,8 +221,109 @@ export class WorldRenderer {
     });
   }
 
+  /**
+   * Bubbles that last as long as a guest's state does: raised hand while waiting to order,
+   * the dish while waiting for food. Driven by state, so they follow the guest and disappear
+   * the moment the state changes.
+   */
+  private syncBubbles(state: GameState): void {
+    const live = new Set<string>();
+    for (const c of state.characters) {
+      if (!isGuest(c)) continue;
+      let tex: string | null = null;
+      if (c.phase === 'wantsToOrder') tex = EMOTE_TEX.hand;
+      else if (c.phase === 'waitingForFood' && c.recipeId) tex = ORDER_BUBBLE_TEX[c.recipeId];
+      const sprite = this.characters.get(c.id);
+      if (!tex || !sprite) continue;
+      live.add(c.id);
+      let img = this.bubbles.get(c.id);
+      if (!img) {
+        img = this.scene.add.image(0, 0, tex).setOrigin(0.5, 1);
+        this.bubbles.set(c.id, img);
+      }
+      img
+        .setTexture(tex)
+        .setPosition(Math.round(sprite.x), Math.round(sprite.y) - EMOTE_ABOVE_PX)
+        .setDepth(DEPTH_OVERLAY);
+    }
+    for (const [id, img] of this.bubbles) {
+      if (!live.has(id)) {
+        img.destroy();
+        this.bubbles.delete(id);
+      }
+    }
+  }
+
+  /** Dish icons: carried by staff, on the pass counter, and on the table while a guest eats. */
+  private syncDishes(state: GameState): void {
+    const want = new Map<string, { tex: string; x: number; y: number; depth: number }>();
+    const furnitureDepth = (f: Furniture) => {
+      const [w, h] = rotatedFootprint(f.defId, f.rot);
+      return depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS;
+    };
+    for (const c of state.characters) {
+      const sprite = this.characters.get(c.id);
+      if (!sprite) continue;
+      if (isStaff(c) && c.carrying) {
+        want.set(`carry:${c.id}`, {
+          tex: DISH_TEX[c.carrying],
+          x: Math.round(sprite.x),
+          y: Math.round(sprite.y) - CARRY_LIFT_PX,
+          depth: sprite.depth + 0.01,
+        });
+      } else if (isGuest(c) && c.phase === 'eating' && c.recipeId && c.seatId) {
+        const chair = state.furniture.find((f) => f.id === c.seatId);
+        const step = STEP_OF_DIR[c.dir];
+        const table = chair
+          ? state.furniture.find(
+              (f) => f.id === furnitureAt(state, chair.x + step.x, chair.y + step.y),
+            )
+          : undefined;
+        if (chair && table) {
+          const o = tileToScreen(chair.x + step.x + 0.5, chair.y + step.y + 0.5);
+          want.set(`table:${c.id}`, {
+            tex: DISH_TEX[c.recipeId],
+            x: Math.round(o.x),
+            y: Math.round(o.y) - TABLE_TOP_PX,
+            depth: furnitureDepth(table) + DEPTH_DISH_BIAS,
+          });
+        }
+      }
+    }
+    const pass = state.furniture.find((f) => f.defId === 'counter_pass');
+    if (pass) {
+      const tiles = footprintTiles(pass.defId, pass.x, pass.y, pass.rot);
+      for (const o of state.orders) {
+        const t = o.status === 'ready' && o.slot !== null ? tiles[o.slot] : undefined;
+        if (!t) continue;
+        const p = tileToScreen(t.x + 0.5, t.y + 0.5);
+        want.set(`pass:${o.id}`, {
+          tex: DISH_TEX[o.recipeId],
+          x: Math.round(p.x),
+          y: Math.round(p.y) - PASS_TOP_PX,
+          depth: furnitureDepth(pass) + DEPTH_DISH_BIAS,
+        });
+      }
+    }
+    for (const [key, w] of want) {
+      let img = this.dishes.get(key);
+      if (!img) {
+        img = this.scene.add.image(0, 0, w.tex).setOrigin(0.5, 1);
+        this.dishes.set(key, img);
+      }
+      img.setTexture(w.tex).setPosition(w.x, w.y).setDepth(w.depth);
+    }
+    for (const [key, img] of this.dishes) {
+      if (!want.has(key)) {
+        img.destroy();
+        this.dishes.delete(key);
+      }
+    }
+  }
+
   /** Emote bubble above a guest's head: pops up, holds, fades. Follows the guest while visible. */
   showEmote(guestId: string, emote: GuestEmote): void {
+    if (emote === 'hand') return; // shown as a state-driven bubble (syncBubbles)
     const target = this.characters.get(guestId);
     if (!target) return;
     const img = this.scene.add.image(0, 0, EMOTE_TEX[emote]).setOrigin(0.5, 1);
@@ -352,8 +493,15 @@ export class WorldRenderer {
     this.put(o.x - 16, o.y + 4, TEX.wallFrontL, depthKey(x, y) + DEPTH_FRONT_BIAS);
   }
 
+  /** Cold oven, or one of two flickering baking frames. */
+  private ovenTexture(baking: boolean): string {
+    if (!baking) return OVEN_TEX.off;
+    return OVEN_TEX.bake[Math.floor(this.scene.time.now / OVEN_FLICKER_MS) % 2] ?? OVEN_TEX.off;
+  }
+
   private syncFurniture(state: GameState): void {
     const live = new Set<string>();
+    const baking = state.characters.some((c) => isStaff(c) && c.action === 'cook');
     for (const f of state.furniture) {
       live.add(f.id);
       const def = FURNITURE[f.defId];
@@ -363,6 +511,7 @@ export class WorldRenderer {
         img = this.scene.add.image(0, 0, f.defId);
         this.furniture.set(f.id, img);
       }
+      if (def.kind === 'oven') img.setTexture(this.ovenTexture(baking));
       // The sprite's footprint top corner sits on the projected origin of tile (x, y).
       // rot 1 is the same sprite mirrored around that corner (flip happens around the origin).
       const o = tileToScreen(f.x, f.y);
@@ -370,7 +519,7 @@ export class WorldRenderer {
         .setOrigin(def.spriteOrigin[0] / img.width, def.spriteOrigin[1] / img.height)
         .setFlipX(f.rot === 1)
         .setPosition(o.x, o.y)
-        .setDepth(depthKey(f.x + w - 1, f.y + h - 1));
+        .setDepth(depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS);
     }
     for (const [id, img] of this.furniture) {
       if (!live.has(id)) {
