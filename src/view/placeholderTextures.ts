@@ -68,12 +68,40 @@ export const TEX = {
 export const CHAR_W = 16;
 export const CHAR_H = 24;
 export type CharFacing = 'front' | 'back';
-export type CharAnim = 'idle' | 'walk';
-export const CHAR_FRAME_COUNT: Record<CharAnim, number> = { idle: 2, walk: 4 };
+export type CharAnim = 'idle' | 'walk' | 'sit' | 'eat';
+export const CHAR_ANIMS: readonly CharAnim[] = ['idle', 'walk', 'sit', 'eat'];
+export const CHAR_FRAME_COUNT: Record<CharAnim, number> = { idle: 2, walk: 4, sit: 1, eat: 2 };
 
-export function charTexKey(facing: CharFacing, anim: CharAnim, frame: number): string {
-  return `char_${facing}_${anim}_${frame}`;
+/**
+ * Colour variants: 0 = debug walker, 1..3 = guest variants 0..2 (shirt dark/mid/light, hair).
+ * Palette swaps share the same shapes (ART_DIRECTION §7: variants come from palette).
+ */
+interface CharPalette {
+  shirt: readonly [string, string, string];
+  hair: string;
 }
+const CHAR_PALETTES: readonly CharPalette[] = [
+  { shirt: [C.tomato1, C.tomato2, C.tomato3], hair: C.wood1 },
+  { shirt: [C.cool1, C.cool2, C.cool3], hair: C.wood1 },
+  { shirt: [C.basil1, C.basil2, C.basil3], hair: C.cheese1 },
+  { shirt: [C.cheese1, C.cheese2, C.cheese3], hair: C.outline },
+];
+export const CHAR_VARIANT_COUNT = CHAR_PALETTES.length;
+
+export function charTexKey(
+  variant: number,
+  facing: CharFacing,
+  anim: CharAnim,
+  frame: number,
+): string {
+  return `char${variant}_${facing}_${anim}_${frame}`;
+}
+
+/** Emote bubbles and coin (16x16 / 7x7). */
+export const EMOTE_TEX = { angry: 'emote_angry', happy: 'emote_happy' } as const;
+export const COIN_TEX = 'coin';
+export const EMOTE_SIZE = 16;
+export const COIN_SIZE = 7;
 
 type Pixel = string | null;
 
@@ -279,15 +307,25 @@ function doorFrame(): Raster {
 // ---------------------------------------------------------------------------------------
 
 /** Crude placeholder person: head, torso, two legs, dark outline, feet on the last row. */
-function characterFrame(facing: CharFacing, anim: CharAnim, frame: number): Raster {
+function characterFrame(
+  variant: number,
+  facing: CharFacing,
+  anim: CharAnim,
+  frame: number,
+): Raster {
+  const pal = CHAR_PALETTES[variant] ?? (CHAR_PALETTES[0] as CharPalette);
+  const [shirt1, shirt2, shirt3] = pal.shirt;
   const fill = new Raster(CHAR_W, CHAR_H);
   const rect = (x0: number, y0: number, x1: number, y1: number, c: string) => {
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) fill.set(x, y, c);
   };
   const front = facing === 'front';
   const walking = anim === 'walk';
+  const sitting = anim === 'sit' || anim === 'eat';
   // Upper body drops 1 px on contact frames (walk 0/2) and on the second idle frame (breathing).
-  const bob = walking ? (frame % 2 === 0 ? 1 : 0) : frame === 1 ? 1 : 0;
+  // Seated: the whole body sits lower (legs are folded under the table).
+  let bob = walking ? (frame % 2 === 0 ? 1 : 0) : frame === 1 && anim === 'idle' ? 1 : 0;
+  if (sitting) bob = 5;
   // Legs: [leftTop, rightTop, leftX, rightX] (a lifted foot ends higher).
   let leftEnd = 23;
   let rightEnd = 23;
@@ -299,24 +337,41 @@ function characterFrame(facing: CharFacing, anim: CharAnim, frame: number): Rast
     if (frame === 2) [leftX, rightX] = [3, 10];
     if (frame === 3) rightEnd = 21;
   }
-  rect(leftX, 18, leftX + 2, leftEnd, C.cool1);
-  rect(rightX, 18, rightX + 2, rightEnd, C.cool1);
-  rect(leftX, leftEnd - 1, leftX + 2, leftEnd, C.wood1); // shoes
-  rect(rightX, rightEnd - 1, rightX + 2, rightEnd, C.wood1);
+  if (sitting) {
+    // Thighs/knees only, resting on the seat.
+    rect(4, 21, 11, 23, C.cool1);
+    rect(4, 23, 5, 23, C.wood1);
+    rect(10, 23, 11, 23, C.wood1);
+  } else {
+    rect(leftX, 18, leftX + 2, leftEnd, C.cool1);
+    rect(rightX, 18, rightX + 2, rightEnd, C.cool1);
+    rect(leftX, leftEnd - 1, leftX + 2, leftEnd, C.wood1); // shoes
+    rect(rightX, rightEnd - 1, rightX + 2, rightEnd, C.wood1);
+  }
   // Torso and arms.
-  rect(4, 10 + bob, 11, 17, C.tomato2);
-  rect(3, 11 + bob, 3, 16, C.tomato3);
-  rect(12, 11 + bob, 12, 16, C.tomato1);
-  if (front) rect(6, 13 + bob, 10, 17, C.cream1); // apron
+  const torsoEnd = sitting ? 20 : 17;
+  rect(4, 10 + bob, 11, torsoEnd, shirt2);
+  rect(3, 11 + bob, 3, torsoEnd - 1, shirt3);
+  rect(12, 11 + bob, 12, torsoEnd - 1, shirt1);
+  if (front) rect(6, 13 + bob, 10, torsoEnd, C.cream1); // apron
+  if (anim === 'eat' && frame === 1) {
+    // Hand with food raised to the mouth.
+    rect(9, 10 + bob, 11, 11 + bob, C.wood4);
+    rect(10, 9 + bob, 11, 9 + bob, C.cheese2);
+  } else if (sitting) {
+    // Hands resting on the table edge.
+    rect(3, 19, 4, 19, C.wood4);
+    rect(11, 19, 12, 19, C.wood4);
+  }
   // Head and hair.
   rect(4, 2 + bob, 11, 9 + bob, C.wood4);
   if (front) {
-    rect(4, 2 + bob, 11, 4 + bob, C.wood1);
-    rect(4, 5 + bob, 4, 6 + bob, C.wood1);
+    rect(4, 2 + bob, 11, 4 + bob, pal.hair);
+    rect(4, 5 + bob, 4, 6 + bob, pal.hair);
     fill.set(7, 6 + bob, C.outline);
     fill.set(10, 6 + bob, C.outline);
   } else {
-    rect(4, 2 + bob, 11, 8 + bob, C.wood1);
+    rect(4, 2 + bob, 11, 8 + bob, pal.hair);
     rect(5, 9 + bob, 10, 9 + bob, C.wood2);
   }
   // Outline: every filled pixel touching transparency.
@@ -330,6 +385,87 @@ function characterFrame(facing: CharFacing, anim: CharAnim, frame: number): Rast
       r.set(x, y, edge ? C.outline : c);
     }
   }
+  return r;
+}
+
+/** 16x16 speech bubble with a tail, pixel face inside. */
+function emoteBubble(kind: 'angry' | 'happy'): Raster {
+  const bg = kind === 'angry' ? C.tomato2 : C.cheese3;
+  const fg = kind === 'angry' ? C.cream1 : C.outline;
+  const r = new Raster(EMOTE_SIZE, EMOTE_SIZE);
+  // Rounded body 14x11 at (1,1), tail below.
+  for (let y = 1; y <= 11; y++) {
+    for (let x = 1; x <= 14; x++) {
+      const corner = (x === 1 || x === 14) && (y === 1 || y === 11);
+      if (corner) continue;
+      const edge = x === 1 || x === 14 || y === 1 || y === 11;
+      r.set(x, y, edge ? C.outline : bg);
+    }
+  }
+  for (const [x, y] of [
+    [7, 12],
+    [8, 12],
+    [7, 13],
+  ] as const)
+    r.set(x, y, C.outline);
+  r.set(8, 11, bg);
+  r.set(7, 11, bg);
+  if (kind === 'angry') {
+    // Slanted brows and a grim mouth.
+    for (const [x, y] of [
+      [4, 4],
+      [5, 5],
+      [6, 5],
+      [11, 4],
+      [10, 5],
+      [9, 5],
+      [5, 7],
+      [10, 7],
+    ] as const)
+      r.set(x, y, fg);
+    for (const x of [5, 6, 7, 8, 9, 10]) r.set(x, 9, fg);
+    r.set(4, 10, bg);
+  } else {
+    // Happy closed eyes and a smile.
+    for (const [x, y] of [
+      [4, 5],
+      [5, 4],
+      [6, 5],
+      [9, 5],
+      [10, 4],
+      [11, 5],
+    ] as const)
+      r.set(x, y, fg);
+    for (const [x, y] of [
+      [4, 8],
+      [5, 9],
+      [6, 9],
+      [7, 9],
+      [8, 9],
+      [9, 9],
+      [10, 9],
+      [11, 8],
+    ] as const)
+      r.set(x, y, fg);
+  }
+  return r;
+}
+
+function coin(): Raster {
+  const r = new Raster(COIN_SIZE, COIN_SIZE);
+  for (let y = 0; y < COIN_SIZE; y++) {
+    for (let x = 0; x < COIN_SIZE; x++) {
+      const dx = x - 3;
+      const dy = y - 3;
+      const d = dx * dx + dy * dy;
+      if (d > 11) continue;
+      r.set(x, y, d > 7 ? C.outline : C.cheese2);
+    }
+  }
+  r.set(2, 2, C.cheese3);
+  r.set(3, 2, C.cheese3);
+  r.set(3, 3, C.cheese1);
+  r.set(3, 4, C.cheese1);
   return r;
 }
 
@@ -623,13 +759,18 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, TEX.wallFrontL, lowWall('l'));
   upload(textures, TEX.wallFrontR, lowWall('r'));
   upload(textures, TEX.tileHighlight, drawHighlight());
-  for (const facing of ['front', 'back'] as const) {
-    for (const anim of ['idle', 'walk'] as const) {
-      for (let f = 0; f < CHAR_FRAME_COUNT[anim]; f++) {
-        upload(textures, charTexKey(facing, anim, f), characterFrame(facing, anim, f));
+  for (let v = 0; v < CHAR_VARIANT_COUNT; v++) {
+    for (const facing of ['front', 'back'] as const) {
+      for (const anim of CHAR_ANIMS) {
+        for (let f = 0; f < CHAR_FRAME_COUNT[anim]; f++) {
+          upload(textures, charTexKey(v, facing, anim, f), characterFrame(v, facing, anim, f));
+        }
       }
     }
   }
+  upload(textures, EMOTE_TEX.angry, emoteBubble('angry'));
+  upload(textures, EMOTE_TEX.happy, emoteBubble('happy'));
+  upload(textures, COIN_TEX, coin());
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {
     const [ox, oy] = FURNITURE[defId].spriteOrigin;
     upload(textures, defId, FURNITURE_ART[defId](ox, oy));

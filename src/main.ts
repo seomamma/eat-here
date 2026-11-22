@@ -5,16 +5,19 @@ import { createInitialState } from './sim/state';
 import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
 import { WorldScene } from './view/scenes/WorldScene';
 import { App } from './ui/App';
+import { bindStore } from './ui/store';
 import './ui/styles/tokens.css';
 import './ui/styles/components.css';
 import '@fontsource/archivo-black/400.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/800.css';
 
-const sim = new Game(createInitialState());
+// Dev hook for automated checks: add ?debug to the URL (also adds the tap-to-walk debug walker).
+const debug = new URLSearchParams(location.search).has('debug');
+const sim = new Game(createInitialState(undefined, { debugWalker: debug }));
+bindStore(sim);
 
-// Dev hook for automated checks: add ?debug to the URL.
-if (new URLSearchParams(location.search).has('debug')) {
+if (debug) {
   (window as unknown as { __sim: Game }).__sim = sim;
 }
 

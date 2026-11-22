@@ -27,6 +27,11 @@ export class WorldScene extends Phaser.Scene {
     this.world = new WorldRenderer(this);
     this.world.sync(state);
     this.world.syncCharacters(state, this.sim.alpha);
+    const unsubs = [
+      this.sim.events.on('guestEmote', (e) => this.world.showEmote(e.guestId, e.emote)),
+      this.sim.events.on('paid', (e) => this.world.showCoinPopup(e.x, e.y, e.amount)),
+    ];
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubs.forEach((u) => u()));
     if (new URLSearchParams(location.search).has('debug')) this.exposeDebugHook();
     const camera = new CameraController(this, WorldRenderer.roomBounds(state));
     // Debug aid: tap a tile to outline it and send the debug walker there.
