@@ -2,12 +2,13 @@ import { signal } from '@preact/signals';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import type { Game } from '../sim/game';
 import {
-  hasAdjacentTable,
+  autoFaceRot,
+  chairFacesTable,
   findFreeSpot,
   validateBuy,
-  validatePlacement,
+  validateMove,
 } from '../sim/systems/build';
-import type { BuyResult } from '../sim/systems/build';
+import type { BuyResult, MoveResult } from '../sim/systems/build';
 import { dispatch } from './store';
 
 /** What the player is currently placing: a new purchase or an existing piece being moved. */
@@ -20,8 +21,10 @@ export interface Ghost {
   y: number;
   rot: Rot;
   result: BuyResult;
-  /** A chair with no table next to it: allowed, but guests will not use it. */
+  /** A chair facing no table: allowed, but guests will not use it. */
   orphanChair: boolean;
+  /** True once the player rotated a new piece by hand (stops auto-facing). */
+  manualRot: boolean;
 }
 
 /** Build UI state (not game state): the view reads it to draw, the bars read it to show buttons. */
@@ -29,12 +32,20 @@ export const buildMode = signal(false);
 export const ghost = signal<Ghost | null>(null);
 export const shopOpen = signal(false);
 
+/** Pause reason held while build mode is on (placing or moving): time stands still. */
+const BUILD_PAUSE = 'build';
+
 let simRef: Game | null = null;
 
 export function bindBuild(sim: Game): void {
   simRef = sim;
+  // Night and the report take over the screen: leave build mode (and let time run again).
   sim.events.on('phaseChanged', (e) => {
-    if (e.phase !== 'prep') exitBuild();
+    if (e.phase === 'night' || e.phase === 'report') exitBuild();
+  });
+  buildMode.subscribe((on) => {
+    if (on) sim.pause(BUILD_PAUSE);
+    else sim.resume(BUILD_PAUSE);
   });
   // Money changes the validity of a new purchase (e.g. debug top-up).
   sim.events.on('moneyChanged', () => refresh());
@@ -43,15 +54,14 @@ export function bindBuild(sim: Game): void {
 function evaluate(sim: Game, g: Omit<Ghost, 'result' | 'orphanChair'>): Ghost {
   const { placing, x, y, rot } = g;
   const state = sim.state;
-  const result: BuyResult =
+  const result: BuyResult | MoveResult =
     placing.kind === 'new'
       ? validateBuy(state, placing.defId, x, y, rot)
-      : state.clock.phase !== 'prep'
-        ? { ok: false, reason: 'notPrep' }
-        : validatePlacement(state, placing.defId, x, y, rot, placing.id);
+      : validateMove(state, placing.id, x, y, rot);
   const others = state.furniture.filter((f) => placing.kind !== 'move' || f.id !== placing.id);
-  const orphanChair = FURNITURE[placing.defId].kind === 'chair' && !hasAdjacentTable(others, x, y);
-  return { ...g, result, orphanChair };
+  const orphanChair =
+    FURNITURE[placing.defId].kind === 'chair' && !chairFacesTable(others, x, y, rot);
+  return { ...g, result: result as BuyResult, orphanChair };
 }
 
 function refresh(): void {
@@ -59,8 +69,14 @@ function refresh(): void {
   if (g && simRef) ghost.value = evaluate(simRef, g);
 }
 
-function setGhost(placing: Placing, x: number, y: number, rot: Rot): void {
-  if (simRef) ghost.value = evaluate(simRef, { placing, x, y, rot });
+function setGhost(placing: Placing, x: number, y: number, rot: Rot, manualRot = false): void {
+  if (simRef) ghost.value = evaluate(simRef, { placing, x, y, rot, manualRot });
+}
+
+/** Rotation a new chair gets at a tile: faces the adjacent table unless the player chose. */
+function rotAt(placing: Placing, x: number, y: number, rot: Rot, manualRot: boolean): Rot {
+  if (manualRot || placing.kind !== 'new' || FURNITURE[placing.defId].kind !== 'chair') return rot;
+  return simRef ? autoFaceRot(simRef.state.furniture, x, y) : rot;
 }
 
 export function enterBuild(): void {
@@ -79,7 +95,8 @@ export function startPlacingNew(defId: FurnitureDefId): void {
   const spot = findFreeSpot(simRef.state, defId) ?? { x: 4, y: 5 };
   shopOpen.value = false;
   buildMode.value = true;
-  setGhost({ kind: 'new', defId }, spot.x, spot.y, 0);
+  const placing: Placing = { kind: 'new', defId };
+  setGhost(placing, spot.x, spot.y, rotAt(placing, spot.x, spot.y, 0, false));
 }
 
 /** Picks up an existing piece; its old position counts as free until confirmed. */
@@ -91,12 +108,14 @@ export function startMoving(id: string): void {
 
 export function moveGhostTo(x: number, y: number): void {
   const g = ghost.peek();
-  if (g && (g.x !== x || g.y !== y)) setGhost(g.placing, x, y, g.rot);
+  if (g && (g.x !== x || g.y !== y)) {
+    setGhost(g.placing, x, y, rotAt(g.placing, x, y, g.rot, g.manualRot), g.manualRot);
+  }
 }
 
 export function rotateGhost(): void {
   const g = ghost.peek();
-  if (g) setGhost(g.placing, g.x, g.y, g.rot === 0 ? 1 : 0);
+  if (g) setGhost(g.placing, g.x, g.y, ((g.rot + 1) % 4) as Rot, true);
 }
 
 export function cancelPlacing(): void {

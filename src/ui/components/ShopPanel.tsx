@@ -2,7 +2,7 @@ import { FURNITURE, type FurnitureDefId } from '../../data/furniture';
 import { SHOP_ITEMS } from '../../data/shop';
 import { STRINGS } from '../../data/strings';
 import { shopOpen, startPlacingNew } from '../build';
-import { money, phase } from '../store';
+import { money } from '../store';
 import { Card } from './Card';
 
 /** Simple vector preview per item; unknown items fall back to a plain box. */
@@ -52,7 +52,7 @@ function ShopIcon(props: { defId: FurnitureDefId }) {
 
 /** Slides in from the bottom (portrait) or the right (landscape); lists what can be bought. */
 export function ShopPanel() {
-  if (!shopOpen.value || phase.value !== 'prep') return null;
+  if (!shopOpen.value) return null;
   const S = STRINGS.shop;
   const have = money.value;
   return (

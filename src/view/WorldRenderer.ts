@@ -22,6 +22,8 @@ import {
   TEX,
   WALL_BACK_RISE,
   charTexKey,
+  furnitureTexKey,
+  isMirroredRot,
   staffVariant,
   type CharAnim,
   type CharFacing,
@@ -560,13 +562,18 @@ export class WorldRenderer {
         img = this.scene.add.image(0, 0, f.defId);
         this.furniture.set(f.id, img);
       }
-      if (def.kind === 'oven') img.setTexture(this.ovenTexture(baking));
+      // Rot 0/1 show the front, 2/3 the back; the oven only glows when seen from the front.
+      img.setTexture(
+        def.kind === 'oven' && f.rot < 2
+          ? this.ovenTexture(baking)
+          : furnitureTexKey(f.defId, f.rot),
+      );
       // The sprite's footprint top corner sits on the projected origin of tile (x, y).
-      // rot 1 is the same sprite mirrored around that corner (flip happens around the origin).
+      // Odd rotations are the same sprite mirrored around that corner (flip is around the origin).
       const o = tileToScreen(f.x, f.y);
       img
         .setOrigin(def.spriteOrigin[0] / img.width, def.spriteOrigin[1] / img.height)
-        .setFlipX(f.rot === 1)
+        .setFlipX(isMirroredRot(f.rot))
         .setPosition(o.x, o.y)
         .setVisible(f.id !== this.hiddenFurnitureId)
         .setDepth(depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS);

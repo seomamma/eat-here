@@ -126,10 +126,10 @@
 - Furniture rotation 0–3 (back-facing placeholder sprites + mirroring); chairs must face an adjacent table to be used; auto-face on placement.
 
 **Acceptance criteria**
-- [ ] Several days play in a row with only the "Next day" tap between them.
-- [ ] Buying and placing a plant mid-day works; time is frozen while placing and resumes after.
-- [ ] Moving an occupied chair/table is refused with a clear reason; no character gets stuck after a mid-day change (tested).
-- [ ] A chair can be rotated through all 4 directions; guests only sit on chairs facing a table.
+- [x] Several days play in a row with only the "Next day" tap between them.
+- [x] Buying and placing a plant mid-day works; time is frozen while placing and resumes after.
+- [x] Moving an occupied chair/table is refused with a clear reason; no character gets stuck after a mid-day change (tested).
+- [x] A chair can be rotated through all 4 directions; guests only sit on chairs facing a table.
 
 ### M8 — Recipe leveling with rare ingredients (D-031)
 **Goal:** "salt on the fries" — level up dishes with special ingredients that are a little hard to get.

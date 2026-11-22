@@ -11,7 +11,7 @@ import { selectGuest, selectedGuestId } from './selection';
 export const money = signal(0);
 export const day = signal(1);
 export const minuteOfDay = signal(0);
-export const phase = signal<DayPhase>('prep');
+export const phase = signal<DayPhase>('open');
 /** Stats of the day that just ended; set while the report modal is shown. */
 export const report = signal<{ day: number; stats: DayStats } | null>(null);
 

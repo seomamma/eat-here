@@ -3,6 +3,7 @@ import { FURNITURE } from '../data/furniture';
 import { footprintTiles, tileAt } from '../sim/grid';
 import type { GameState } from '../sim/state';
 import type { Ghost } from '../ui/build';
+import { furnitureTexKey, isMirroredRot } from './placeholderTextures';
 import { tileToScreen, ISO_HALF_H, ISO_HALF_W, type Point } from './iso';
 
 /** Above floors but below furniture; the placement tint and ghost sit above everything but UI. */
@@ -76,13 +77,14 @@ export class BuildOverlay {
       }
     }
     this.tint.setVisible(true);
-    this.ghostImage ??= this.scene.add.image(0, 0, defId).setAlpha(GHOST_ALPHA);
+    const texKey = furnitureTexKey(defId, ghost.rot);
+    this.ghostImage ??= this.scene.add.image(0, 0, texKey).setAlpha(GHOST_ALPHA);
     const o = tileToScreen(ghost.x, ghost.y);
     const img = this.ghostImage;
     img
-      .setTexture(defId)
+      .setTexture(texKey)
       .setOrigin(def.spriteOrigin[0] / img.width, def.spriteOrigin[1] / img.height)
-      .setFlipX(ghost.rot === 1)
+      .setFlipX(isMirroredRot(ghost.rot))
       .setPosition(o.x, o.y)
       .setDepth(DEPTH_GHOST)
       .setVisible(true);

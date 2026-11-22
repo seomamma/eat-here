@@ -1,7 +1,7 @@
 import { STRINGS } from '../../data/strings';
-import { formatClock, weekdayIndex } from '../../sim/time';
+import { formatHour, weekdayIndex } from '../../sim/time';
 import { RANKS, rankDef } from '../../data/ranks';
-import { day, fame, minuteOfDay, money, rank } from '../store';
+import { day, fame, minuteOfDay, money, phase, rank } from '../store';
 import { Card } from './Card';
 
 function CoinIcon() {
@@ -15,6 +15,28 @@ function CoinIcon() {
         stroke-width="2"
         stroke-linecap="round"
       />
+    </svg>
+  );
+}
+
+/** Sun while the restaurant is open, moon at night. */
+function TimeIcon(props: { night: boolean }) {
+  return props.night ? (
+    <svg class="time-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M16 3a9 9 0 1 0 5 15 7.5 7.5 0 0 1-5-15z"
+        fill="var(--saffron)"
+        stroke="var(--ink)"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+      />
+    </svg>
+  ) : (
+    <svg class="time-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <g stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round">
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" />
+      </g>
+      <circle cx="12" cy="12" r="5" fill="var(--saffron)" stroke="var(--ink)" stroke-width="2.5" />
     </svg>
   );
 }
@@ -53,10 +75,11 @@ export function Hud() {
       <Card accent="tomato">
         <h1 class="card-title">{STRINGS.gameTitle}</h1>
         <p class="card-subtitle">
+          <TimeIcon night={phase.value === 'night'} />
           {STRINGS.hudDayLine(
             day.value,
             STRINGS.weekdays[weekdayIndex(day.value)] ?? '',
-            formatClock(minuteOfDay.value),
+            phase.value === 'night' ? STRINGS.hudNight : formatHour(minuteOfDay.value),
           )}
         </p>
       </Card>

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { FURNITURE, type FurnitureDefId } from '../data/furniture';
+import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
 import { STAFF, type StaffRole } from '../data/staff';
 import { TILE_H, TILE_W } from './iso';
@@ -804,6 +804,19 @@ function legs(i0: number, j0: number, i1: number, j1: number, z1: number, t = 0.
   return [mk(i0, j0), mk(i1 - t, j0), mk(i0, j1 - t), mk(i1 - t, j1 - t)];
 }
 
+/**
+ * Texture of a furniture piece for a rotation (D-030): rot 0/1 use the front view, rot 2/3 the
+ * back view; odd rotations are the same sprite mirrored (see `isMirroredRot`).
+ */
+export function furnitureTexKey(defId: FurnitureDefId, rot: Rot): string {
+  return rot >= 2 ? `${defId}_back` : defId;
+}
+
+/** Odd rotations draw the sprite mirrored around the footprint's top corner. */
+export function isMirroredRot(rot: Rot): boolean {
+  return rot % 2 === 1;
+}
+
 export type OvenGlow = 'off' | 0 | 1;
 /** Baking frames alternate (flicker); 'off' is a cold, dim mouth. */
 export const OVEN_TEX = {
@@ -811,7 +824,8 @@ export const OVEN_TEX = {
   bake: ['oven_pizza_bake_0', 'oven_pizza_bake_1'],
 } as const;
 
-function ovenArt(ox: number, oy: number, glow: OvenGlow): Raster {
+/** Back view of the oven (rot 2/3): the mouth is on the hidden side, so no glow either. */
+function ovenArt(ox: number, oy: number, glow: OvenGlow, back = false): Raster {
   return boxes(2, 1, ox, oy, [
     part({
       i0: 0,
@@ -825,7 +839,7 @@ function ovenArt(ox: number, oy: number, glow: OvenGlow): Raster {
       right: C.brick1,
       decal: (face, a, e) => {
         if (face === 'top') return undefined;
-        if (face === 'left') {
+        if (face === 'left' && !back) {
           // Mouth on the +y face the chef stands in front of.
           const dx = Math.abs(a - 16);
           if (dx < 7 && e < 9 && e >= 1) {
@@ -856,7 +870,8 @@ function ovenArt(ox: number, oy: number, glow: OvenGlow): Raster {
   ]);
 }
 
-type FurnitureArt = (ox: number, oy: number) => Raster;
+/** `back` draws the back view (rot 2/3); pieces that look the same from behind ignore it. */
+type FurnitureArt = (ox: number, oy: number, back: boolean) => Raster;
 
 const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
   table_small: (ox, oy) =>
@@ -886,7 +901,7 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.cream3,
       }),
     ]),
-  chair_wood: (ox, oy) =>
+  chair_wood: (ox, oy, back) =>
     boxes(1, 1, ox, oy, [
       ...legs(0.2, 0.2, 0.8, 0.8, 5, 0.12),
       part({
@@ -900,12 +915,13 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         left: C.wood3,
         right: C.wood2,
       }),
-      // Backrest on the -x side (faces +x).
+      // Front view (faces +y): backrest on the -y side, behind the seat. Back view (faces -y):
+      // the backrest is on the +y side, towards the viewer.
       part({
         i0: 0.16,
-        j0: 0.16,
-        i1: 0.3,
-        j1: 0.84,
+        j0: back ? 0.7 : 0.16,
+        i1: 0.84,
+        j1: back ? 0.84 : 0.3,
         z0: 8,
         z1: 18,
         top: C.wood4,
@@ -913,8 +929,8 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.wood2,
       }),
     ]),
-  oven_pizza: (ox, oy) => ovenArt(ox, oy, 'off'),
-  counter_pass: (ox, oy) =>
+  oven_pizza: (ox, oy, back) => ovenArt(ox, oy, 'off', back),
+  counter_pass: (ox, oy, back) =>
     boxes(2, 1, ox, oy, [
       part({
         i0: 0,
@@ -927,15 +943,19 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         left: C.wood3,
         right: C.wood2,
         decal: (face, a, e) => {
-          if (face === 'left' && e > 2 && e < 9 && a % 16 > 2 && a % 16 < 14) return C.wood2;
+          // Front: panelled cupboard doors. Back: a plain shelf edge.
+          if (!back && face === 'left' && e > 2 && e < 9 && a % 16 > 2 && a % 16 < 14) {
+            return C.wood2;
+          }
+          if (back && face === 'left' && e > 6 && e < 8) return C.wood2;
           return undefined;
         },
       }),
-      // Warming plates on top.
+      // Warming plates on top (swapped ends in the back view).
       part({
-        i0: 0.25,
+        i0: back ? 1.35 : 0.25,
         j0: 0.3,
-        i1: 0.65,
+        i1: back ? 1.75 : 0.65,
         j1: 0.7,
         z0: 11,
         z1: 13,
@@ -944,9 +964,9 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.cheese1,
       }),
       part({
-        i0: 1.2,
+        i0: back ? 0.3 : 1.2,
         j0: 0.3,
-        i1: 1.7,
+        i1: back ? 0.8 : 1.7,
         j1: 0.7,
         z0: 11,
         z1: 12,
@@ -1032,6 +1052,7 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, OVEN_TEX.bake[1], ovenArt(ovx, ovy, 1));
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {
     const [ox, oy] = FURNITURE[defId].spriteOrigin;
-    upload(textures, defId, FURNITURE_ART[defId](ox, oy));
+    upload(textures, defId, FURNITURE_ART[defId](ox, oy, false));
+    upload(textures, furnitureTexKey(defId, 2), FURNITURE_ART[defId](ox, oy, true));
   }
 }

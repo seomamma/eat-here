@@ -12,7 +12,7 @@ import {
   rotateGhost,
   shopOpen,
 } from '../build';
-import { dispatch, phase } from '../store';
+import { phase, report } from '../store';
 
 const B = STRINGS.build;
 
@@ -40,36 +40,54 @@ function PlacementHint() {
   );
 }
 
-/** Bottom bar: Shop / Build / Open! in prep, placement controls in build mode, status while open. */
-export function ActionBar() {
+/** Open / Closing status; replaced by the pause notice while building. */
+function StatusPill() {
   const p = phase.value;
-  if (p === 'prep') {
-    const g = ghost.value;
-    if (g) {
-      return (
-        <div class="bottom-bar">
-          <PlacementHint />
-          <div class="bar-row">
-            <button type="button" class="btn btn--small btn--crust" onClick={rotateGhost}>
-              {B.rotate}
-            </button>
-            <button
-              type="button"
-              class="btn btn--small btn--basil"
-              disabled={!g.result.ok}
-              onClick={confirmPlacing}
-            >
-              {B.confirm}
-            </button>
-            <button type="button" class="btn btn--small btn--paper" onClick={cancelPlacing}>
-              {B.cancel}
-            </button>
-          </div>
-        </div>
-      );
-    }
+  if (buildMode.value) {
     return (
-      <div class="bottom-bar">
+      <div class="status-pill status-pill--paused" role="status">
+        <span class="status-dot status-dot--paused" aria-hidden="true" />
+        {STRINGS.pausedWhileBuilding}
+      </div>
+    );
+  }
+  return (
+    <div class="status-pill" role="status">
+      <span class={`status-dot status-dot--${p}`} aria-hidden="true" />
+      {p === 'closing' ? STRINGS.statusClosing : STRINGS.statusOpen(formatClock(DAY_CLOSE_MINUTE))}
+    </div>
+  );
+}
+
+/**
+ * Bottom bar: status pill plus Shop / Build in any phase, placement controls while a piece is
+ * being placed. Hidden at night and while the day report is open.
+ */
+export function ActionBar() {
+  if (phase.value === 'night' || phase.value === 'report' || report.value) return null;
+  const g = ghost.value;
+  return (
+    <div class="bottom-bar">
+      {g && <PlacementHint />}
+      <StatusPill />
+      {g ? (
+        <div class="bar-row">
+          <button type="button" class="btn btn--small btn--crust" onClick={rotateGhost}>
+            {B.rotate}
+          </button>
+          <button
+            type="button"
+            class="btn btn--small btn--basil"
+            disabled={!g.result.ok}
+            onClick={confirmPlacing}
+          >
+            {B.confirm}
+          </button>
+          <button type="button" class="btn btn--small btn--paper" onClick={cancelPlacing}>
+            {B.cancel}
+          </button>
+        </div>
+      ) : (
         <div class="bar-row">
           <button
             type="button"
@@ -85,32 +103,12 @@ export function ActionBar() {
               {B.doneButton}
             </button>
           ) : (
-            <>
-              <button type="button" class="btn btn--small btn--sky" onClick={enterBuild}>
-                {B.buildButton}
-              </button>
-              <button
-                type="button"
-                class="btn btn--small btn--tomato"
-                onClick={() => dispatch({ type: 'openRestaurant' })}
-              >
-                {STRINGS.openButton}
-              </button>
-            </>
+            <button type="button" class="btn btn--small btn--sky" onClick={enterBuild}>
+              {B.buildButton}
+            </button>
           )}
         </div>
-      </div>
-    );
-  }
-  if (p === 'open' || p === 'closing') {
-    return (
-      <div class="bottom-bar">
-        <div class="status-pill" role="status">
-          <span class={`status-dot status-dot--${p}`} aria-hidden="true" />
-          {p === 'open' ? STRINGS.statusOpen(formatClock(DAY_CLOSE_MINUTE)) : STRINGS.statusClosing}
-        </div>
-      </div>
-    );
-  }
-  return null;
+      )}
+    </div>
+  );
 }

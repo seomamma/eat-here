@@ -21,6 +21,8 @@
 }
 
 .top-bar {
+  position: relative;
+  z-index: 2;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -184,12 +186,14 @@
 /* Bottom action bar sits inside the bottom HUD inset reserved by the camera (80px / 44px). */
 .bottom-bar {
   position: absolute;
+  z-index: 2;
   left: var(--safe-left);
   right: var(--safe-right);
   bottom: var(--safe-bottom);
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   padding: 0 12px 8px;
 }
 
@@ -215,6 +219,62 @@
 }
 .status-dot--closing {
   background: var(--saffron);
+}
+.status-pill--paused {
+  box-shadow: 3px 3px 0 0 var(--saffron);
+}
+.status-dot--paused {
+  background: var(--saffron);
+}
+
+.time-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 5px;
+}
+
+/* Night transition: dark veil over the world (below the HUD), moon and next day's number. */
+.night-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 20, 52, 0.68);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.night-overlay--on {
+  opacity: 1;
+}
+.night-card {
+  display: flex;
+  transform: translateY(10px) scale(0.92);
+  transition: transform 0.6s ease;
+}
+.night-overlay--on .night-card {
+  transform: none;
+}
+.night-card .card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px;
+}
+.night-moon {
+  width: 34px;
+  height: 34px;
+}
+.night-day {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .modal-backdrop {
@@ -296,7 +356,10 @@
 @media (orientation: landscape) and (max-height: 500px) {
   /* Bottom-right corner: keeps clear of the room's lowest corner and fits the 44px inset. */
   .bottom-bar {
+    flex-direction: row;
     justify-content: flex-end;
+    align-items: flex-end;
+    gap: 10px;
     padding: 0 16px 2px;
   }
   .btn--primary {
