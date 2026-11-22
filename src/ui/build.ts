@@ -31,6 +31,20 @@ export interface Ghost {
 export const buildMode = signal(false);
 export const ghost = signal<Ghost | null>(null);
 export const shopOpen = signal(false);
+export const shopTab = signal<'furniture' | 'market'>('furniture');
+export const recipesOpen = signal(false);
+
+/** Shop and recipe book share one slot on screen: opening one closes the other. */
+export function openShop(tab: 'furniture' | 'market' = shopTab.peek()): void {
+  shopTab.value = tab;
+  recipesOpen.value = false;
+  shopOpen.value = true;
+}
+
+export function openRecipes(): void {
+  shopOpen.value = false;
+  recipesOpen.value = true;
+}
 
 /** Pause reason held while build mode is on (placing or moving): time stands still. */
 const BUILD_PAUSE = 'build';
@@ -87,6 +101,7 @@ export function exitBuild(): void {
   buildMode.value = false;
   ghost.value = null;
   shopOpen.value = false;
+  recipesOpen.value = false;
 }
 
 /** Starts placing a new purchase at a free tile near the room centre. Money is spent on confirm. */
@@ -94,6 +109,7 @@ export function startPlacingNew(defId: FurnitureDefId): void {
   if (!simRef) return;
   const spot = findFreeSpot(simRef.state, defId) ?? { x: 4, y: 5 };
   shopOpen.value = false;
+  recipesOpen.value = false;
   buildMode.value = true;
   const placing: Placing = { kind: 'new', defId };
   setGhost(placing, spot.x, spot.y, rotAt(placing, spot.x, spot.y, 0, false));

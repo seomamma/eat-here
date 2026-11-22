@@ -1,5 +1,9 @@
 import { signal } from '@preact/signals';
+import type { IngredientId } from '../data/ingredients';
+import type { RecipeId } from '../data/recipes';
 import type { DayStats } from '../sim/dayStats';
+import type { GameState } from '../sim/state';
+import type { MarketState } from '../sim/systems/market';
 import type { Command, CommandResult, Game } from '../sim/game';
 import type { DayPhase } from '../sim/time';
 import type { GuestPhase } from '../sim/characters';
@@ -22,9 +26,35 @@ export interface RankUpInfo {
   rank: number;
   name: string;
   unlocks: string[];
+  reward: IngredientId | null;
 }
 /** Rank-ups waiting to be shown (the first one is on screen); the sim is paused while any is. */
 export const rankUps = signal<RankUpInfo[]>([]);
+
+/** Copies of sim state the panels render (refreshed from sim events; read-only for the UI). */
+export const inventory = signal<Record<IngredientId, number>>({} as Record<IngredientId, number>);
+export const market = signal<MarketState>({ day: 1, offers: [] });
+export const recipeStates = signal<GameState['recipes']>({} as GameState['recipes']);
+
+export type Toast =
+  | { id: number; kind: 'level'; recipeId: RecipeId; level: number }
+  | { id: number; kind: 'gift'; guestName: string; ingredient: IngredientId };
+/** Transient feedback cards (level up, gifts); they dismiss themselves and never pause the sim. */
+export const toasts = signal<Toast[]>([]);
+const TOAST_MS = 4000;
+let nextToastId = 1;
+
+type NewToast = Toast extends infer T ? (T extends Toast ? Omit<T, 'id'> : never) : never;
+
+function pushToast(toast: NewToast): void {
+  const id = nextToastId++;
+  toasts.value = [...toasts.value, { ...toast, id } as Toast];
+  setTimeout(() => dismissToast(id), TOAST_MS);
+}
+
+export function dismissToast(id: number): void {
+  toasts.value = toasts.value.filter((t) => t.id !== id);
+}
 
 /** Snapshot of the selected guest for the info card. */
 export interface GuestCardInfo {
@@ -60,6 +90,19 @@ export function bindStore(sim: Game): void {
   minuteOfDay.value = clock.minuteOfDay;
   phase.value = clock.phase;
   report.value = clock.phase === 'report' ? { day: clock.day, stats: sim.state.dayStats } : null;
+  const syncPantry = () => {
+    inventory.value = { ...sim.state.inventory };
+    market.value = structuredClone(sim.state.market);
+    recipeStates.value = structuredClone(sim.state.recipes);
+  };
+  syncPantry();
+  for (const ev of ['inventoryChanged', 'marketRefreshed', 'recipeLeveledUp', 'rankUp'] as const) {
+    sim.events.on(ev, syncPantry);
+  }
+  sim.events.on('recipeLeveledUp', (e) => pushToast({ kind: 'level', ...e }));
+  sim.events.on('giftReceived', (e) =>
+    pushToast({ kind: 'gift', guestName: e.guestName, ingredient: e.ingredient }),
+  );
   sim.events.on('moneyChanged', (e) => {
     money.value = e.money;
   });
@@ -79,7 +122,10 @@ export function bindStore(sim: Game): void {
     rank.value = e.rank;
   });
   sim.events.on('rankUp', (e) => {
-    rankUps.value = [...rankUps.value, { rank: e.rank, name: e.name, unlocks: e.unlocks }];
+    rankUps.value = [
+      ...rankUps.value,
+      { rank: e.rank, name: e.name, unlocks: e.unlocks, reward: e.reward },
+    ];
     sim.pause(RANK_UP_PAUSE);
   });
   sim.events.on('guestLeft', (e) => {

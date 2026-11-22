@@ -37,6 +37,7 @@ export function ReportModal() {
             />
             <Row label={S.served} value={String(stats.guestsServed)} />
             <Row label={S.fame} value={`+${stats.fameGained}`} />
+            <Row label={S.gifts} value={String(stats.gifts)} />
             <Row label={S.leftNoSeat} value={String(stats.guestsLeftNoSeat)} />
             <Row
               label={S.bestSeller}

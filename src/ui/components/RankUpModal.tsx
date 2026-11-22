@@ -1,6 +1,8 @@
 import { STRINGS } from '../../data/strings';
 import { dismissRankUp, rankUps } from '../store';
+import { INGREDIENTS } from '../../data/ingredients';
 import { Card } from './Card';
+import { IngredientIcon } from './Icons';
 
 const CONFETTI_COLORS = ['var(--tomato)', 'var(--saffron)', 'var(--basil)', 'var(--sky)'];
 const CONFETTI_COUNT = 28;
@@ -52,6 +54,15 @@ export function RankUpModal() {
                       <li key={u}>{u}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {info.reward && (
+                <div class="rankup-reward">
+                  <IngredientIcon id={info.reward} size={36} />
+                  <span>
+                    <span class="rankup-unlocked">{S.reward}</span>
+                    <span class="rankup-reward-name">{INGREDIENTS[info.reward].name}</span>
+                  </span>
                 </div>
               )}
             </div>

@@ -6,7 +6,12 @@ import {
   MARKET_SLOTS,
   MAX_RECIPE_LEVEL_MVP,
 } from '../../src/data/balance';
-import { INGREDIENTS, INGREDIENT_IDS, RARE_INGREDIENTS } from '../../src/data/ingredients';
+import {
+  INGREDIENTS,
+  INGREDIENT_IDS,
+  RARE_INGREDIENTS,
+  type IngredientId,
+} from '../../src/data/ingredients';
 import { RANKS } from '../../src/data/ranks';
 import { RECIPES, RECIPE_IDS } from '../../src/data/recipes';
 import { isGuest } from '../../src/sim/characters';
@@ -271,7 +276,7 @@ describe('gifts', () => {
     for (let i = 0; i < n; i++) rollGift(g.state, g.events, guest(GIFT_MIN_HAPPINESS));
     expect(got.length / n).toBeGreaterThan(GIFT_CHANCE - 0.03);
     expect(got.length / n).toBeLessThan(GIFT_CHANCE + 0.03);
-    const rare = got.filter((i) => INGREDIENTS[i as 'oregano'].rarity === 'rare').length;
+    const rare = got.filter((i) => INGREDIENTS[i as IngredientId].rarity === 'rare').length;
     expect(rare / got.length).toBeGreaterThan(0.3);
     expect(rare / got.length).toBeLessThan(0.5);
     expect(Object.values(g.state.inventory).reduce((a, b) => a + b, 0)).toBe(got.length);

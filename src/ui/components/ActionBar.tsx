@@ -9,8 +9,9 @@ import {
   enterBuild,
   exitBuild,
   ghost,
+  openRecipes,
+  openShop,
   rotateGhost,
-  shopOpen,
 } from '../build';
 import { phase, report } from '../store';
 
@@ -89,14 +90,11 @@ export function ActionBar() {
         </div>
       ) : (
         <div class="bar-row">
-          <button
-            type="button"
-            class="btn btn--small btn--saffron"
-            onClick={() => {
-              shopOpen.value = true;
-            }}
-          >
+          <button type="button" class="btn btn--small btn--saffron" onClick={() => openShop()}>
             {B.shopButton}
+          </button>
+          <button type="button" class="btn btn--small btn--tomato" onClick={openRecipes}>
+            {B.recipesButton}
           </button>
           {buildMode.value ? (
             <button type="button" class="btn btn--small btn--basil" onClick={exitBuild}>

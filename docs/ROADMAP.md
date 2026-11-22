@@ -139,10 +139,10 @@
 - Upgrading: coins + ingredient spent, LEVEL UP moment, higher price and quality.
 
 **Acceptance criteria**
-- [ ] Each of the 4 dishes can be upgraded Lv.1→3 when you own the ingredient and coins; refused otherwise (unit tested).
-- [ ] Market offers change every morning and are deterministic per seed; gifts happen occasionally (measured rate reported).
-- [ ] Higher level dishes give more happiness and income (unit tested).
-- [ ] LEVEL UP and "gift" feedback are clearly visible (sound in M10).
+- [x] Each of the 4 dishes can be upgraded Lv.1→3 when you own the ingredient and coins; refused otherwise (unit tested).
+- [x] Market offers change every morning and are deterministic per seed; gifts happen occasionally (measured rate reported).
+- [x] Higher level dishes give more happiness and income (unit tested).
+- [x] LEVEL UP and "gift" feedback are clearly visible (sound in M10).
 
 ### M9 — Save & load
 **Goal:** progress persists.
