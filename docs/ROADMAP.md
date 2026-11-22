@@ -18,7 +18,7 @@
 - [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` all pass.
 - [x] A test proves the sim lint boundary (a deliberate Phaser import in sim fails lint).
 
-### M1 — The room
+### M1 — The room ✅ (top-down placeholder; superseded visually by M1b)
 **Goal:** see the restaurant and move the camera.
 - Grid model in sim + placeholder tile rendering (floor, walls, door).
 - Furniture from data: 2 tables + 4 chairs, oven, pass counter, at fixed starting positions.
@@ -31,6 +31,20 @@
 - [x] Zoom only snaps to integer levels; camera can't leave the room bounds.
 - [x] Rotating the phone re-fits the camera.
 - [x] Unit tests for grid occupancy.
+
+### M1b — Isometric room (D-025, D-026)
+**Goal:** the room from M1, drawn in isometric view, pixel-perfect on every phone.
+- `src/view/iso.ts`: tile↔screen projection, diamond hit-test, depth key — unit tested.
+- Placeholder art regenerated isometric: diamond floors (wood, kitchen checker), two full-height back walls, low cut-away front walls, door in a front wall, furniture as simple iso boxes with 2:1 edges.
+- Furniture rotation support in data/state (`rot` 0/1, mirrored sprite, rotated footprint).
+- Camera fit/clamp on the room's diamond bounds; zoom integer in device pixels; slimmer landscape HUD insets.
+
+**Acceptance criteria**
+- [ ] Room reads clearly as an isometric pizzeria in portrait and landscape; room is reasonably large in landscape.
+- [ ] All diagonal edges are clean 2:1 steps; pixels are even at DPR 1, 2 and 2.625.
+- [ ] Depth order correct: chairs behind/in front of tables as expected, oven in front of back wall.
+- [ ] Debug: tapping a tile highlights exactly that diamond (including near diamond edges).
+- [ ] Unit tests for projection round-trip, hit-test edges, depth ordering and rotated footprints.
 
 ### M2 — Walking
 **Goal:** characters move correctly through the room.

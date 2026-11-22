@@ -16,7 +16,7 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Why:** A narrow theme gives a stronger identity and a manageable number of recipes and art.
 
 ### D-003 Camera: top-down ¾ on a square grid
-**Status:** Accepted
+**Status:** Superseded by D-025
 **Alternatives:** Isometric.
 **Why:** Roughly half the art cost (3 directions instead of 4+ angles per object), simpler depth sorting and tap-to-tile mapping.
 
@@ -120,3 +120,14 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Status:** Accepted (M0)
 **Decision:** Use Phaser 4.2.1 (stable `latest` on npm at M0). All deps pinned to exact versions.
 **Why:** D-010 said to prefer Phaser 4 if stable. Note for future sessions: many tutorials/examples online are Phaser 3 — check API differences against Phaser 4 docs before copying code.
+
+### D-025 Camera: isometric view (supersedes D-003)
+**Status:** Accepted (after M1)
+**Decision:** The world is drawn in **isometric** projection (room rotated 45°, diamond floor tiles, 2:1 pixel lines), like classic Kairosoft management games. The **simulation grid is unchanged** (square tiles, x/y); only the view layer projects it.
+**Alternatives:** Keep top-down ¾ (D-003).
+**Why:** The user's reference for the desired feel is isometric, and it is what the target audience associates with the genre. Switching right after M1 is the cheapest point: no final art exists and only the renderer must change. Costs accepted: isometric pixel art is harder to draw/clean up (strict 2:1 lines), and the view needs tile↔screen projection, x+y depth sorting and diamond hit-testing.
+
+### D-026 Pixel-perfect zoom in device pixels; slimmer HUD in landscape
+**Status:** Accepted (after M1)
+**Decision:** Integer zoom is computed in **device pixels** (render at `devicePixelRatio`), so one art pixel is always a whole number of physical pixels, also on fractional-DPR phones (e.g. 2.625). Landscape uses slimmer HUD insets than portrait so the room isn't tiny.
+**Why:** Found in M1 review: CSS-pixel integer zoom gives uneven pixels on fractional DPR, and landscape at 844×390 left only 214 px for the room.

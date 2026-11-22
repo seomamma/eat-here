@@ -1,17 +1,18 @@
 # Asset List — MVP (first playable)
 
 > Status: draft v0.1. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
-> Sizes follow ART_DIRECTION.md. Naming: `<entity>_<anim>_<dir>_<frame>`.
+> Sizes follow ART_DIRECTION.md (isometric, D-025). Furniture: 2 orientations via mirroring. Naming: `<entity>_<anim>_<dir>_<frame>`.
 
-## 1. Tiles (16×16)
+## 1. Tiles (isometric: floor diamonds 32×16, wall segments 16×48 / front cut-away 16×12)
 
 | ID | Description | Variants |
 |---|---|---|
 | `floor_wood` | Dining room wooden floor | 2 (subtle variation) |
 | `floor_tile` | Kitchen checker tile | 1 |
-| `wall_back` | Back wall (cream plaster, brick base) | left / mid / right |
-| `wall_side` | Side walls (top-down edge) | left / right |
-| `wall_corner` | Corners | 2 |
+| `wall_back_left` | Back-left wall segment (cream plaster, brick base) | 2 (plain, window) |
+| `wall_back_right` | Back-right wall segment (mirror + darker shade) | 2 |
+| `wall_front_low` | Low cut-away front wall | left / right |
+| `wall_corner` | Back corner + front corners | 3 |
 | `door` | Entrance door (open/closed) | 2 frames |
 | `outside_ground` | Sidewalk strip outside the door | 1 |
 
@@ -28,7 +29,7 @@
 
 ## 3. Characters (frame 16×24)
 
-Directions: `down`, `up`, `side` (left = mirrored).
+Facings: `front` (down-right) and `back` (up-right); the other two are mirrored.
 
 | Character | Animations | Frame count |
 |---|---|---|

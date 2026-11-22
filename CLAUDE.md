@@ -33,7 +33,7 @@ Cozy pixel-art pizzeria **manager sim** for mobile (browser-first). Phaser 4 + T
 - All randomness via the seeded RNG in state.
 - UI strings in `src/data/strings.ts`.
 - Sim logic gets Vitest tests in `tests/`. Bug fix → add a failing test first when feasible.
-- Pixel art: integer zoom only, nearest-neighbor, sizes per ART_DIRECTION.md (16 px tiles, 16×24 characters).
+- Pixel art: integer zoom only, nearest-neighbor, isometric view (D-025), sizes per ART_DIRECTION.md (32×16 floor diamonds, 16×24 characters).
 
 ## Commands
 - `npm run dev` — Vite dev server

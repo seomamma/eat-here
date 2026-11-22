@@ -157,10 +157,10 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 
 ## 5. View layer (Phaser)
 
-- One main `WorldScene`. `WorldRenderer` keeps a map `entityId → Sprite`, creating/destroying sprites as entities appear/disappear, and each frame sets position, animation (from state + direction) and depth (`y` of base).
-- **Camera:** drag to pan, pinch / wheel to zoom, snapping to **integer zoom levels**, bounded to the restaurant. Default zoom = largest integer that fits the restaurant in the viewport.
+- One main `WorldScene`. `WorldRenderer` keeps a map `entityId → Sprite`, creating/destroying sprites as entities appear/disappear, and each frame sets position, animation (from state + direction) and depth (`x + y` of the front-most footprint tile, see ART_DIRECTION §2).
+- **Camera:** drag to pan, pinch / wheel to zoom, snapping to **integer zoom levels in device pixels** (D-026), bounded to the restaurant. Default zoom = largest integer that fits the restaurant in the viewport.
 - **Scale mode:** Phaser `Scale.RESIZE` — canvas always fills the screen; orientation changes trigger re-fit.
-- Input: tap on tile → command or selection (shows guest info card).
+- Input: tap → `screenToTile` (diamond hit-test) → command or selection (shows guest info card).
 - Juice (popups, sparkles, coin bounce) lives here, triggered by sim events.
 
 ## 6. UI layer (Preact over DOM)

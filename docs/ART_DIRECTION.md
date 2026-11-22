@@ -12,28 +12,36 @@ The contrast is the identity: the *world* is soft, warm, hand-pixeled and cozy; 
 
 From the user's reference we take **only broad principles**: small expressive pixel characters, white UI surfaces, thick black outlines, bold typography, solid offset accent shadows. We do **not** reuse any characters, layouts, color sets, or compositions from the reference or from Kairosoft / Restaurant City. Our accent palette is deliberately food-themed (tomato, basil, saffron, crust) rather than the reference's purple/orange/teal.
 
-## 2. Camera & perspective
+## 2. Camera & perspective (isometric — D-025)
 
-- **Top-down ¾ view** (looking down at an angle): floors seen from above, walls and furniture show their front face.
-- **Square tile grid**, 16×16 px tiles.
-- Characters face **4 directions**: down, up, side (right); left = mirrored right. → 3 drawn directions.
-- Depth sorting: by the Y coordinate of each object's **base** (feet / footprint bottom). Lower on screen = in front.
-- Walls: only the **back wall** (top) and **side walls** are drawn; the front wall is omitted so the room is always visible.
+- **Isometric view:** the room is rotated 45°; floor tiles are diamonds; walls run diagonally.
+- **2:1 pixel lines:** every diagonal edge steps exactly 2 px across for 1 px down. No other diagonal angles in world art.
+- The simulation grid stays square (x to the lower-right, y to the lower-left on screen). Projection:
+  - `screenX = (x − y) × 16`, `screenY = (x + y) × 8` (tile origin = top corner of the diamond)
+  - inverse for taps: `x = floor((sx/16 + sy/8) / 2)`, `y = floor((sy/8 − sx/16) / 2)`
+- **Walls:** the two **back** walls (top-left and top-right edges) are drawn full height. The two **front** walls are drawn as a **low cut-away** (a few px high) so the interior stays visible. The door sits in a front wall.
+- **Characters:** 2 drawn facings — **down-right (front)** and **up-right (back)**; down-left and up-left are mirrored → 4 directions.
+- **Furniture:** drawn in 1 orientation; the other is the mirrored sprite (rot 0/1). Footprints rotate accordingly (2×1 ↔ 1×2).
+- **Depth sorting:** by `x + y` of an object's front-most footprint tile (higher = in front), tie-broken by `x`. Characters use their interpolated `x + y`.
 
 ## 3. Resolution & scaling
 
 | Thing | Size |
 |---|---|
-| Tile | 16 × 16 px |
-| Character frame | 16 × 24 px (pivot at bottom-center, feet on y=23) |
-| Small furniture (chair, plant) | 16 × 16 / 16 × 24 |
-| Table (2-seat) | 16 × 16 footprint (sprite may be 16×20) |
-| Oven / counter | 32 × 24 (2-tile footprint) |
-| Dish icons | 12 × 12 (drawn on 16×16 canvas) |
+| Floor tile (diamond) | 32 × 16 px |
+| Back wall segment (per tile edge) | 16 × 48 px (wall face incl. top cap) |
+| Front cut-away wall segment | 16 × 12 px |
+| Character frame | 16 × 24 px (pivot bottom-center, feet on y=23) |
+| Small furniture (chair, plant) | 1×1 footprint, ~32 × 24–32 px canvas |
+| Table (2-seat) | 1×1 footprint, ~32 × 24 px |
+| Oven / counter | 2×1 footprint, ~48 × 32–40 px |
+| Dish icons | 12 × 12 (on 16 × 16 canvas) |
 | Emotes | 12 × 12 in 16 × 16 bubble |
 
+Furniture sprites are anchored so the **footprint's top corner** matches the projected tile origin; each def stores its sprite offset.
+
 - World renders with **nearest-neighbor** filtering, `pixelArt: true`, rounded pixel positions.
-- **Zoom is integer only** (e.g. 2×, 3×, 4×, 5×) so every pixel stays square. Default zoom chosen so the restaurant fills the screen.
+- **Zoom is integer in device pixels** (D-026): one art pixel = a whole number of physical pixels on every screen. Default zoom chosen so the restaurant fills the available area.
 - **UI is not pixel art.** It is HTML/CSS rendered at native device resolution (see ARCHITECTURE.md), so text is razor sharp.
 
 ## 4. Palettes
@@ -55,7 +63,7 @@ All world sprites must use only colors from `assets/palette/world.hex` (to be cr
 | Cool accents (tiles, sky, aprons) | `#2F3F5C` `#4A6A8F` `#8FB3D0` `#DCE9F2` |
 | Highlights | `#FFFFFF` (sparingly) |
 
-Light comes from the **top-left**. Shadows under characters/furniture: 1 flat dark ellipse at 35% opacity (the only allowed transparency besides fully transparent).
+Light comes from the **top-left** (the left back wall is lit, the right back wall slightly darker). Shadows under characters/furniture: 1 flat dark ellipse at 35% opacity (the only allowed transparency besides fully transparent).
 
 ### UI palette
 
@@ -91,7 +99,7 @@ Light comes from the **top-left**. Shadows under characters/furniture: 1 flat da
 | Animation | Frames | Directions |
 |---|---|---|
 | idle | 2 (subtle breathing) | down, up, side |
-| walk | 4 | down, up, side |
+| walk | 4 | front, back (mirrored for the other two) |
 | walk_carry (waiter with plate) | 4 | down, up, side |
 | sit | 1 | down, up, side |
 | eat | 2 | down, up, side |
@@ -108,7 +116,7 @@ AI image tools produce **"fake pixel art"**: inconsistent pixel sizes, too many 
 ### Pipeline
 
 1. **Style bible first.** Before any production sprite: one approved **style sheet** (a single image with the chef, waiter, one guest, one table, one oven, floor and wall tiles together, at final size). Every later asset is compared against it.
-2. **Concept generation (AI).** Generate concepts at high resolution with a consistent prompt template (stored in `assets/prompts/`). Always include: top-down ¾ view, 16×24 character proportions, warm palette, dark brown outline, flat shading, light from top-left, plain background.
+2. **Concept generation (AI).** Generate concepts at high resolution with a consistent prompt template (stored in `assets/prompts/`). Always include: isometric view with 2:1 pixel lines, 16×24 character proportions, warm palette, dark brown outline, flat shading, light from top-left, plain background.
 3. **Downscale to grid.** Resize to target size (e.g. 16×24) with **nearest-neighbor** after cropping so 1 "AI pixel" = 1 real pixel.
 4. **Palette lock.** Quantize to the locked world palette (no dithering), using Aseprite's palette remap or a script.
 5. **Manual cleanup in Aseprite** (or free alternatives LibreSprite / Pixelorama): fix outlines, remove orphan pixels, ensure readable silhouette, consistent light direction.
