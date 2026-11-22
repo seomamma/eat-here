@@ -19,3 +19,6 @@ export const GUEST_SPAWN_INTERVAL_SEC = [4, 10] as const;
 export const MAX_GUESTS_ALIVE = 12;
 /** Seconds a guest stays seated after paying before getting up. */
 export const GUEST_PAY_SEC = 1;
+
+/** Dish slots on one pass counter (2x1 counter = 2 slots); the chef waits when full. */
+export const PASS_SLOTS = 2;

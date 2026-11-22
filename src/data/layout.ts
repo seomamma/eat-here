@@ -1,4 +1,5 @@
 import type { FurnitureDefId, Rot } from './furniture';
+import type { StaffRole } from './staff';
 
 export type TileType = 'floor_wood' | 'floor_tile' | 'wall' | 'door';
 
@@ -27,6 +28,12 @@ export const START_FURNITURE: readonly LayoutFurniture[] = [
   { defId: 'table_small', x: 6, y: 8 },
   { defId: 'chair_wood', x: 5, y: 8 },
   { defId: 'chair_wood', x: 7, y: 8, rot: 1 },
+];
+
+/** Starting staff and their idle spots: chef in the kitchen, waiter near the pass (waiter side). */
+export const START_STAFF: readonly { role: StaffRole; x: number; y: number }[] = [
+  { role: 'chef', x: 4, y: 2 },
+  { role: 'waiter', x: 6, y: 4 },
 ];
 
 export function startTile(x: number, y: number): TileType {
