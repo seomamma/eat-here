@@ -18,7 +18,8 @@ import { footprintTiles, type Furniture } from '../grid';
 import type { GameState } from '../state';
 import { secToTicks } from './spawner';
 
-export type HappinessReason = 'welcome' | 'seated' | 'order' | 'food' | 'quality' | 'decor';
+export type HappinessReason =
+  'welcome' | 'seated' | 'order' | 'food' | 'quality' | 'decor' | 'usual';
 
 export interface HappinessEntry {
   reason: HappinessReason;

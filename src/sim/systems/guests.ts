@@ -1,5 +1,5 @@
 import { GUEST_PAY_SEC } from '../../data/balance';
-import { LOVE_AT } from '../../data/happiness';
+import { HAPPINESS_POINTS, LOVE_AT } from '../../data/happiness';
 import { FURNITURE } from '../../data/furniture';
 import { GUEST_TYPES } from '../../data/guests';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
@@ -11,11 +11,28 @@ import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
 import { addFame } from './fame';
-import { beginStep, checkSlow, fameFor, onSeated, onServed, tipFor } from './happiness';
+import {
+  awardHappiness,
+  beginStep,
+  checkSlow,
+  fameFor,
+  onSeated,
+  onServed,
+  tipFor,
+} from './happiness';
 import { isChairUsable } from './build';
 import { requestOrder } from './jobs';
 import { rollGift } from './market';
 import { priceAtLevel } from './recipes';
+import { checkMoments } from './moments';
+import {
+  fameMultiplier,
+  onRegularPaid,
+  recordServed,
+  seatPatienceSec,
+  spawnRegularGuests,
+  usualRecipe,
+} from './regulars';
 import { secToTicks, spawnGuest } from './spawner';
 
 export interface GuestContext {
@@ -71,7 +88,15 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
   const { state } = ctx;
   const taken = new Set<string>();
   for (const c of state.characters) if (isGuest(c) && c.seatId) taken.add(c.seatId);
-  const here = currentTile(g);
+  // A companion prefers the free chair nearest to their partner's (the same table if possible).
+  const partner = g.companionOf
+    ? state.characters.find((c) => c.id === g.companionOf && isGuest(c))
+    : undefined;
+  const partnerChair =
+    partner && isGuest(partner) && partner.seatId
+      ? furnitureById(state, partner.seatId)
+      : undefined;
+  const here = partnerChair ? { x: partnerChair.x, y: partnerChair.y } : currentTile(g);
   const free = chairs(state)
     .filter((f) => !taken.has(f.id) && isChairUsable(state, f))
     .map((f, i) => ({ f, i, d: Math.abs(f.x - here.x) + Math.abs(f.y - here.y) }))
@@ -124,7 +149,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
     case 'arriving':
       if (arrived) {
         g.phase = 'waitingForSeat';
-        g.timer = secToTicks(type.seatPatienceSec);
+        g.timer = secToTicks(seatPatienceSec(g, type.seatPatienceSec));
       }
       break;
 
@@ -167,8 +192,11 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
 
     case 'browsing':
       if (--g.timer <= 0) {
+        // A regular always orders their favorite when it is on the menu.
+        const usual = usualRecipe(state, g);
+        if (usual) awardHappiness(g, 'usual', HAPPINESS_POINTS.usual);
         const unlocked = RECIPE_IDS.filter((id) => state.recipes[id].unlocked);
-        g.recipeId = rngPick(state, unlocked);
+        g.recipeId = usual ?? rngPick(state, unlocked);
         g.phase = 'wantsToOrder';
         beginStep(state, g);
         events.emit('guestEmote', { guestId: g.id, emote: 'hand' });
@@ -187,7 +215,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         g.timer = secToTicks(GUEST_PAY_SEC);
         const price = g.recipeId ? priceAtLevel(g.recipeId, state.recipes[g.recipeId].level) : 0;
         const tip = tipFor(price, g.happiness);
-        const fame = fameFor(g.happiness);
+        const fame = fameFor(g.happiness) * fameMultiplier(g);
         state.money += price + tip;
         events.emit('paid', {
           guestId: g.id,
@@ -200,8 +228,13 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         });
         events.emit('moneyChanged', { money: state.money });
         addFame(state, events, fame);
-        if (g.happiness >= LOVE_AT) events.emit('guestEmote', { guestId: g.id, emote: 'love' });
+        if (g.recipeId) recordServed(state, g.recipeId);
+        const heart = onRegularPaid(state, events, g);
+        if (heart) events.emit('guestEmote', { guestId: g.id, emote: 'heart' });
+        else if (g.happiness >= LOVE_AT)
+          events.emit('guestEmote', { guestId: g.id, emote: 'love' });
         rollGift(state, events, g);
+        checkMoments(state, events);
       }
       break;
 
@@ -226,6 +259,10 @@ export function tickGuests(ctx: GuestContext): void {
   if (fresh) {
     state.characters.push(fresh);
     events.emit('guestArrived', { guestId: fresh.id });
+  }
+  for (const regular of spawnRegularGuests(state, events)) {
+    state.characters.push(regular);
+    events.emit('guestArrived', { guestId: regular.id });
   }
   for (const c of state.characters) {
     if (isGuest(c)) updateGuest(ctx, c);

@@ -24,11 +24,13 @@ export class Emitter<Events extends object> {
   }
 }
 
-export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow';
+export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow' | 'heart';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
 import type { FurnitureDefId, Rot } from '../data/furniture';
 import type { IngredientId } from '../data/ingredients';
+import type { MomentCard, MomentReward } from '../data/moments';
+import type { RegularId } from '../data/regulars';
 import type { RecipeId } from '../data/recipes';
 import type { DayStats } from './dayStats';
 import type { DayPhase } from './time';
@@ -58,6 +60,12 @@ export interface GameEvents {
   recipeLeveledUp: { recipeId: RecipeId; level: number };
   /** A very happy guest left an ingredient. */
   giftReceived: { guestId: string; guestName: string; ingredient: IngredientId };
+  /** A one-off moment fired (rewards are already applied); the UI shows its card. */
+  momentTriggered: { id: string; card: MomentCard; reward: MomentReward | null };
+  /** A regular showed up for their visit. */
+  regularArrived: { regularId: RegularId; guestId: string };
+  /** A regular gained a friendship heart. */
+  heartGained: { regularId: RegularId; guestId: string; hearts: number };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
   moneyChanged: { money: number };
   /** A new piece was bought and placed. */

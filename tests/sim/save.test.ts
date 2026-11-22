@@ -1,4 +1,5 @@
 import fixtureText from '../fixtures/save-v1.json?raw';
+import fixtureV2Text from '../fixtures/save-v2.json?raw';
 import { describe, expect, it } from 'vitest';
 import { isGuest, isStaff } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
@@ -189,5 +190,34 @@ describe('migrate', () => {
     const g = new Game(res.state);
     step(g, 300);
     expect(g.state.tick).toBeGreaterThan(500);
+  });
+  it('migrates a v2 save to v3: empty moments, counters and regulars, guests become plain', () => {
+    const res = deserialize(fixtureV2Text);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const { state } = res;
+    expect(state.version).toBe(3);
+    expect(state.momentsSeen).toEqual([]);
+    expect(state.counters).toEqual({ served: {}, servedLevel: {} });
+    expect(state.regulars.nonna_rosa.unlocked).toBe(false);
+    expect(state.regulars.oliver.hearts).toBe(0);
+    const guests = state.characters.filter(isGuest);
+    expect(guests.length).toBeGreaterThan(0);
+    for (const c of guests) {
+      expect(c.regularId).toBeNull();
+      expect(c.look).toBeNull();
+      expect(c.companionOf).toBeNull();
+    }
+    const g = new Game(state);
+    step(g, 400);
+    expect(g.state.tick).toBeGreaterThan(800);
+  });
+
+  it('rejects a v3 state with a broken regulars block', () => {
+    const f = JSON.parse(serialize(createInitialState(1), AT)) as {
+      state: Record<string, unknown>;
+    };
+    f.state.regulars = { nonna_rosa: { unlocked: 'yes' } };
+    expect(deserialize(JSON.stringify(f))).toEqual({ ok: false, reason: 'bad:regulars' });
   });
 });

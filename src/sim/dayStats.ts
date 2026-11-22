@@ -1,7 +1,8 @@
 import { LEDGER_NOTABLE_TIP } from '../data/balance';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
 
-export type LedgerKind = 'dish' | 'tip' | 'ingredients' | 'furniture' | 'market' | 'upgrade';
+export type LedgerKind =
+  'dish' | 'tip' | 'ingredients' | 'furniture' | 'market' | 'upgrade' | 'moment';
 
 /**
  * One line of the day's money ledger (D-033). `amount` is signed (+ income, - spending).
@@ -88,7 +89,7 @@ export function recordLedger(
   label = '',
 ): void {
   const { ledger } = stats;
-  if (kind === 'furniture' || kind === 'market' || kind === 'upgrade') {
+  if (kind === 'furniture' || kind === 'market' || kind === 'upgrade' || kind === 'moment') {
     ledger.entries.push({ tick, kind, amount, label, count: 1 });
     return;
   }

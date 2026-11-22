@@ -2,6 +2,7 @@ import { FIRST_GUEST_SEC, SPAWN_CURVE, MAX_GUESTS_ALIVE, TICK_MS } from '../../d
 import { GUEST_NAMES, GUEST_TYPES, type GuestTypeId } from '../../data/guests';
 import { rankDef } from '../../data/ranks';
 import { DOOR_X } from '../../data/layout';
+import type { LookId, RegularId } from '../../data/regulars';
 import { isGuest, type Guest } from '../characters';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
@@ -32,6 +33,22 @@ export function spawnGuest(state: GameState): Guest | null {
   sp.nextInTicks = rollSpawnDelay(state);
   if (state.characters.filter(isGuest).length >= MAX_GUESTS_ALIVE) return null;
 
+  return createGuest(state, {
+    variant: rngInt(state, 0, GUEST_TYPES.local.variants - 1),
+    name: rngPick(state, GUEST_NAMES),
+  });
+}
+
+export interface NewGuest {
+  variant: number;
+  name: string;
+  regularId?: RegularId;
+  look?: LookId;
+  companionOf?: string;
+}
+
+/** A new guest standing on the door tile, walking one tile in. */
+export function createGuest(state: GameState, o: NewGuest): Guest {
   const typeId: GuestTypeId = 'local';
   const x = DOOR_X;
   const y = state.grid.height - 1;
@@ -39,8 +56,11 @@ export function spawnGuest(state: GameState): Guest | null {
     id: `guest${state.nextGuestId++}`,
     kind: 'guest',
     typeId,
-    variant: rngInt(state, 0, GUEST_TYPES[typeId].variants - 1),
-    name: rngPick(state, GUEST_NAMES),
+    variant: o.variant,
+    regularId: o.regularId ?? null,
+    look: o.look ?? null,
+    companionOf: o.companionOf ?? null,
+    name: o.name,
     happiness: 0,
     happinessLog: [],
     stepTick: state.tick,

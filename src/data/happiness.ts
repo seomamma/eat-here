@@ -17,6 +17,8 @@ export const HAPPINESS_POINTS = {
   order: 10,
   /** From the order being taken until the dish is served. */
   food: 15,
+  /** A regular is served their favorite dish ("Their usual!"). */
+  usual: 10,
 } as const;
 
 /** Dish quality points = base + recipe level * perLevel (Lv.1 = 15 ... Lv.5 = 35). */

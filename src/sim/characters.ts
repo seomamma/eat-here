@@ -1,5 +1,6 @@
 import { DEBUG_WALKER_SPEED, TICK_MS } from '../data/balance';
 import type { GuestTypeId } from '../data/guests';
+import type { LookId, RegularId } from '../data/regulars';
 import type { Facing } from '../data/furniture';
 import type { StaffRole } from '../data/staff';
 import type { RecipeId } from '../data/recipes';
@@ -67,6 +68,12 @@ export interface Guest extends CharacterBase {
   leaveReason: GuestLeaveReason | null;
   /** Cosmetic first name (seeded pick at spawn). */
   name: string;
+  /** Set for a regular (their usual, fame x2, hearts); null for everyone else. */
+  regularId: RegularId | null;
+  /** Fixed look of a named guest (regular or companion); null = palette `variant`. */
+  look: LookId | null;
+  /** Guest id of the regular this guest came with (seats at the same table if possible). */
+  companionOf: string | null;
   /** Happiness meter 0..100 (GAME_DESIGN §4). */
   happiness: number;
   /** What filled the meter, in order (shown on the info card). */

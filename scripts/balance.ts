@@ -6,6 +6,7 @@ import { DECOR_RADIUS } from '../src/data/happiness';
 import { FURNITURE } from '../src/data/furniture';
 import { INGREDIENTS, type IngredientId } from '../src/data/ingredients';
 import { RECIPE_IDS, RECIPES } from '../src/data/recipes';
+import { REGULAR_IDS, regularDef } from '../src/data/regulars';
 import { isGuest } from '../src/sim/characters';
 import { profitOf } from '../src/sim/dayStats';
 import { Game } from '../src/sim/game';
@@ -37,6 +38,8 @@ export interface RunResult {
   rank2Day: number | null;
   /** Day on which the first plant was bought (null if never). */
   plantDay: number | null;
+  /** Day each regular became a regular (null = not within the run), and hearts at the end. */
+  regulars: Record<string, { unlockDay: number | null; hearts: number }>;
 }
 
 /** Coins the player keeps back for ingredients before spending on anything. */
@@ -115,7 +118,8 @@ function think(game: Game, log: { plantDay: number | null }): void {
 /** Plays `days` days with one seed. */
 export function runSeed(seed: number, days: number): RunResult {
   const game = new Game(createInitialState(seed));
-  const result: RunResult = { seed, days: [], rank2Day: null, plantDay: null };
+  const result: RunResult = { seed, days: [], rank2Day: null, plantDay: null, regulars: {} };
+  for (const id of REGULAR_IDS) result.regulars[id] = { unlockDay: null, hearts: 0 };
   const log = { plantDay: null as number | null };
   let happy: number[] = [];
   let arrived = 0;
@@ -125,6 +129,11 @@ export function runSeed(seed: number, days: number): RunResult {
     const g = game.state.characters.find((c) => c.id === e.guestId);
     if (g && isGuest(g)) happy.push(g.happiness);
     bigTip = Math.max(bigTip, e.tip);
+  });
+  game.events.on('momentTriggered', (e) => {
+    const id = e.reward?.unlockRegular;
+    const entry = id ? result.regulars[id] : undefined;
+    if (entry && entry.unlockDay === null) entry.unlockDay = game.state.clock.day;
   });
   game.events.on('rankUp', (e) => {
     if (e.rank === 2 && result.rank2Day === null) result.rank2Day = game.state.clock.day;
@@ -158,6 +167,8 @@ export function runSeed(seed: number, days: number): RunResult {
     for (let i = 0; i < 100 && game.state.clock.phase === 'night'; i++) game.tickOnce();
   }
   result.plantDay = log.plantDay;
+  for (const id of REGULAR_IDS)
+    (result.regulars[id] as { hearts: number }).hearts = game.state.regulars[id].hearts;
   return result;
 }
 
@@ -211,6 +222,19 @@ export function formatReport(results: RunResult[]): string {
   lines.push(`Rank 2 day per seed:     ${fmt(r2)}`);
   lines.push(`First plant day per seed: ${fmt(plant)}`);
   lines.push(`Lowest daily profit: ${minProfit}   Lowest daily big tip: ${minBigTip}`);
+  for (const id of REGULAR_IDS) {
+    const found = results.flatMap((r) => {
+      const d = r.regulars[id]?.unlockDay;
+      return d === null || d === undefined ? [] : [d];
+    });
+    const hearts = results.map((r) => r.regulars[id]?.hearts ?? 0);
+    lines.push(
+      `${regularDef(id).name} unlocked: ${found.length}/${results.length} seeds, ` +
+        `mean day ${found.length ? mean(found).toFixed(1) : '-'} ` +
+        `(per seed: ${fmt(results.map((r) => r.regulars[id]?.unlockDay ?? null))}); ` +
+        `mean hearts at end ${mean(hearts).toFixed(1)}`,
+    );
+  }
   lines.push(
     `Recipe price table: ${RECIPE_IDS.map((id) => `${id}=${RECIPES[id].price}`).join(' ')}`,
   );

@@ -11,6 +11,12 @@ import { createClock, type Clock } from './time';
 import { buildWalkGrid, isWalkable } from './pathfinding';
 import { createInventory, rollMarket, type MarketState } from './systems/market';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
+import {
+  createCounters,
+  createRegularStates,
+  type Counters,
+  type RegularStates,
+} from './systems/regulars';
 
 export interface GameState {
   version: number;
@@ -48,6 +54,12 @@ export interface GameState {
     nextInTicks: number;
   };
   /** Counter for guest ids. */
+  /** Ids of the moments that already fired (each fires once; src/data/moments.ts). */
+  momentsSeen: string[];
+  /** Totals the moment triggers read. */
+  counters: Counters;
+  /** Friendship state of every regular. */
+  regulars: RegularStates;
   nextGuestId: number;
   nextFurnitureId: number;
   nextJobId: number;
@@ -108,6 +120,9 @@ export function createInitialState(
     orders: [],
     recipes: createRecipes(),
     guestSpawn: { enabled: true, nextInTicks: FIRST_GUEST_TICKS },
+    momentsSeen: [],
+    counters: createCounters(),
+    regulars: createRegularStates(),
     nextGuestId: 1,
     nextFurnitureId: furniture.length + 1,
     nextJobId: 1,

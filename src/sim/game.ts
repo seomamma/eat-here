@@ -9,6 +9,7 @@ import { validateBuy, validateMove } from './systems/build';
 import { addIngredient, rollMarket, validateBuyOffer } from './systems/market';
 import { nextUpgrade, validateUpgrade } from './systems/recipes';
 import type { RecipeId } from '../data/recipes';
+import { checkMoments } from './systems/moments';
 import { replanAfterBuild } from './systems/replan';
 import { tickGuests } from './systems/guests';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
@@ -171,6 +172,7 @@ export class Game {
     this.setPhase('open');
     this.events.emit('marketRefreshed', { day });
     this.events.emit('dayStarted', { day });
+    checkMoments(this.state, this.events);
   }
 
   /** No guests, no orders or jobs in flight, and every staff member idle with empty hands. */
@@ -268,6 +270,7 @@ export class Game {
       count: state.inventory[up.ingredient],
     });
     this.events.emit('recipeLeveledUp', { recipeId, level: recipe.level });
+    checkMoments(state, this.events);
     return { ok: true };
   }
 

@@ -1,0 +1,613 @@
+{
+  "format": "eat-here-save",
+  "version": 2,
+  "savedAt": 1700000000000,
+  "state": {
+    "version": 2,
+    "seed": 11,
+    "rng": 2583707588,
+    "tick": 700,
+    "money": 685,
+    "spentOnBuilding": 150,
+    "fame": 26,
+    "rank": 1,
+    "clock": {
+      "day": 1,
+      "minuteOfDay": 810,
+      "dayTick": 700,
+      "phase": "open",
+      "nightTicks": 0
+    },
+    "dayStats": {
+      "income": 46,
+      "tips": 12,
+      "fameGained": 26,
+      "ingredientCosts": 11,
+      "guestsServed": 4,
+      "guestsLeftNoSeat": 0,
+      "gifts": 0,
+      "ordersByRecipe": {
+        "garlic_bread": 1,
+        "margherita": 2,
+        "marinara": 1
+      },
+      "ledger": {
+        "entries": []
+      }
+    },
+    "grid": {
+      "width": 10,
+      "height": 12,
+      "tiles": [
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "wall",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "wall",
+        "wall",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "wall",
+        "wall",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "floor_tile",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall",
+        "wall",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "door",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "floor_wood",
+        "wall"
+      ]
+    },
+    "furniture": [
+      {
+        "id": "f1",
+        "defId": "oven_pizza",
+        "x": 2,
+        "y": 1,
+        "rot": 0,
+        "level": 1
+      },
+      {
+        "id": "f2",
+        "defId": "counter_pass",
+        "x": 5,
+        "y": 3,
+        "rot": 0,
+        "level": 1
+      },
+      {
+        "id": "f3",
+        "defId": "table_small",
+        "x": 3,
+        "y": 6,
+        "rot": 0,
+        "level": 1
+      },
+      {
+        "id": "f4",
+        "defId": "chair_wood",
+        "x": 2,
+        "y": 6,
+        "rot": 1,
+        "level": 1
+      },
+      {
+        "id": "f5",
+        "defId": "chair_wood",
+        "x": 4,
+        "y": 6,
+        "rot": 3,
+        "level": 1
+      },
+      {
+        "id": "f6",
+        "defId": "table_small",
+        "x": 6,
+        "y": 8,
+        "rot": 0,
+        "level": 1
+      },
+      {
+        "id": "f7",
+        "defId": "chair_wood",
+        "x": 5,
+        "y": 8,
+        "rot": 1,
+        "level": 1
+      },
+      {
+        "id": "f8",
+        "defId": "chair_wood",
+        "x": 7,
+        "y": 8,
+        "rot": 3,
+        "level": 1
+      },
+      {
+        "id": "f9",
+        "defId": "plant_potted",
+        "x": 4,
+        "y": 5,
+        "rot": 0,
+        "level": 1
+      }
+    ],
+    "characters": [
+      {
+        "id": "staff1",
+        "kind": "staff",
+        "role": "chef",
+        "level": 1,
+        "xp": 0,
+        "phase": "working",
+        "jobId": "job17",
+        "stage": "bake",
+        "target": {
+          "x": 2,
+          "y": 2
+        },
+        "action": "cook",
+        "timer": 12,
+        "carrying": null,
+        "home": {
+          "x": 4,
+          "y": 2
+        },
+        "x": 2,
+        "y": 2,
+        "prevX": 2,
+        "prevY": 2,
+        "path": [],
+        "dir": "ur"
+      },
+      {
+        "id": "staff2",
+        "kind": "staff",
+        "role": "waiter",
+        "level": 1,
+        "xp": 0,
+        "phase": "working",
+        "jobId": "job16",
+        "stage": "serve",
+        "target": {
+          "x": 5,
+          "y": 7
+        },
+        "action": "serveDish",
+        "timer": 4,
+        "carrying": "garlic_bread",
+        "home": {
+          "x": 6,
+          "y": 4
+        },
+        "x": 5,
+        "y": 7,
+        "prevX": 5,
+        "prevY": 7,
+        "path": [],
+        "dir": "dl"
+      },
+      {
+        "id": "guest4",
+        "kind": "guest",
+        "typeId": "local",
+        "variant": 2,
+        "name": "Elsa",
+        "happiness": 70,
+        "happinessLog": [
+          {
+            "reason": "welcome",
+            "points": 10
+          },
+          {
+            "reason": "seated",
+            "points": 15
+          },
+          {
+            "reason": "order",
+            "points": 10
+          },
+          {
+            "reason": "food",
+            "points": 15
+          },
+          {
+            "reason": "quality",
+            "points": 15
+          },
+          {
+            "reason": "decor",
+            "points": 5
+          }
+        ],
+        "stepTick": 465,
+        "slowShown": false,
+        "phase": "leaving",
+        "timer": 0,
+        "seatId": null,
+        "waitSpot": null,
+        "recipeId": "marinara",
+        "leaveReason": "done",
+        "x": 3.8000000000000025,
+        "y": 7,
+        "prevX": 3.6000000000000023,
+        "prevY": 7,
+        "path": [
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          }
+        ],
+        "dir": "dr"
+      },
+      {
+        "id": "guest5",
+        "kind": "guest",
+        "typeId": "local",
+        "variant": 2,
+        "name": "Otto",
+        "happiness": 35,
+        "happinessLog": [
+          {
+            "reason": "welcome",
+            "points": 10
+          },
+          {
+            "reason": "seated",
+            "points": 15
+          },
+          {
+            "reason": "order",
+            "points": 10
+          }
+        ],
+        "stepTick": 564,
+        "slowShown": false,
+        "phase": "waitingForFood",
+        "timer": 0,
+        "seatId": "f7",
+        "waitSpot": null,
+        "recipeId": "garlic_bread",
+        "leaveReason": null,
+        "x": 5,
+        "y": 8,
+        "prevX": 5,
+        "prevY": 8,
+        "path": [],
+        "dir": "dr"
+      },
+      {
+        "id": "guest6",
+        "kind": "guest",
+        "typeId": "local",
+        "variant": 1,
+        "name": "Nora",
+        "happiness": 35,
+        "happinessLog": [
+          {
+            "reason": "welcome",
+            "points": 10
+          },
+          {
+            "reason": "seated",
+            "points": 15
+          },
+          {
+            "reason": "order",
+            "points": 10
+          }
+        ],
+        "stepTick": 663,
+        "slowShown": false,
+        "phase": "waitingForFood",
+        "timer": 0,
+        "seatId": "f5",
+        "waitSpot": null,
+        "recipeId": "garlic_bread",
+        "leaveReason": null,
+        "x": 4,
+        "y": 6,
+        "prevX": 4,
+        "prevY": 6,
+        "path": [],
+        "dir": "ul"
+      },
+      {
+        "id": "guest7",
+        "kind": "guest",
+        "typeId": "local",
+        "variant": 1,
+        "name": "Anna",
+        "happiness": 25,
+        "happinessLog": [
+          {
+            "reason": "welcome",
+            "points": 10
+          },
+          {
+            "reason": "seated",
+            "points": 15
+          }
+        ],
+        "stepTick": 686,
+        "slowShown": false,
+        "phase": "wantsToOrder",
+        "timer": 0,
+        "seatId": "f8",
+        "waitSpot": null,
+        "recipeId": "garlic_bread",
+        "leaveReason": null,
+        "x": 7,
+        "y": 8,
+        "prevX": 7,
+        "prevY": 8,
+        "path": [],
+        "dir": "ul"
+      },
+      {
+        "id": "guest8",
+        "kind": "guest",
+        "typeId": "local",
+        "variant": 1,
+        "name": "Nora",
+        "happiness": 0,
+        "happinessLog": [],
+        "stepTick": 650,
+        "slowShown": false,
+        "phase": "walkingToSeat",
+        "timer": 165,
+        "seatId": "f4",
+        "waitSpot": null,
+        "recipeId": null,
+        "leaveReason": null,
+        "x": 2,
+        "y": 9.200000000000003,
+        "prevX": 2,
+        "prevY": 9.400000000000002,
+        "path": [
+          {
+            "x": 2,
+            "y": 9
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 6
+          }
+        ],
+        "dir": "ur"
+      }
+    ],
+    "jobs": [
+      {
+        "id": "job16",
+        "kind": "deliver",
+        "guestId": "guest5",
+        "orderId": "order5",
+        "assigneeId": "staff2",
+        "createdTick": 633
+      },
+      {
+        "id": "job17",
+        "kind": "cook",
+        "guestId": "guest6",
+        "orderId": "order6",
+        "assigneeId": "staff1",
+        "createdTick": 663
+      },
+      {
+        "id": "job18",
+        "kind": "takeOrder",
+        "guestId": "guest7",
+        "orderId": "order7",
+        "assigneeId": null,
+        "createdTick": 686
+      }
+    ],
+    "orders": [
+      {
+        "id": "order5",
+        "guestId": "guest5",
+        "recipeId": "garlic_bread",
+        "status": "delivering",
+        "slot": null
+      },
+      {
+        "id": "order6",
+        "guestId": "guest6",
+        "recipeId": "garlic_bread",
+        "status": "cooking",
+        "slot": null
+      },
+      {
+        "id": "order7",
+        "guestId": "guest7",
+        "recipeId": "garlic_bread",
+        "status": "waitingToBeTaken",
+        "slot": null
+      }
+    ],
+    "recipes": {
+      "marinara": {
+        "unlocked": true,
+        "level": 1
+      },
+      "margherita": {
+        "unlocked": true,
+        "level": 1
+      },
+      "garlic_bread": {
+        "unlocked": true,
+        "level": 1
+      },
+      "pepperoni": {
+        "unlocked": false,
+        "level": 1
+      }
+    },
+    "guestSpawn": {
+      "enabled": true,
+      "nextInTicks": 16
+    },
+    "nextGuestId": 9,
+    "nextFurnitureId": 10,
+    "nextJobId": 19,
+    "nextOrderId": 8,
+    "inventory": {
+      "oregano": 0,
+      "fresh_basil": 0,
+      "garlic_butter": 0,
+      "chili_flakes": 0,
+      "san_marzano": 0,
+      "buffalo_mozzarella": 0,
+      "aged_parmesan": 0,
+      "hot_honey": 0
+    },
+    "market": {
+      "day": 1,
+      "offers": [
+        {
+          "ingredient": "garlic_butter",
+          "price": 58,
+          "bought": false
+        },
+        {
+          "ingredient": "chili_flakes",
+          "price": 56,
+          "bought": false
+        },
+        {
+          "ingredient": "aged_parmesan",
+          "price": 229,
+          "bought": false
+        }
+      ]
+    }
+  }
+}

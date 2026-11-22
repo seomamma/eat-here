@@ -1,10 +1,12 @@
 import { FURNITURE } from '../data/furniture';
 import { INGREDIENTS } from '../data/ingredients';
+import { REGULAR_IDS } from '../data/regulars';
 import { RECIPE_IDS } from '../data/recipes';
 import type { GameState } from './state';
+import { createCounters, createRegularStates } from './systems/regulars';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export const SAVE_FORMAT = 'eat-here-save';
 
@@ -32,6 +34,24 @@ export const MIGRATIONS: Migrations = {
   1: (state) => {
     const stats = isObj(state.dayStats) ? state.dayStats : {};
     return { ...state, dayStats: { ...stats, ledger: { entries: [] } } };
+  },
+  // v2 -> v3: regulars and moments (M11). Nothing is unlocked yet; guests in the room get the
+  // new fields as plain guests.
+  2: (state) => {
+    const characters = Array.isArray(state.characters)
+      ? state.characters.map((c: unknown) =>
+          isObj(c) && c.kind === 'guest'
+            ? { regularId: null, look: null, companionOf: null, ...c }
+            : c,
+        )
+      : state.characters;
+    return {
+      ...state,
+      characters,
+      momentsSeen: [],
+      counters: createCounters(),
+      regulars: createRegularStates(),
+    };
   },
 };
 
@@ -162,6 +182,23 @@ export function validateState(s: Record<string, unknown>): string | null {
     if (!['debug', 'guest', 'staff'].includes(c.kind as string)) return 'bad:characters.kind';
   }
   if (!Array.isArray(s.jobs)) return 'bad:jobs';
+  if (!Array.isArray(s.momentsSeen) || !s.momentsSeen.every((m) => typeof m === 'string'))
+    return 'bad:momentsSeen';
+  if (!isObj(s.counters) || !isObj(s.counters.served) || !isObj(s.counters.servedLevel))
+    return 'bad:counters';
+  if (!isObj(s.regulars)) return 'bad:regulars';
+  for (const id of REGULAR_IDS) {
+    const r = s.regulars[id];
+    if (
+      !isObj(r) ||
+      typeof r.unlocked !== 'boolean' ||
+      !isInt(r.hearts) ||
+      !isInt(r.visits) ||
+      !isInt(r.lastVisitDay) ||
+      !isInt(r.lastHeartDay)
+    )
+      return 'bad:regulars';
+  }
   if (!Array.isArray(s.orders)) return 'bad:orders';
 
   if (!isObj(s.recipes)) return 'bad:recipes';
