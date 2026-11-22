@@ -115,3 +115,8 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 
 ### D-023 Language: user communication in Swedish, everything in the repo in English
 **Status:** Accepted
+
+### D-024 Phaser 4 instead of Phaser 3
+**Status:** Accepted (M0)
+**Decision:** Use Phaser 4.2.1 (stable `latest` on npm at M0). All deps pinned to exact versions.
+**Why:** D-010 said to prefer Phaser 4 if stable. Note for future sessions: many tutorials/examples online are Phaser 3 — check API differences against Phaser 4 docs before copying code.

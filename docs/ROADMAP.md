@@ -5,7 +5,7 @@
 
 ## Phase A — MVP (first playable)
 
-### M0 — Project skeleton
+### M0 — Project skeleton ✅
 **Goal:** an empty but correctly set up project.
 - Vite + TypeScript (strict) + Phaser + Preact + Vitest + ESLint/Prettier.
 - Phaser canvas fills the screen (`Scale.RESIZE`, `pixelArt: true`); Preact overlay mounted.
@@ -13,10 +13,10 @@
 - npm scripts: `dev`, `build`, `test`, `lint`, `typecheck`.
 
 **Acceptance criteria**
-- [ ] `npm run dev` shows a canvas with a colored background and a UI card "Eat here!" on top.
-- [ ] Works in portrait and landscape (rotate device/resize window) without stretching.
-- [ ] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` all pass.
-- [ ] A test proves the sim lint boundary (a deliberate Phaser import in sim fails lint).
+- [x] `npm run dev` shows a canvas with a colored background and a UI card "Eat here!" on top.
+- [x] Works in portrait and landscape (rotate device/resize window) without stretching.
+- [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` all pass.
+- [x] A test proves the sim lint boundary (a deliberate Phaser import in sim fails lint).
 
 ### M1 — The room
 **Goal:** see the restaurant and move the camera.
@@ -24,6 +24,7 @@
 - Furniture from data: 2 tables + 4 chairs, oven, pass counter, at fixed starting positions.
 - Camera pan (drag) + zoom (pinch/wheel) with integer zoom steps, bounded.
 - Depth sorting by base Y.
+- Camera fit reserves space for the HUD (top/bottom bars) so the room isn't covered by UI (seen in M0 landscape).
 
 **Acceptance criteria**
 - [ ] 10×12 room with walls, door and furniture visible, pixels crisp at every zoom level.

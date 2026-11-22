@@ -1,6 +1,6 @@
 # Eat here! Restaurant game
 
-Cozy pixel-art pizzeria **manager sim** for mobile (browser-first). Phaser + TypeScript + Vite, Preact UI overlay, offline, local saves.
+Cozy pixel-art pizzeria **manager sim** for mobile (browser-first). Phaser 4 + TypeScript + Vite, Preact UI overlay, offline, local saves.
 
 ## Read first
 - `docs/GAME_DESIGN.md` — what we build · `docs/ROADMAP.md` — current milestone + acceptance criteria

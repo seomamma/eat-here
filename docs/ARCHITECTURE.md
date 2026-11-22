@@ -35,7 +35,7 @@ Three layers with one-way dependencies:
 |---|---|
 | Language | TypeScript (strict) |
 | Build/dev | Vite |
-| World rendering | Phaser 3 (latest stable 3.x), `pixelArt: true` |
+| World rendering | Phaser 4 (4.2.1, see D-024), `pixelArt: true` |
 | UI | Preact (+ `@preact/signals`) rendered into a DOM overlay above the canvas |
 | Tests | Vitest (simulation), Playwright smoke test later |
 | Lint/format | ESLint + Prettier |
