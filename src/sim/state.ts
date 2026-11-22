@@ -18,6 +18,8 @@ export interface GameState {
   /** Ticks simulated so far. */
   tick: number;
   money: number;
+  /** Total spent on furniture (not part of any day's income or costs). */
+  spentOnBuilding: number;
   fame: number;
   /** Restaurant rank, 1-based (src/data/ranks.ts). */
   rank: number;
@@ -40,6 +42,7 @@ export interface GameState {
   };
   /** Counter for guest ids. */
   nextGuestId: number;
+  nextFurnitureId: number;
   nextJobId: number;
   nextOrderId: number;
 }
@@ -86,6 +89,7 @@ export function createInitialState(
     rng: seed >>> 0,
     tick: 0,
     money: 300,
+    spentOnBuilding: 0,
     fame: 0,
     rank: 1,
     clock: createClock(),
@@ -98,6 +102,7 @@ export function createInitialState(
     recipes: createRecipes(),
     guestSpawn: { enabled: false, nextInTicks: FIRST_GUEST_TICKS },
     nextGuestId: 1,
+    nextFurnitureId: furniture.length + 1,
     nextJobId: 1,
     nextOrderId: 1,
   };

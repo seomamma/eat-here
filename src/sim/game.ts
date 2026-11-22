@@ -1,9 +1,11 @@
 import { MAX_TICKS_PER_UPDATE, TICK_MS } from '../data/balance';
+import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
 import { createDayStats } from './dayStats';
 import { isGuest, isStaff, stepCharacter } from './characters';
 import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
 import type { GameState } from './state';
+import { validateBuy, validatePlacement } from './systems/build';
 import { tickGuests } from './systems/guests';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 import { tickStaff } from './systems/staff';
@@ -12,7 +14,9 @@ import { DAY_TICKS, minuteAtTick, resetClockForDay, type DayPhase } from './time
 export type Command =
   | { type: 'debugWalkTo'; x: number; y: number }
   | { type: 'openRestaurant' }
-  | { type: 'continueAfterReport' };
+  | { type: 'continueAfterReport' }
+  | { type: 'buyAndPlace'; defId: FurnitureDefId; x: number; y: number; rot: Rot }
+  | { type: 'moveFurniture'; id: string; x: number; y: number; rot: Rot };
 
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
@@ -158,7 +162,42 @@ export class Game {
         return this.openRestaurant();
       case 'continueAfterReport':
         return this.continueAfterReport();
+      case 'buyAndPlace':
+        return this.buyAndPlace(cmd.defId, cmd.x, cmd.y, cmd.rot);
+      case 'moveFurniture':
+        return this.moveFurniture(cmd.id, cmd.x, cmd.y, cmd.rot);
     }
+  }
+
+  /** Buys a shop item and places it in one step; nothing changes unless all checks pass. */
+  private buyAndPlace(defId: FurnitureDefId, x: number, y: number, rot: Rot): CommandResult {
+    const check = validateBuy(this.state, defId, x, y, rot);
+    if (!check.ok) return check;
+    const { state } = this;
+    const price = FURNITURE[defId].price;
+    const id = `f${state.nextFurnitureId++}`;
+    state.money -= price;
+    state.spentOnBuilding += price;
+    state.furniture.push({ id, defId, x, y, rot, level: 1 });
+    this.invalidateWalkGrid();
+    this.events.emit('moneyChanged', { money: state.money });
+    this.events.emit('furniturePlaced', { id, defId, x, y, rot });
+    return { ok: true };
+  }
+
+  private moveFurniture(id: string, x: number, y: number, rot: Rot): CommandResult {
+    const { state } = this;
+    if (state.clock.phase !== 'prep') return { ok: false, reason: 'notPrep' };
+    const piece = state.furniture.find((f) => f.id === id);
+    if (!piece) return { ok: false, reason: 'unknownFurniture' };
+    const check = validatePlacement(state, piece.defId, x, y, rot, id);
+    if (!check.ok) return check;
+    piece.x = x;
+    piece.y = y;
+    piece.rot = rot;
+    this.invalidateWalkGrid();
+    this.events.emit('furnitureMoved', { id, x, y, rot });
+    return { ok: true };
   }
 
   private openRestaurant(): CommandResult {

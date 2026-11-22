@@ -12,6 +12,7 @@ import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
 import { addFame } from './fame';
 import { beginStep, checkSlow, fameFor, onSeated, onServed, tipFor } from './happiness';
+import { isChairUsable } from './build';
 import { requestOrder } from './jobs';
 import { secToTicks, spawnGuest } from './spawner';
 
@@ -83,7 +84,7 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
   for (const c of state.characters) if (isGuest(c) && c.seatId) taken.add(c.seatId);
   const here = currentTile(g);
   const free = chairs(state)
-    .filter((f) => !taken.has(f.id))
+    .filter((f) => !taken.has(f.id) && isChairUsable(state, f))
     .map((f, i) => ({ f, i, d: Math.abs(f.x - here.x) + Math.abs(f.y - here.y) }))
     .sort((a, b) => a.d - b.d || a.i - b.i);
   for (const { f } of free) {

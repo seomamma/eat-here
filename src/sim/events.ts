@@ -27,6 +27,7 @@ export class Emitter<Events extends object> {
 export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
+import type { FurnitureDefId, Rot } from '../data/furniture';
 import type { DayStats } from './dayStats';
 import type { DayPhase } from './time';
 
@@ -50,6 +51,9 @@ export interface GameEvents {
   rankUp: { rank: number; name: string; unlocks: string[] };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
   moneyChanged: { money: number };
+  /** A new piece was bought and placed. */
+  furniturePlaced: { id: string; defId: FurnitureDefId; x: number; y: number; rot: Rot };
+  furnitureMoved: { id: string; x: number; y: number; rot: Rot };
   /** The waiter finished taking the order; a cook job now exists. */
   orderTaken: { orderId: string; guestId: string; recipeId: string };
   /** Cooking started and ingredients were paid for. */
