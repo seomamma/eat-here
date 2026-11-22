@@ -24,7 +24,7 @@ export class Emitter<Events extends object> {
   }
 }
 
-export type GuestEmote = 'angry' | 'happy' | 'hand';
+export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
 import type { DayStats } from './dayStats';
@@ -36,7 +36,18 @@ export interface GameEvents {
   guestArrived: { guestId: string };
   guestSeated: { guestId: string; seatId: string };
   guestEmote: { guestId: string; emote: GuestEmote };
-  paid: { guestId: string; amount: number; x: number; y: number };
+  /** `amount` = `price` + `tip` (what was added to the money); `fame` = fame the guest gave. */
+  paid: {
+    guestId: string;
+    price: number;
+    tip: number;
+    amount: number;
+    fame: number;
+    x: number;
+    y: number;
+  };
+  fameChanged: { fame: number; gained: number; rank: number };
+  rankUp: { rank: number; name: string; unlocks: string[] };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
   moneyChanged: { money: number };
   /** The waiter finished taking the order; a cook job now exists. */

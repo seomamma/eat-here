@@ -1,4 +1,5 @@
 import { GUEST_PAY_SEC } from '../../data/balance';
+import { LOVE_AT } from '../../data/happiness';
 import { FURNITURE } from '../../data/furniture';
 import { GUEST_TYPES } from '../../data/guests';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
@@ -9,6 +10,8 @@ import { buildOccupancy, type Furniture } from '../grid';
 import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
+import { addFame } from './fame';
+import { beginStep, checkSlow, fameFor, onSeated, onServed, tipFor } from './happiness';
 import { requestOrder } from './jobs';
 import { secToTicks, spawnGuest } from './spawner';
 
@@ -116,13 +119,15 @@ function releaseSeatIfOff(ctx: GuestContext, g: Guest): void {
 export function startEating(ctx: GuestContext, g: Guest): void {
   g.phase = 'eating';
   g.timer = randomTicks(ctx.state, GUEST_TYPES[g.typeId].eatSec);
-  ctx.events.emit('guestEmote', { guestId: g.id, emote: 'happy' });
+  onServed(ctx.state, g);
+  ctx.events.emit('guestEmote', { guestId: g.id, emote: 'tasty' });
 }
 
 function updateGuest(ctx: GuestContext, g: Guest): void {
   const { state, events } = ctx;
   const type = GUEST_TYPES[g.typeId];
   stepCharacter(g, type.walkSpeed);
+  checkSlow(state, events, g);
   const arrived = g.path.length === 0;
 
   switch (g.phase) {
@@ -165,6 +170,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         g.dir = seatFacing(state, chair);
         g.phase = 'browsing';
         g.timer = randomTicks(state, type.browseSec);
+        onSeated(state, g);
         events.emit('guestSeated', { guestId: g.id, seatId: chair.id });
       }
       break;
@@ -174,6 +180,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         const unlocked = RECIPE_IDS.filter((id) => state.recipes[id].unlocked);
         g.recipeId = rngPick(state, unlocked);
         g.phase = 'wantsToOrder';
+        beginStep(state, g);
         events.emit('guestEmote', { guestId: g.id, emote: 'hand' });
         requestOrder(state, g, g.recipeId);
       }
@@ -188,10 +195,22 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
       if (--g.timer <= 0) {
         g.phase = 'paying';
         g.timer = secToTicks(GUEST_PAY_SEC);
-        const amount = g.recipeId ? RECIPES[g.recipeId].price : 0;
-        state.money += amount;
-        events.emit('paid', { guestId: g.id, amount, x: g.x, y: g.y });
+        const price = g.recipeId ? RECIPES[g.recipeId].price : 0;
+        const tip = tipFor(price, g.happiness);
+        const fame = fameFor(g.happiness);
+        state.money += price + tip;
+        events.emit('paid', {
+          guestId: g.id,
+          price,
+          tip,
+          amount: price + tip,
+          fame,
+          x: g.x,
+          y: g.y,
+        });
         events.emit('moneyChanged', { money: state.money });
+        addFame(state, events, fame);
+        if (g.happiness >= LOVE_AT) events.emit('guestEmote', { guestId: g.id, emote: 'love' });
       }
       break;
 

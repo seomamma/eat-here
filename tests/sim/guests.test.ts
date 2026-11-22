@@ -13,7 +13,7 @@ const TICKS_PER_HOUR = (3600 * 1000) / TICK_MS;
 interface Log {
   arrived: string[];
   left: { guestId: string; reason: string }[];
-  paid: { guestId: string; amount: number }[];
+  paid: { guestId: string; price: number; amount: number }[];
   seated: string[];
   emotes: { guestId: string; emote: string }[];
   moneyEvents: number[];
@@ -124,15 +124,21 @@ describe('guest system', () => {
     expect(g.state.characters.filter(isGuest)).toHaveLength(0);
   });
 
-  it('only unlocked recipes are eaten', () => {
+  it('only unlocked recipes are eaten (pepperoni only after the rank up)', () => {
     const g = openGame(5);
     expect(g.state.recipes.pepperoni.unlocked).toBe(false);
     const log = attach(g);
+    // Rank-ups are covered in fame.test.ts; here the fame stays below rank 2.
+    g.events.on('fameChanged', () => {
+      g.state.fame = Math.min(g.state.fame, 10);
+    });
     run(g, 20_000);
+    expect(g.state.rank).toBe(1);
     const prices = new Set(Object.values(RECIPES).map((r) => r.price));
+    expect(log.paid.length).toBeGreaterThan(0);
     for (const p of log.paid) {
-      expect(prices.has(p.amount)).toBe(true);
-      expect(p.amount).not.toBe(RECIPES.pepperoni.price);
+      expect(prices.has(p.price)).toBe(true);
+      expect(p.price).not.toBe(RECIPES.pepperoni.price);
     }
   });
 

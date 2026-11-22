@@ -10,6 +10,7 @@ import {
 } from '../characters';
 import { findPath, isWalkable, type TilePos } from '../pathfinding';
 import { startEating, type GuestContext } from './guests';
+import { onOrderTaken } from './happiness';
 import {
   addJob,
   cancelStaleJobs,
@@ -185,7 +186,10 @@ function finishAction(ctx: GuestContext, s: Staff, job: Job): void {
     case 'act': {
       order.status = 'queued';
       const guest = getGuest(state, order.guestId);
-      if (guest) guest.phase = 'waitingForFood';
+      if (guest) {
+        guest.phase = 'waitingForFood';
+        onOrderTaken(state, guest);
+      }
       addJob(state, 'cook', order);
       events.emit('orderTaken', {
         orderId: order.id,

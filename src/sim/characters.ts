@@ -3,6 +3,7 @@ import type { GuestTypeId } from '../data/guests';
 import type { StaffRole } from '../data/staff';
 import type { RecipeId } from '../data/recipes';
 import type { GuestLeaveReason } from './events';
+import type { HappinessEntry } from './systems/happiness';
 import type { TilePos } from './pathfinding';
 
 /**
@@ -55,6 +56,16 @@ export interface Guest extends CharacterBase {
   waitSpot: TilePos | null;
   recipeId: RecipeId | null;
   leaveReason: GuestLeaveReason | null;
+  /** Cosmetic first name (seeded pick at spawn). */
+  name: string;
+  /** Happiness meter 0..100 (GAME_DESIGN §4). */
+  happiness: number;
+  /** What filled the meter, in order (shown on the info card). */
+  happinessLog: HappinessEntry[];
+  /** Tick the current timed step began (arrival, hand raised, order taken). */
+  stepTick: number;
+  /** True once the "slow" emote was shown for the current step. */
+  slowShown: boolean;
 }
 
 export type StaffPhase = 'idle' | 'walkingToJob' | 'working';

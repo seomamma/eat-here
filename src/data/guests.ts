@@ -26,3 +26,23 @@ export const GUEST_TYPES = {
 } satisfies Record<string, GuestTypeDef>;
 
 export type GuestTypeId = keyof typeof GUEST_TYPES;
+
+/** First names handed out at spawn (seeded pick); purely cosmetic. */
+export const GUEST_NAMES: readonly string[] = [
+  'Anna',
+  'Marco',
+  'Lena',
+  'Tom',
+  'Sofia',
+  'Ben',
+  'Mia',
+  'Luca',
+  'Nora',
+  'Leo',
+  'Ida',
+  'Sam',
+  'Elsa',
+  'Theo',
+  'Ruby',
+  'Otto',
+];

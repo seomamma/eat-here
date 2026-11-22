@@ -1,7 +1,10 @@
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
 
 export interface DayStats {
+  /** Money received from guests (dish prices plus tips). */
   income: number;
+  tips: number;
+  fameGained: number;
   ingredientCosts: number;
   guestsServed: number;
   guestsLeftNoSeat: number;
@@ -12,6 +15,8 @@ export interface DayStats {
 export function createDayStats(): DayStats {
   return {
     income: 0,
+    tips: 0,
+    fameGained: 0,
     ingredientCosts: 0,
     guestsServed: 0,
     guestsLeftNoSeat: 0,

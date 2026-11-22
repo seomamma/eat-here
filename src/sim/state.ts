@@ -18,6 +18,9 @@ export interface GameState {
   /** Ticks simulated so far. */
   tick: number;
   money: number;
+  fame: number;
+  /** Restaurant rank, 1-based (src/data/ranks.ts). */
+  rank: number;
   clock: Clock;
   /** Numbers of the current day; reset on `continueAfterReport`. */
   dayStats: DayStats;
@@ -83,6 +86,8 @@ export function createInitialState(
     rng: seed >>> 0,
     tick: 0,
     money: 300,
+    fame: 0,
+    rank: 1,
     clock: createClock(),
     dayStats: createDayStats(),
     grid,

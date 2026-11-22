@@ -26,13 +26,16 @@ export class Game {
   private accumulator = 0;
   private walkGrid: WalkGrid | null = null;
 
-  private paused = false;
+  /** Why time is stopped (several can hold at once, e.g. hidden tab and a modal). */
+  private readonly pauseReasons = new Set<string>();
 
   constructor(readonly state: GameState) {
     // Day stats are fed from the sim's own events, so the report always equals what happened.
     this.events.on('paid', (e) => {
       const stats = this.state.dayStats;
       stats.income += e.amount;
+      stats.tips += e.tip;
+      stats.fameGained += e.fame;
       stats.guestsServed++;
       const guest = this.state.characters.find((c) => c.id === e.guestId);
       const recipeId = guest && isGuest(guest) ? guest.recipeId : null;
@@ -47,17 +50,17 @@ export class Game {
   }
 
   get isPaused(): boolean {
-    return this.paused;
+    return this.pauseReasons.size > 0;
   }
 
-  /** Stops time (tab hidden). `update` does nothing until `resume`. */
-  pause(): void {
-    this.paused = true;
+  /** Stops time (tab hidden, modal open). `update` does nothing until every reason is resumed. */
+  pause(reason = 'visibility'): void {
+    this.pauseReasons.add(reason);
   }
 
   /** Continues exactly where it stopped: time that passed while paused is dropped, not replayed. */
-  resume(): void {
-    this.paused = false;
+  resume(reason = 'visibility'): void {
+    this.pauseReasons.delete(reason);
     this.accumulator = 0;
   }
 
@@ -78,10 +81,11 @@ export class Game {
 
   /** Feeds real elapsed time; runs as many fixed ticks as fit (capped). */
   update(realDtMs: number): void {
-    if (this.paused || !(realDtMs > 0)) return;
+    if (this.isPaused || !(realDtMs > 0)) return;
     this.accumulator += realDtMs * this.speed;
     let n = 0;
-    while (this.accumulator >= TICK_MS && n < MAX_TICKS_PER_UPDATE) {
+    // A tick can pause the sim (rank-up modal): stop right there.
+    while (this.accumulator >= TICK_MS && n < MAX_TICKS_PER_UPDATE && !this.isPaused) {
       this.tickOnce();
       this.accumulator -= TICK_MS;
       n++;

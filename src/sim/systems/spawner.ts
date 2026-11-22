@@ -1,8 +1,9 @@
 import { FIRST_GUEST_SEC, SPAWN_CURVE, MAX_GUESTS_ALIVE, TICK_MS } from '../../data/balance';
-import { GUEST_TYPES, type GuestTypeId } from '../../data/guests';
+import { GUEST_NAMES, GUEST_TYPES, type GuestTypeId } from '../../data/guests';
+import { rankDef } from '../../data/ranks';
 import { DOOR_X } from '../../data/layout';
 import { isGuest, type Guest } from '../characters';
-import { rngInt } from '../rng';
+import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
 
 export function secToTicks(sec: number): number {
@@ -16,7 +17,8 @@ function rollSpawnDelay(state: GameState): number {
   for (const seg of SPAWN_CURVE) {
     if (seg.fromMinute <= minute) [min, max] = seg.intervalSec;
   }
-  return rngInt(state, secToTicks(min), secToTicks(max));
+  const base = rngInt(state, secToTicks(min), secToTicks(max));
+  return Math.max(1, Math.round(base / rankDef(state.rank).spawnRate));
 }
 
 /** First-arrival delay of a fresh game (also used by the initial state). */
@@ -38,6 +40,11 @@ export function spawnGuest(state: GameState): Guest | null {
     kind: 'guest',
     typeId,
     variant: rngInt(state, 0, GUEST_TYPES[typeId].variants - 1),
+    name: rngPick(state, GUEST_NAMES),
+    happiness: 0,
+    happinessLog: [],
+    stepTick: state.tick,
+    slowShown: false,
     phase: 'arriving',
     timer: 0,
     seatId: null,

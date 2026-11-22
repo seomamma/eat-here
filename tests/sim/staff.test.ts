@@ -217,12 +217,14 @@ describe('staff, jobs and orders', () => {
     const costs = log.bought.reduce((n, c) => n + c, 0);
     expect(g.state.money).toBe(300 + paid - costs);
     expect(log.paid.every((p) => p > 0)).toBe(true);
-    // Only starting recipes are cooked.
-    for (const b of log.bought) {
-      expect(
-        [RECIPES.marinara, RECIPES.margherita, RECIPES.garlic_bread].map((r) => r.ingredientCost),
-      ).toContain(b);
-    }
+    // Only unlocked recipes are cooked (pepperoni once rank 2 is reached).
+    const allowed: { ingredientCost: number }[] = [
+      RECIPES.marinara,
+      RECIPES.margherita,
+      RECIPES.garlic_bread,
+    ];
+    if (g.state.rank >= 2) allowed.push(RECIPES.pepperoni);
+    for (const b of log.bought) expect(allowed.map((r) => r.ingredientCost)).toContain(b);
   });
 
   it('is deterministic for a fixed seed', () => {
