@@ -7,6 +7,11 @@ import type { Bounds, Point } from './iso';
  */
 export const HUD_INSETS_PORTRAIT = { top: 96, bottom: 80 } as const;
 export const HUD_INSETS_LANDSCAPE = { top: 56, bottom: 44 } as const;
+/**
+ * Portrait only: if the fit-whole-room zoom leaves the room narrower than this fraction of the
+ * available width, start one integer zoom step closer (the player pans around the room).
+ */
+export const PORTRAIT_MIN_FILL = 0.8;
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 8;
 /** Wheel delta (px) that amounts to one zoom step. */
@@ -75,6 +80,9 @@ export class CameraController {
     const bw = this.bounds.maxX - this.bounds.minX;
     const bh = this.bounds.maxY - this.bounds.minY;
     this.zoom = clampZoom(Math.floor(Math.min(a.width / bw, a.height / bh)));
+    const portrait = this.scene.scale.height > this.scene.scale.width;
+    if (portrait && bw * this.zoom < PORTRAIT_MIN_FILL * a.width)
+      this.zoom = clampZoom(this.zoom + 1);
     // Centre the room in the available area.
     this.offsetX = a.left + (a.width - bw * this.zoom) / 2 - this.bounds.minX * this.zoom;
     this.offsetY = a.top + (a.height - bh * this.zoom) / 2 - this.bounds.minY * this.zoom;
