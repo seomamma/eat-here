@@ -155,6 +155,17 @@
 - [ ] Corrupt main save → loads backup with a friendly notice.
 - [ ] Unit tests: round-trip save/load, migration from a v1 fixture.
 
+### M9b — UI polish: money breakdown, in-place confirm, Menu (D-033)
+**Goal:** friendlier everyday UI before the MVP polish pass.
+- Tap the money card → **"Today" breakdown** popover: income (dishes, tips) and spending (ingredients, furniture, market, upgrades) as totals, plus the day's notable single items (e.g. "Potted Plant −150", "Big tip from Nora +22").
+- Build mode: **Rotate / ✓ / ✕ float above the item** being placed (anchored to the ghost on screen), instead of a bottom bar.
+- **Menu**: one Menu button opens a grid of shortcut cards (Shop, Market, Recipes, Build, and placeholders for future Staff, Stats, Settings). Our own look (card style, pizza icon) — not a copy of any existing game's menu (ART_DIRECTION §8).
+
+**Acceptance criteria**
+- [ ] Money breakdown totals equal the day's money change (unit tested ledger).
+- [ ] Floating build controls stay on-screen and next to the ghost at all zoom levels, in portrait and landscape.
+- [ ] Every action reachable from the Menu; the bottom of the screen is less cluttered.
+
 ### M10 — MVP polish & playtest
 **Goal:** it feels good to play for 20 minutes.
 - Placeholder SFX + music, juice pass (bounce, sparkles, popups).

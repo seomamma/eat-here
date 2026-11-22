@@ -161,3 +161,8 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Status:** Accepted (after M7b)
 **Decision:** Saves contain the complete `GameState`, written every in-game hour, after purchases/upgrades/placements, at day start and when the app is hidden. Reload continues exactly where the player left.
 **Why:** With D-029 there is no prep phase and purchases happen mid-day; restarting the day on reload would make bought items "disappear". Since all state is plain serializable data (D-012), a full save is simpler than a partial one.
+
+### D-033 Everyday UI: money ledger, in-place build controls, Menu hub
+**Status:** Accepted (user request after M8)
+**Decision:** (1) The sim keeps a per-day **ledger** of categorized money entries; tapping the money card shows totals + notable items. (2) Build controls float next to the placed item. (3) A single **Menu** button opens a grid of shortcut cards; it replaces the row of Shop/Recipes/Build buttons and scales to future features. Gift threshold lowered to 70 (user choice) so the first gift can arrive after the first plant/upgrade.
+**Why:** Players want to understand where money went, and a hub menu keeps the screen clean as features grow. The hub-menu pattern is generic in the genre; our look and layout follow our own card style (ART_DIRECTION §8).
