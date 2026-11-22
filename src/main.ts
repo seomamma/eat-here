@@ -9,6 +9,7 @@ import { LocalSaveStorage, loadSave, wipeSaves, writeSave } from './platform/sto
 import { Game } from './sim/game';
 import { createInitialState, type GameState } from './sim/state';
 import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
+import { GalleryScene } from './view/scenes/GalleryScene';
 import { WorldScene } from './view/scenes/WorldScene';
 import { App } from './ui/App';
 import { bindBuild } from './ui/build';
@@ -92,6 +93,23 @@ function startGame(state: GameState, fromBackup: boolean): void {
   game.scene.add('WorldScene', WorldScene, true, { sim });
 }
 
+/** ?gallery: the sprite gallery dev page (no sim, no UI). */
+function startGallery(): void {
+  const host = document.getElementById('game');
+  if (!host) throw new Error('#game container missing');
+  const initial = deviceCanvasSize(host);
+  const game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game',
+    backgroundColor: '#6FAE4E',
+    pixelArt: true,
+    roundPixels: true,
+    scale: { mode: Phaser.Scale.NONE, width: initial.width, height: initial.height },
+    scene: [GalleryScene],
+  });
+  attachDeviceCanvas(game, host);
+}
+
 titleMenu.value = {
   save: found
     ? {
@@ -110,4 +128,5 @@ titleMenu.value = {
     startGame(state, false);
   },
 };
-render(h(App, {}), ui);
+if (new URLSearchParams(location.search).has('gallery')) startGallery();
+else render(h(App, {}), ui);
