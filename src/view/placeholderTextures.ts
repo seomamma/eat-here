@@ -130,6 +130,8 @@ export const EMOTE_TEX = {
 /** Bouncing arrow above the selected guest (11x7). */
 export const MARKER_TEX = 'select_marker';
 export const COIN_TEX = 'coin';
+/** Pixel sparkles for level-up and gifts: a 5x5 plus and a 3x3 plus (M10 juice). */
+export const SPARKLE_TEX = { large: 'sparkle_l', small: 'sparkle_s' } as const;
 export const EMOTE_SIZE = 16;
 export const COIN_SIZE = 7;
 
@@ -702,6 +704,19 @@ function coin(): Raster {
   return r;
 }
 
+/** A tiny plus-shaped sparkle: bright core, warm arms. */
+function sparkle(size: 3 | 5): Raster {
+  const r = new Raster(size, size);
+  const mid = (size - 1) / 2;
+  for (let i = 0; i < size; i++) {
+    const d = Math.abs(i - mid);
+    const c = d === 0 ? C.cream1 : d === 1 ? C.cheese3 : C.cheese2;
+    r.set(i, mid, c);
+    r.set(mid, i, c);
+  }
+  return r;
+}
+
 // ---------------------------------------------------------------------------------------
 // Furniture: isometric boxes
 // ---------------------------------------------------------------------------------------
@@ -1043,6 +1058,8 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, EMOTE_TEX.slow, emoteBubble('slow'));
   upload(textures, MARKER_TEX, selectMarker());
   upload(textures, COIN_TEX, coin());
+  upload(textures, SPARKLE_TEX.large, sparkle(5));
+  upload(textures, SPARKLE_TEX.small, sparkle(3));
   for (const id of RECIPE_IDS) {
     upload(textures, DISH_TEX[id], dishIcon(id));
     upload(textures, ORDER_BUBBLE_TEX[id], orderBubble(id));

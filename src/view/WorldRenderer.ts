@@ -5,8 +5,10 @@ import { isGuest, isStaff, type Character, type IsoDir } from '../sim/characters
 import type { GuestEmote } from '../sim/events';
 import { footprintTiles, furnitureAt, rotatedFootprint, type Furniture } from '../sim/grid';
 import type { GameState } from '../sim/state';
+import { prefersReducedMotion } from '../platform/motion';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
 import { interpolatePosition } from './interpolate';
+import { coinRise, squash } from './juice';
 import {
   CHAR_ANIMS,
   CHAR_FRAME_COUNT,
@@ -19,6 +21,7 @@ import {
   CHAR_W,
   ORDER_BUBBLE_TEX,
   OVEN_TEX,
+  SPARKLE_TEX,
   TEX,
   WALL_BACK_RISE,
   charTexKey,
@@ -114,7 +117,21 @@ const MARKER_ABOVE_PX = 25;
 const MARKER_BOB_MS = 300;
 /** Extra touch margin (art px) around a guest sprite for tap selection. */
 const TAP_PAD_PX = 3;
-const COIN_RISE_PX = 16;
+/** Coin popup arc: sideways drift (px). */
+const COIN_ARC_PX = 6;
+/** Hop of a guest or waiter when a dish is served. */
+const HOP_MS = 260;
+const HOP_PX = 3;
+/** Sparkle burst: count, flight time, travel distance range (px). */
+const SPARKLE_COUNT = 8;
+const SPARKLE_MS = 750;
+const SPARKLE_REACH_PX = [8, 16] as const;
+const SPARKLE_STATIC_MS = 500;
+/** Sparkle anchors above a guest's feet and above the oven's footprint centre (px). */
+const SPARKLE_ABOVE_PX = 14;
+const OVEN_SPARKLE_ABOVE_PX = 16;
+/** A waiter this close (px) to a served guest joins the hop. */
+const SERVE_HOP_RANGE_PX = 40;
 const COIN_MS = 1100;
 const COIN_FADE_MS = 400;
 const COIN_ABOVE_PX = 26;
@@ -139,6 +156,8 @@ export class WorldRenderer {
   private highlight: Phaser.GameObjects.Image | null = null;
   private marker: Phaser.GameObjects.Image | null = null;
   private effects: Effect[] = [];
+  /** Characters currently hopping: id -> birth time (scene ms). */
+  private readonly hops = new Map<string, number>();
   /** Persistent state-driven overlays: status bubbles above guests and dish icons. */
   private readonly bubbles = new Map<string, Phaser.GameObjects.Image>();
   private readonly dishes = new Map<string, Phaser.GameObjects.Image>();
@@ -219,7 +238,10 @@ export class WorldRenderer {
       const anim = animOf(c);
       const seated = anim === 'sit' || anim === 'eat';
       sprite
-        .setPosition(Math.round(o.x), Math.round(o.y) + 1 - (seated ? SEATED_LIFT_PX : 0)) // feet row sits on the centre pixel
+        .setPosition(
+          Math.round(o.x),
+          Math.round(o.y) + 1 - (seated ? SEATED_LIFT_PX : 0) - this.hopOffset(c.id),
+        ) // feet row sits on the centre pixel
         .setFlipX(view.flip)
         .setDepth(depthKey(p.x, p.y) + (seated ? DEPTH_SEATED_BIAS : 0));
       sprite.play(animKey(paletteOf(c), view.facing, anim), true);
@@ -378,6 +400,7 @@ export class WorldRenderer {
     if (!target) return;
     const img = this.scene.add.image(0, 0, EMOTE_TEX[emote]).setOrigin(0.5, 1);
     const side = emote === 'slow' ? EMOTE_SLOW_SIDE_PX : 0;
+    const reduced = prefersReducedMotion();
     const born = this.scene.time.now;
     let lastX = target.x;
     let lastY = target.y;
@@ -391,9 +414,14 @@ export class WorldRenderer {
         }
         let dy = 0;
         let alpha = 1;
+        let sx = 1;
+        let sy = 1;
         if (t < EMOTE_POP_MS) {
           const k = t / EMOTE_POP_MS;
-          dy = Math.round(6 * (1 - k));
+          if (!reduced) {
+            dy = Math.round(6 * (1 - k));
+            [sx, sy] = squash(k);
+          }
           alpha = k < 0.3 ? 0 : 1; // hard pixel pop-in (no semi-transparent pixels)
         } else if (t > EMOTE_POP_MS + EMOTE_HOLD_MS) {
           const k = (t - EMOTE_POP_MS - EMOTE_HOLD_MS) / EMOTE_FADE_MS;
@@ -402,6 +430,7 @@ export class WorldRenderer {
         }
         img
           .setPosition(Math.round(lastX) + side, Math.round(lastY) - EMOTE_ABOVE_PX + dy)
+          .setScale(sx, sy)
           .setAlpha(Math.max(0, alpha))
           .setDepth(DEPTH_OVERLAY);
         return t < EMOTE_POP_MS + EMOTE_HOLD_MS + EMOTE_FADE_MS;
@@ -433,15 +462,20 @@ export class WorldRenderer {
     const coin = this.scene.add.image(0, 0, COIN_TEX).setOrigin(0, 0.5).setDepth(DEPTH_OVERLAY);
     const gap = 2;
     const total = coin.width + gap + text.width;
+    const reduced = prefersReducedMotion();
+    // Alternate the drift side by tile so neighbouring popups do not overlap.
+    const side = (x + y) % 2 === 0 ? 1 : -1;
     const born = this.scene.time.now;
     this.effects.push({
       born,
       update: (now) => {
         const t = now - born;
         const k = Math.min(1, t / COIN_MS);
-        const rise = Math.round(COIN_RISE_PX * (1 - (1 - k) * (1 - k)));
+        // Reduced motion: no flight, the popup just sits there and fades.
+        const rise = reduced ? 0 : coinRise(k);
+        const drift = reduced ? 0 : Math.round(side * COIN_ARC_PX * (1 - (1 - k) * (1 - k)));
         const fade = t > COIN_MS - COIN_FADE_MS ? (t - (COIN_MS - COIN_FADE_MS)) / COIN_FADE_MS : 0;
-        const left = Math.round(baseX - total / 2);
+        const left = Math.round(baseX - total / 2) + drift;
         const yy = baseY - rise;
         coin.setPosition(left, yy).setAlpha(1 - fade);
         text.setPosition(left + coin.width + gap, yy).setAlpha(1 - fade);
@@ -452,6 +486,87 @@ export class WorldRenderer {
         text.destroy();
       },
     });
+  }
+
+  /** Makes a guest or waiter hop once (a happy little jump); skipped with reduced motion. */
+  hop(id: string): void {
+    if (prefersReducedMotion() || !this.characters.has(id)) return;
+    this.hops.set(id, this.scene.time.now);
+  }
+
+  /** Pixels a character is lifted right now (0 when not hopping). */
+  private hopOffset(id: string): number {
+    const born = this.hops.get(id);
+    if (born === undefined) return 0;
+    const k = (this.scene.time.now - born) / HOP_MS;
+    if (k >= 1) {
+      this.hops.delete(id);
+      return 0;
+    }
+    return Math.round(HOP_PX * Math.sin(Math.PI * k));
+  }
+
+  /** The dish reached a guest: the guest and the waiter next to them hop. */
+  hopOnServe(state: GameState, guestId: string): void {
+    this.hop(guestId);
+    const guest = this.characters.get(guestId);
+    if (!guest) return;
+    for (const c of state.characters) {
+      const sprite = this.characters.get(c.id);
+      if (!isStaff(c) || c.role !== 'waiter' || !sprite) continue;
+      if (Math.hypot(sprite.x - guest.x, sprite.y - guest.y) <= SERVE_HOP_RANGE_PX) this.hop(c.id);
+    }
+  }
+
+  /** A few pixel sparkles flying out from a screen point (world px); static with reduced motion. */
+  showSparkles(wx: number, wy: number): void {
+    const reduced = prefersReducedMotion();
+    const born = this.scene.time.now;
+    const parts = Array.from({ length: SPARKLE_COUNT }, (_, i) => {
+      const angle = (i / SPARKLE_COUNT) * Math.PI * 2 + (i % 2) * 0.4;
+      const reach = SPARKLE_REACH_PX[i % 2] ?? SPARKLE_REACH_PX[0];
+      const img = this.scene.add
+        .image(0, 0, i % 2 === 0 ? SPARKLE_TEX.large : SPARKLE_TEX.small)
+        .setDepth(DEPTH_OVERLAY);
+      return { img, angle, reach, delay: (i % 4) * 40 };
+    });
+    this.effects.push({
+      born,
+      update: (now) => {
+        const t = now - born;
+        const life = reduced ? SPARKLE_STATIC_MS : SPARKLE_MS;
+        for (const p of parts) {
+          const k = Math.max(0, Math.min(1, (t - (reduced ? 0 : p.delay)) / life));
+          const out = reduced ? p.reach * 0.6 : p.reach * (1 - (1 - k) * (1 - k));
+          const fall = reduced ? 0 : 5 * k * k; // drifts down a little as it fades
+          // Blink the last third out (hard on/off keeps the pixels crisp).
+          const visible = k < 0.65 || Math.floor(t / 70) % 2 === 0;
+          p.img
+            .setPosition(
+              Math.round(wx + Math.cos(p.angle) * out),
+              Math.round(wy + Math.sin(p.angle) * out * 0.6 + fall),
+            )
+            .setVisible(t >= (reduced ? 0 : p.delay) && visible);
+        }
+        return t < (reduced ? SPARKLE_STATIC_MS : SPARKLE_MS + 200);
+      },
+      destroy: () => parts.forEach((p) => p.img.destroy()),
+    });
+  }
+
+  /** Sparkles over a guest's head (gifts). */
+  sparklesAtGuest(guestId: string): void {
+    const sprite = this.characters.get(guestId);
+    if (sprite) this.showSparkles(Math.round(sprite.x), Math.round(sprite.y) - SPARKLE_ABOVE_PX);
+  }
+
+  /** Sparkles at the pizza oven (a recipe levelled up in the kitchen). */
+  sparklesAtOven(state: GameState): void {
+    const oven = state.furniture.find((f) => f.defId === 'oven_pizza');
+    if (!oven) return;
+    const [w, h] = rotatedFootprint(oven.defId, oven.rot);
+    const o = tileToScreen(oven.x + w / 2, oven.y + h / 2);
+    this.showSparkles(Math.round(o.x), Math.round(o.y) - OVEN_SPARKLE_ABOVE_PX);
   }
 
   /** Draws (or moves) the 1px diamond outline on a tile; null hides it. Debug aid. */

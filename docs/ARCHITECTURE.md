@@ -82,6 +82,13 @@ src/
   platform/
     storage.ts            SaveStorage interface + localStorage impl
     lifecycle.ts          visibility/pause handling
+    audio.ts              Web Audio engine: synthesised SFX + procedural music (D-035)
+    audioEvents.ts        sim events -> sounds, day/night music mood
+    audioRate.ts          pure rate limiter (per-sound gap + burst budget)
+    settings.ts           sound/music toggles in localStorage (apart from the save)
+    motion.ts             prefers-reduced-motion
+scripts/
+  balance.ts              headless balance runner (scripted player); `npm run balance`
 tests/                    Vitest specs for sim/
 docs/                     planning documents
 public/assets/            exported atlases, fonts, audio
@@ -191,6 +198,8 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 - **Flow:** the title screen runs before any sim exists; Continue/New Game then builds `Game` + Phaser world from the chosen state. New Game writes the fresh state at once (the previous pizzeria moves to `backup`).
 
 ## 9. Lifecycle & pause
+
+Audio (M10) lives in `src/platform/`: the AudioContext is created on the first user gesture and suspended while the page is hidden; sounds are triggered from sim events in `audioEvents.ts` and a delegated click listener on the UI overlay, so the sim never knows about audio.
 
 - `document.visibilitychange` / Capacitor `appStateChange` → `game.pause()` / `game.resume()`. No offline progress: time simply doesn't pass while paused.
 - Opening a modal (report, rank up) also pauses the sim.

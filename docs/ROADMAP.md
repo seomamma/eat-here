@@ -168,12 +168,13 @@
 
 ### M10 — MVP polish & playtest
 **Goal:** it feels good to play for 20 minutes.
-- Placeholder SFX + music, juice pass (bounce, sparkles, popups).
-- Balance pass using a headless "simulate 10 days" script (money/fame curves).
+- Placeholder SFX + music (synthesised in code, D-035), Settings panel (sound, music, back to title), juice pass (bounce, sparkles, popups, reduced-motion aware).
+- Balance pass using a headless "simulate 10 days" script (`npm run balance`, money/fame curves, D-034).
+- Playtest kit: `docs/PLAYTEST.md`.
 - Test on a real phone in both orientations.
 
 **Acceptance criteria**
-- [ ] A new player reaches Rank 2 in about 3–5 in-game days.
+- [x] A new player reaches Rank 2 in about 3–5 in-game days. (`npm run balance`, scripted player, 10 seeds: day 4 on nine, day 3 on one; D-034. A human will be somewhat slower.)
 - [ ] 20-minute playtest by the user with no blocking bugs; feedback captured in DECISIONS.md / backlog.
 - [ ] **MVP sign-off by the user.**
 

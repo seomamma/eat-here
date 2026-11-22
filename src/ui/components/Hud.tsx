@@ -4,6 +4,7 @@ import { RANKS, rankDef } from '../../data/ranks';
 import { todayOpen } from '../build';
 import { day, fame, minuteOfDay, money, phase, rank } from '../store';
 import { Card } from './Card';
+import { MoneyAmount } from './MoneyAmount';
 
 function CoinIcon() {
   return (
@@ -95,10 +96,7 @@ export function Hud() {
           }}
         >
           <CoinIcon />
-          {/* Re-keyed on every change so the bump animation restarts. */}
-          <span class="money-amount" key={amount}>
-            {amount}
-          </span>
+          <MoneyAmount value={amount} />
         </button>
       </Card>
       <Card accent="saffron" class="fame-card">

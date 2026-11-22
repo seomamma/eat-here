@@ -1,7 +1,8 @@
 /**
  * Restaurant ranks (GAME_DESIGN §9). Fame thresholds, unlocks and arrival-rate bonus per rank.
  * Thresholds are 7x the GAME_DESIGN draft (D-028): happiness scale was raised, so fame per
- * guest is higher; 350 puts rank 2 around day 3 (measured in M6).
+ * guest is higher. Rank 2 is 500 (D-034): the scripted player of `npm run balance` reaches it on
+ * day 4 (day 3 on one seed of ten).
  */
 import type { IngredientId } from './ingredients';
 import type { RecipeId } from './recipes';
