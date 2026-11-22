@@ -27,10 +27,10 @@
 - Camera fit reserves space for the HUD (top/bottom bars) so the room isn't covered by UI (seen in M0 landscape).
 
 **Acceptance criteria**
-- [ ] 10×12 room with walls, door and furniture visible, pixels crisp at every zoom level.
-- [ ] Zoom only snaps to integer levels; camera can't leave the room bounds.
-- [ ] Rotating the phone re-fits the camera.
-- [ ] Unit tests for grid occupancy.
+- [x] 10×12 room with walls, door and furniture visible, pixels crisp at every zoom level.
+- [x] Zoom only snaps to integer levels; camera can't leave the room bounds.
+- [x] Rotating the phone re-fits the camera.
+- [x] Unit tests for grid occupancy.
 
 ### M2 — Walking
 **Goal:** characters move correctly through the room.
