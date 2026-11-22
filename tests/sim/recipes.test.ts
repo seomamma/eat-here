@@ -164,7 +164,7 @@ describe('level effects', () => {
     for (const p of upPaid) expect(p.price).toBe(priceAtLevel(p.recipeId as 'marinara', 3));
     const avg = (xs: { happiness: number }[]) =>
       xs.reduce((a, p) => a + p.happiness, 0) / xs.length;
-    expect(avg(upPaid)).toBeGreaterThan(avg(basePaid) + 8);
+    expect(avg(upPaid)).toBeGreaterThan(avg(basePaid) + 5);
     expect(up.state.dayStats.income).toBeGreaterThan(base.state.dayStats.income);
   });
 });

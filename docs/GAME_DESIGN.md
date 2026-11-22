@@ -166,7 +166,7 @@ Each dish has a **level (1–5; MVP ships 1–3)**. Leveling a dish needs **coin
 
 **Special ingredients are collectibles**, not stock: you never need them for daily cooking (cooking costs stay abstract, D-016). They are only spent when leveling a dish. Rarity tiers: common, rare (epic/legendary later). Sources — deliberately a little hard to get:
 - **Market** (tab in the Shop): every morning 3 random offers (seeded), each buyable once that day. Commons are cheap; a rare shows up only now and then and is pricey.
-- **Gifts from guests:** a guest who leaves very happy (≥ 80) has a small chance to leave an ingredient — *"Nora left you a gift: Buffalo Mozzarella!"*. Rares are more likely here.
+- **Gifts from guests:** a guest who leaves very happy (≥ 70) has a small chance to leave an ingredient — *"Nora left you a gift: Buffalo Mozzarella!"*. Rares are more likely here.
 - **Rank-up rewards:** each rank up gives one ingredient (Rank 2 → a rare).
 - Later: regulars, awards, suppliers (GAME_DESIGN §10b).
 

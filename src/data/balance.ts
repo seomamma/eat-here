@@ -61,7 +61,7 @@ export const MARKET_PRICE: Record<'common' | 'rare', readonly [number, number]> 
   rare: [180, 260],
 };
 /** A guest leaving with at least this happiness may leave a gift. */
-export const GIFT_MIN_HAPPINESS = 80;
+export const GIFT_MIN_HAPPINESS = 70;
 /** Chance of a gift per such guest. */
 export const GIFT_CHANCE = 0.12;
 /** Chance that a gift is a rare ingredient (otherwise common). */
