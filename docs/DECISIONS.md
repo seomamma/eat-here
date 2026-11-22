@@ -58,29 +58,29 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Note:** Phaser 4 should be evaluated at M0 — if stable and documented, prefer it; otherwise latest Phaser 3.x.
 
 ### D-011 UI in DOM (Preact) over the Phaser canvas
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Alternatives:** UI drawn in Phaser; vanilla DOM without a library.
 **Why:** The "modern UI vs retro world" identity wants sharp, native-resolution text and responsive layouts — trivial with CSS, painful in canvas. User is a web developer. Preact (~4 kB) gives components without React's weight; vanilla DOM would become messy with many panels.
 **Risk:** Two rendering systems; mitigated by the rule that both only read sim state and send commands.
 
 ### D-012 Simulation core independent of rendering
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Decision:** All game logic in `src/sim` as pure TS operating on plain serializable state; Phaser and UI are projections.
 **Alternatives:** Logic inside Phaser game objects (typical tutorial style).
 **Why:** Testable without a browser, trivial save/load, deterministic debugging with seeded RNG, renderer can change without touching rules.
 
 ### D-013 Systems + state machines + job queue (no ECS library)
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Alternatives:** ECS library (bitecs etc.), behavior trees, GOAP.
 **Why:** Our entity count is tiny; plain objects + per-entity state machines + a shared job queue are the simplest understandable model and extend fine to many staff.
 
 ### D-014 Own A* pathfinding, 4-directional, no character collisions
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Alternatives:** easystar.js; navmesh; local avoidance.
 **Why:** ~100 lines, fully tested, no dependency. Characters overlapping briefly is standard and acceptable in this genre.
 
 ### D-015 Saves: autosave at prep start; mid-day quit restarts the day
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Alternatives:** Snapshot anytime including in-flight guests.
 **Why:** Days are ~4 minutes, so little progress is lost; avoids serializing transient AI state. Full-state saving remains possible later since state is plain data.
 
@@ -106,11 +106,11 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Decision:** All text in English; UI strings still kept in one module (`src/data/strings.ts`) to keep the door open.
 
 ### D-021 Art: 16 px tiles, 16×24 characters, locked palette, AI concepts + manual cleanup
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Why:** Small sizes keep the art workload manageable and the charm high. AI output is not usable pixel art directly; a pipeline with palette locking, cleanup and automated validation keeps assets consistent.
 
 ### D-022 Content as typed TS data, not JSON
-**Status:** Proposed — needs approval
+**Status:** Accepted (plan approved before M0)
 **Why:** Type checking and autocomplete on all content; no schema validation layer needed. Can move to JSON later if a modding/editor need appears.
 
 ### D-023 Language: user communication in Swedish, everything in the repo in English
