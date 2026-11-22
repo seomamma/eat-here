@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { render, h } from 'preact';
 import { bindAutosave } from './platform/autosave';
 import { bindLifecycle } from './platform/lifecycle';
+import { randomSeed } from './platform/seed';
 import { LocalSaveStorage, loadSave, wipeSaves, writeSave } from './platform/storage';
 import { Game } from './sim/game';
 import { createInitialState, type GameState } from './sim/state';
@@ -76,7 +77,7 @@ titleMenu.value = {
     if (found) startGame(found.state, found.fromBackup);
   },
   onNewGame: () => {
-    const state = createInitialState(undefined, { debugWalker: debug });
+    const state = createInitialState(randomSeed(), { debugWalker: debug });
     // Written at once: the old pizzeria moves to the backup slot, the new one is the main save.
     writeSave(storage, state, Date.now());
     startGame(state, false);

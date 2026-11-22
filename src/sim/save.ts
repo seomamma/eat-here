@@ -4,7 +4,7 @@ import { RECIPE_IDS } from '../data/recipes';
 import type { GameState } from './state';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export const SAVE_FORMAT = 'eat-here-save';
 
@@ -26,8 +26,14 @@ export type Migrations = Record<
   (state: Record<string, unknown>) => Record<string, unknown>
 >;
 
-/** Steps from older versions; empty while v1 is the only format. */
-export const MIGRATIONS: Migrations = {};
+/** Steps from older versions. */
+export const MIGRATIONS: Migrations = {
+  // v1 -> v2: the day's money ledger (D-033). Older days simply start with an empty one.
+  1: (state) => {
+    const stats = isObj(state.dayStats) ? state.dayStats : {};
+    return { ...state, dayStats: { ...stats, ledger: { entries: [] } } };
+  },
+};
 
 /** `savedAt` is passed in so this stays pure (the caller owns the clock). */
 export function serialize(state: GameState, savedAt: number): string {
@@ -121,6 +127,8 @@ export function validateState(s: Record<string, unknown>): string | null {
   if (!['open', 'closing', 'report', 'night'].includes(clock.phase as string))
     return 'bad:clock.phase';
   if (!isObj(s.dayStats) || !isObj(s.dayStats.ordersByRecipe)) return 'bad:dayStats';
+  if (!isObj(s.dayStats.ledger) || !Array.isArray(s.dayStats.ledger.entries))
+    return 'bad:dayStats.ledger';
   if (
     !isObj(s.guestSpawn) ||
     typeof s.guestSpawn.enabled !== 'boolean' ||

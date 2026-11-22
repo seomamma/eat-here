@@ -6,6 +6,7 @@ import type { Character, Staff } from './characters';
 import type { Job, Order } from './systems/jobs';
 import { createGrid, createStartFurniture, type Furniture, type GridState } from './grid';
 import { createDayStats, type DayStats } from './dayStats';
+import { SAVE_VERSION } from './save';
 import { createClock, type Clock } from './time';
 import { buildWalkGrid, isWalkable } from './pathfinding';
 import { createInventory, rollMarket, type MarketState } from './systems/market';
@@ -90,7 +91,7 @@ export function createInitialState(
   const furniture = createStartFurniture();
   const s = spawnTile(grid, furniture);
   const state: GameState = {
-    version: 1,
+    version: SAVE_VERSION,
     seed,
     rng: seed >>> 0,
     tick: 0,

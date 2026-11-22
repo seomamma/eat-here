@@ -1,6 +1,6 @@
 import { MAX_TICKS_PER_UPDATE, TICK_MS } from '../data/balance';
 import { FURNITURE, type FurnitureDefId, type Rot } from '../data/furniture';
-import { createDayStats } from './dayStats';
+import { createDayStats, recordLedger } from './dayStats';
 import { isGuest, isStaff, stepCharacter } from './characters';
 import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
@@ -47,11 +47,16 @@ export class Game {
       stats.fameGained += e.fame;
       stats.guestsServed++;
       const guest = this.state.characters.find((c) => c.id === e.guestId);
+      const tick = this.state.tick;
+      recordLedger(stats, tick, 'dish', e.price);
+      if (e.tip > 0)
+        recordLedger(stats, tick, 'tip', e.tip, guest && isGuest(guest) ? guest.name : 'guest');
       const recipeId = guest && isGuest(guest) ? guest.recipeId : null;
       if (recipeId) stats.ordersByRecipe[recipeId] = (stats.ordersByRecipe[recipeId] ?? 0) + 1;
     });
     this.events.on('ingredientsBought', (e) => {
       this.state.dayStats.ingredientCosts += e.amount;
+      recordLedger(this.state.dayStats, this.state.tick, 'ingredients', -e.amount);
     });
     this.events.on('giftReceived', () => {
       this.state.dayStats.gifts++;
@@ -211,6 +216,7 @@ export class Game {
     const id = `f${state.nextFurnitureId++}`;
     state.money -= price;
     state.spentOnBuilding += price;
+    recordLedger(state.dayStats, state.tick, 'furniture', -price, defId);
     state.furniture.push({ id, defId, x, y, rot, level: 1 });
     this.afterFurnitureChange();
     this.events.emit('moneyChanged', { money: state.money });
@@ -239,6 +245,7 @@ export class Game {
     if (!offer) return { ok: false, reason: 'unknownOffer' };
     offer.bought = true;
     state.money -= offer.price;
+    recordLedger(state.dayStats, state.tick, 'market', -offer.price, offer.ingredient);
     this.events.emit('moneyChanged', { money: state.money });
     addIngredient(state, this.events, offer.ingredient);
     return { ok: true };
@@ -252,6 +259,7 @@ export class Game {
     const up = nextUpgrade(recipeId, recipe.level);
     if (!up) return { ok: false, reason: 'maxLevel' };
     state.money -= up.coins;
+    recordLedger(state.dayStats, state.tick, 'upgrade', -up.coins, `${recipeId}:${up.level}`);
     state.inventory[up.ingredient]--;
     recipe.level = up.level;
     this.events.emit('moneyChanged', { money: state.money });

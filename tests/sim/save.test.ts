@@ -137,7 +137,10 @@ describe('deserialize', () => {
 
 describe('migrate', () => {
   it('steps version by version', () => {
-    const f = JSON.parse(serialize(createInitialState(1), AT)) as { version: number };
+    const f = {
+      ...(JSON.parse(serialize(createInitialState(1), AT)) as object),
+      version: 1,
+    };
     const order: number[] = [];
     const steps = {
       1: (s: Record<string, unknown>) => (order.push(1), { ...s, addedInV2: true }),
@@ -156,7 +159,7 @@ describe('migrate', () => {
   });
 
   it('fails cleanly on a missing or throwing step', () => {
-    const f = JSON.parse(serialize(createInitialState(1), AT)) as object;
+    const f = { ...(JSON.parse(serialize(createInitialState(1), AT)) as object), version: 1 };
     expect(migrate(f, {}, 2)).toEqual({ ok: false, reason: 'noMigration1' });
     const bad = migrate(
       f,
@@ -179,6 +182,7 @@ describe('migrate', () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.state.version).toBe(SAVE_VERSION);
+    expect(res.state.dayStats.ledger).toEqual({ entries: [] });
     expect(res.state.clock.day).toBe(1);
     expect(res.state.furniture.some((f) => f.defId === 'plant_potted')).toBe(true);
     expect(res.state.characters.some((c) => isGuest(c))).toBe(true);

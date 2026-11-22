@@ -66,3 +66,6 @@ export const GIFT_MIN_HAPPINESS = 70;
 export const GIFT_CHANCE = 0.12;
 /** Chance that a gift is a rare ingredient (otherwise common). */
 export const GIFT_RARE_CHANCE = 0.4;
+
+/** Tips at least this big may become the day's "notable" single ledger entry (D-033). */
+export const LEDGER_NOTABLE_TIP = 4;
