@@ -64,6 +64,17 @@ export const TEX = {
   tileHighlight: 'tile_highlight',
 } as const;
 
+/** Character frame size (ART_DIRECTION §3): pivot bottom-centre, feet on the last row. */
+export const CHAR_W = 16;
+export const CHAR_H = 24;
+export type CharFacing = 'front' | 'back';
+export type CharAnim = 'idle' | 'walk';
+export const CHAR_FRAME_COUNT: Record<CharAnim, number> = { idle: 2, walk: 4 };
+
+export function charTexKey(facing: CharFacing, anim: CharAnim, frame: number): string {
+  return `char_${facing}_${anim}_${frame}`;
+}
+
 type Pixel = string | null;
 
 /** Pixel buffer with hex colours; null = transparent. */
@@ -258,6 +269,65 @@ function doorFrame(): Raster {
         !fill.get(tx, ty - 1) ||
         !fill.get(tx, ty + 1);
       r.set(tx, ty, edge ? C.outline : c);
+    }
+  }
+  return r;
+}
+
+// ---------------------------------------------------------------------------------------
+// Characters: 16x24, two facings (front = down-right, back = up-right; the others are mirrored)
+// ---------------------------------------------------------------------------------------
+
+/** Crude placeholder person: head, torso, two legs, dark outline, feet on the last row. */
+function characterFrame(facing: CharFacing, anim: CharAnim, frame: number): Raster {
+  const fill = new Raster(CHAR_W, CHAR_H);
+  const rect = (x0: number, y0: number, x1: number, y1: number, c: string) => {
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) fill.set(x, y, c);
+  };
+  const front = facing === 'front';
+  const walking = anim === 'walk';
+  // Upper body drops 1 px on contact frames (walk 0/2) and on the second idle frame (breathing).
+  const bob = walking ? (frame % 2 === 0 ? 1 : 0) : frame === 1 ? 1 : 0;
+  // Legs: [leftTop, rightTop, leftX, rightX] (a lifted foot ends higher).
+  let leftEnd = 23;
+  let rightEnd = 23;
+  let leftX = 4;
+  let rightX = 9;
+  if (walking) {
+    if (frame === 0) [leftX, rightX] = [3, 10];
+    if (frame === 1) leftEnd = 21;
+    if (frame === 2) [leftX, rightX] = [3, 10];
+    if (frame === 3) rightEnd = 21;
+  }
+  rect(leftX, 18, leftX + 2, leftEnd, C.cool1);
+  rect(rightX, 18, rightX + 2, rightEnd, C.cool1);
+  rect(leftX, leftEnd - 1, leftX + 2, leftEnd, C.wood1); // shoes
+  rect(rightX, rightEnd - 1, rightX + 2, rightEnd, C.wood1);
+  // Torso and arms.
+  rect(4, 10 + bob, 11, 17, C.tomato2);
+  rect(3, 11 + bob, 3, 16, C.tomato3);
+  rect(12, 11 + bob, 12, 16, C.tomato1);
+  if (front) rect(6, 13 + bob, 10, 17, C.cream1); // apron
+  // Head and hair.
+  rect(4, 2 + bob, 11, 9 + bob, C.wood4);
+  if (front) {
+    rect(4, 2 + bob, 11, 4 + bob, C.wood1);
+    rect(4, 5 + bob, 4, 6 + bob, C.wood1);
+    fill.set(7, 6 + bob, C.outline);
+    fill.set(10, 6 + bob, C.outline);
+  } else {
+    rect(4, 2 + bob, 11, 8 + bob, C.wood1);
+    rect(5, 9 + bob, 10, 9 + bob, C.wood2);
+  }
+  // Outline: every filled pixel touching transparency.
+  const r = new Raster(CHAR_W, CHAR_H);
+  for (let y = 0; y < CHAR_H; y++) {
+    for (let x = 0; x < CHAR_W; x++) {
+      const c = fill.get(x, y);
+      if (!c) continue;
+      const edge =
+        !fill.get(x - 1, y) || !fill.get(x + 1, y) || !fill.get(x, y - 1) || !fill.get(x, y + 1);
+      r.set(x, y, edge ? C.outline : c);
     }
   }
   return r;
@@ -553,6 +623,13 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, TEX.wallFrontL, lowWall('l'));
   upload(textures, TEX.wallFrontR, lowWall('r'));
   upload(textures, TEX.tileHighlight, drawHighlight());
+  for (const facing of ['front', 'back'] as const) {
+    for (const anim of ['idle', 'walk'] as const) {
+      for (let f = 0; f < CHAR_FRAME_COUNT[anim]; f++) {
+        upload(textures, charTexKey(facing, anim, f), characterFrame(facing, anim, f));
+      }
+    }
+  }
   for (const defId of Object.keys(FURNITURE) as FurnitureDefId[]) {
     const [ox, oy] = FURNITURE[defId].spriteOrigin;
     upload(textures, defId, FURNITURE_ART[defId](ox, oy));

@@ -1,10 +1,19 @@
 import Phaser from 'phaser';
 import { DOOR_X } from '../data/layout';
 import { FURNITURE } from '../data/furniture';
+import type { IsoDir } from '../sim/characters';
 import { rotatedFootprint } from '../sim/grid';
 import type { GameState } from '../sim/state';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
-import { TEX, WALL_BACK_RISE } from './placeholderTextures';
+import { interpolatePosition } from './interpolate';
+import {
+  CHAR_FRAME_COUNT,
+  TEX,
+  WALL_BACK_RISE,
+  charTexKey,
+  type CharAnim,
+  type CharFacing,
+} from './placeholderTextures';
 
 /** Floors sit below everything; back walls are never in front of anything. */
 const DEPTH_FLOOR = -20000;
@@ -14,13 +23,49 @@ const DEPTH_FRONT_BIAS = 0.5;
 /** Debug overlays on top of the world. */
 const DEPTH_OVERLAY = 1_000_000;
 
+/** Animation speed (ART_DIRECTION §6: 8 fps loops; idle breathing is slower). */
+const WALK_FPS = 8;
+const IDLE_FPS = 2;
+
+/** Front = down-right, back = up-right; the other two directions mirror them. */
+const DIR_VIEW: Record<IsoDir, { facing: CharFacing; flip: boolean }> = {
+  dr: { facing: 'front', flip: false },
+  dl: { facing: 'front', flip: true },
+  ur: { facing: 'back', flip: false },
+  ul: { facing: 'back', flip: true },
+};
+
+function animKey(facing: CharFacing, anim: CharAnim): string {
+  return `char_${facing}_${anim}`;
+}
+
 /** Syncs Phaser game objects from GameState. Read-only: never mutates state. */
 export class WorldRenderer {
   private tilesBuilt = false;
   private readonly furniture = new Map<string, Phaser.GameObjects.Image>();
+  private readonly characters = new Map<string, Phaser.GameObjects.Sprite>();
   private highlight: Phaser.GameObjects.Image | null = null;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.createAnimations();
+  }
+
+  private createAnimations(): void {
+    for (const facing of ['front', 'back'] as const) {
+      for (const anim of ['idle', 'walk'] as const) {
+        const key = animKey(facing, anim);
+        if (this.scene.anims.exists(key)) continue;
+        this.scene.anims.create({
+          key,
+          frames: Array.from({ length: CHAR_FRAME_COUNT[anim] }, (_, i) => ({
+            key: charTexKey(facing, anim, i),
+          })),
+          frameRate: anim === 'walk' ? WALK_FPS : IDLE_FPS,
+          repeat: -1,
+        });
+      }
+    }
+  }
 
   /**
    * Screen-space bounds of the visible room: interior floor plus the full-height back walls.
@@ -38,6 +83,38 @@ export class WorldRenderer {
       this.tilesBuilt = true;
     }
     this.syncFurniture(state);
+  }
+
+  /**
+   * Places characters at their position interpolated between the last two ticks (`alpha` is the
+   * fraction into the next tick). Feet sit on the tile centre; depth uses the interpolated
+   * position, so they sort with furniture by x + y and always draw above the back walls.
+   */
+  syncCharacters(state: GameState, alpha: number): void {
+    const live = new Set<string>();
+    for (const c of state.characters) {
+      live.add(c.id);
+      let sprite = this.characters.get(c.id);
+      if (!sprite) {
+        sprite = this.scene.add.sprite(0, 0, charTexKey('front', 'idle', 0)).setOrigin(0.5, 1);
+        this.characters.set(c.id, sprite);
+      }
+      const p = interpolatePosition(c, alpha);
+      // Tile (x, y) has its diamond centre at tileToScreen(x + 0.5, y + 0.5).
+      const o = tileToScreen(p.x + 0.5, p.y + 0.5);
+      const view = DIR_VIEW[c.dir];
+      sprite
+        .setPosition(Math.round(o.x), Math.round(o.y) + 1) // feet row sits on the centre pixel
+        .setFlipX(view.flip)
+        .setDepth(depthKey(p.x, p.y));
+      sprite.play(animKey(view.facing, c.path.length > 0 ? 'walk' : 'idle'), true);
+    }
+    for (const [id, sprite] of this.characters) {
+      if (!live.has(id)) {
+        sprite.destroy();
+        this.characters.delete(id);
+      }
+    }
   }
 
   /** Draws (or moves) the 1px diamond outline on a tile; null hides it. Debug aid. */

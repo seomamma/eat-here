@@ -44,7 +44,7 @@ export function createStartFurniture(): Furniture[] {
   }));
 }
 
-export function inBounds(grid: GridState, x: number, y: number): boolean {
+export function inBounds(grid: { width: number; height: number }, x: number, y: number): boolean {
   return (
     Number.isInteger(x) &&
     Number.isInteger(y) &&
