@@ -123,9 +123,27 @@ Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left 
 - **MVP:** one guest type ("Local"), with palette variations for visual variety.
 - **Post-MVP:** several types (Student, Office worker, Family, Food critic, Tourist…) with different budgets, favorite dishes, patience, and appeal preferences. New types unlock via rank.
 
-### Regulars (post-MVP, first big feature after MVP)
+### Regulars & Moments (M11 spec)
 
-Named characters with a favorite dish and condition, e.g. **Nonna Rosa** — unlocks when you serve a Margherita with **Buffalo Mozzarella** at level ≥ 3. Then she comes **every Friday**. Unlock shows a joyful popup with a jingle: *"Nonna Rosa became a regular!"* Regulars give bonus fame and may unlock secrets.
+**Goal:** prove the hook "the restaurant remembers its guests". Small, data-driven, no generative AI.
+
+**Moments engine** (`src/data/moments.ts`, `src/sim/systems/moments.ts`): a moment = `{ id, trigger (condition on state/events), once: true, card: { title, text, icon }, reward? (coins / ingredient / fame / unlock) }`. Fired moments are stored in state (`momentsSeen`). The UI shows a moment as a celebratory card with a short jingle; it pauses the sim while open (like RANK UP). Regular unlocks and story beats are moments; later the magazine, awards and events reuse it.
+
+**Regulars** (`src/data/regulars.ts`): `{ id, name, look (unique palette + small accessory), favorite recipe, unlock condition, visitDays (weekdays), visitWindow (lunch/dinner), beats[] }`.
+- Locked → the Guests book shows a **hint** ("Someone in town dreams of a perfect Margherita…").
+- Unlock condition met → moment **"Nonna Rosa became a regular!"** + jingle.
+- On each visit day, the regular arrives once in their window as a named guest with their own look. They get extra patience; if no seat is free they wait at the door instead of leaving quickly.
+- **"The usual, please!"**: if their favorite is on the menu they always order it and get **+10 "Their usual!"** happiness; fame from regulars ×2.
+- **Friendship hearts (0–5):** +1 heart per visit with happiness ≥ 70 (max one per day). Hearts are shown in the Guests book and in their guest card.
+- **Story beats:** moments triggered by hearts/visits, e.g. at 2 hearts "Nonna Rosa brought you her secret basil" (a rare ingredient reward), at 5 hearts a small bonus (e.g. fame or a special decor item later).
+
+**MVP regulars (2):**
+| Regular | Unlocks when | Visits | Favorite | Beats |
+|---|---|---|---|---|
+| **Nonna Rosa** | a Margherita **Lv.3** is served | Fridays (lunch) | Margherita | 2♥: gives Buffalo Mozzarella · 4♥: "She says it tastes like Napoli" (+fame) |
+| **Oliver** | 10 Pepperoni served (after Rank 2) | Tuesdays (dinner) | Pepperoni | 2♥: "Oliver greets the chef by name" · 3♥: "Oliver brought a date!" (2nd named guest, sits with him if a 2-seat table is free) · 5♥: "Oliver and Mia are celebrating something…" (+tip bonus) |
+
+**Next Goals card** (pillar 5): a compact card in the Menu (and a small "!" pulse on the Menu button when a goal is newly reached) listing 3 goals: next rank (fame x/y), a recipe/upgrade goal, a regular hint or hearts goal.
 
 ## 5. Staff
 
