@@ -80,7 +80,7 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Why:** ~100 lines, fully tested, no dependency. Characters overlapping briefly is standard and acceptable in this genre.
 
 ### D-015 Saves: autosave at prep start; mid-day quit restarts the day
-**Status:** Accepted (plan approved before M0)
+**Status:** Superseded by D-032
 **Alternatives:** Snapshot anytime including in-flight guests.
 **Why:** Days are ~4 minutes, so little progress is lost; avoids serializing transient AI state. Full-state saving remains possible later since state is plain data.
 
@@ -156,3 +156,8 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Status:** Accepted (user request at M8)
 **Decision:** Leveling a dish costs coins **and** a special ingredient item. Items are collectibles in an inventory (Market with daily random offers, gifts from very happy guests, rank-up rewards). Daily cooking stays abstract with no stock (D-016 unchanged).
 **Why:** The user wants some upgrade items to be hard to get — a collection goal that supports "always a next goal" without inventory stress.
+
+### D-032 Save the full game state, any time (supersedes D-015)
+**Status:** Accepted (after M7b)
+**Decision:** Saves contain the complete `GameState`, written every in-game hour, after purchases/upgrades/placements, at day start and when the app is hidden. Reload continues exactly where the player left.
+**Why:** With D-029 there is no prep phase and purchases happen mid-day; restarting the day on reload would make bought items "disappear". Since all state is plain serializable data (D-012), a full save is simpler than a partial one.

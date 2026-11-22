@@ -96,7 +96,7 @@ assets/                   art sources (aseprite, prompts, palette)
 interface GameState {
   version: number;          // save format version
   seed: number;             // rng
-  clock: { day: number; minuteOfDay: number; phase: 'prep' | 'open' | 'closing' | 'report' };
+  clock: { day: number; minuteOfDay: number; phase: 'open' | 'closing' | 'report' | 'night' };
   money: number;
   fame: number;
   rank: number;
@@ -181,8 +181,8 @@ All randomness goes through a **seeded RNG** stored in state → reproducible bu
 ## 8. Save system
 
 - Saves are `JSON.stringify(GameState)` + `{ version, savedAt }`, written through `SaveStorage` (`load(slot)`, `save(slot, data)`).
-- **When:** autosave at the **start of each prep phase** (i.e. after the day report) and after any prep-phase purchase.
-- **Mid-day quit:** if the app is closed during a business day, loading returns to the start of that day's prep phase (last save). The day is short, so little is lost, and we avoid serializing in-flight guests/paths. (Pausing while app is merely in background keeps the live state in memory.)
+- **What:** the **full** `GameState` (D-032) — it is plain data, including guests, paths, jobs and orders, so a reload continues exactly where you left off.
+- **When:** autosave every in-game hour, after every purchase/upgrade/placement, at the start of each day, and immediately when the app/tab is hidden (`visibilitychange`, Capacitor `appStateChange`).
 - **Versioning:** each save has `version`; `migrate()` upgrades old saves step by step (`v1 → v2 → …`). Unit-tested with fixture saves.
 - One save slot in MVP; keep a `backup` copy of the previous save to recover from corruption.
 
