@@ -4,7 +4,8 @@ import { createInitialState } from '../../src/sim/state';
 describe('createInitialState', () => {
   it('starts at version 1, day 1 with 300 money', () => {
     const s = createInitialState();
-    expect(s).toMatchObject({ version: 1, money: 300, day: 1 });
+    expect(s).toMatchObject({ version: 1, money: 300 });
+    expect(s.clock).toMatchObject({ day: 1, phase: 'prep', minuteOfDay: 600 });
   });
 
   it('returns a fresh object each call', () => {

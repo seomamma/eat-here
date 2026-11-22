@@ -4,7 +4,7 @@ import { GUEST_TYPES } from '../../data/guests';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
 import { RECIPE_IDS, RECIPES } from '../../data/recipes';
 import { dirFromStep, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
-import type { Emitter, GameEvents } from '../events';
+import type { Emitter, GameEvents, GuestLeaveReason } from '../events';
 import { buildOccupancy, type Furniture } from '../grid';
 import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
 import { rngInt, rngPick } from '../rng';
@@ -94,7 +94,7 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
   return false;
 }
 
-function startLeaving(ctx: GuestContext, g: Guest, reason: 'done' | 'noSeat'): void {
+function startLeaving(ctx: GuestContext, g: Guest, reason: GuestLeaveReason): void {
   g.phase = 'leaving';
   g.leaveReason = reason;
   const door = { x: DOOR_X, y: ctx.state.grid.height - 1 };
@@ -135,6 +135,11 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
 
     case 'waitingForSeat':
       if (tryClaimSeat(ctx, g)) break;
+      if (state.clock.phase === 'closing') {
+        // Closing time: nobody new gets seated, and this is not the guest's fault (no angry emote).
+        startLeaving(ctx, g, 'closed');
+        break;
+      }
       if (--g.timer <= 0) {
         events.emit('guestEmote', { guestId: g.id, emote: 'angry' });
         startLeaving(ctx, g, 'noSeat');

@@ -4,7 +4,7 @@ import { RECIPES } from '../../src/data/recipes';
 import { isGuest, isStaff, type Staff } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, isWalkable } from '../../src/sim/pathfinding';
-import { createInitialState } from '../../src/sim/state';
+import { openGame } from './helpers';
 
 const TICKS_PER_SEC = 1000 / TICK_MS;
 
@@ -88,7 +88,7 @@ function runUntil(g: Game, cond: () => boolean, maxTicks = 20_000): void {
 }
 
 function simulate(seed: number, hours: number) {
-  const g = new Game(createInitialState(seed));
+  const g = openGame(seed);
   const log = attach(g);
   run(g, hours * 3600 * TICKS_PER_SEC);
   g.state.guestSpawn.enabled = false;
@@ -98,7 +98,7 @@ function simulate(seed: number, hours: number) {
 
 describe('staff, jobs and orders', () => {
   it('starts with one chef and one waiter at their idle spots', () => {
-    const g = new Game(createInitialState());
+    const g = openGame();
     expect(
       staffOf(g)
         .map((s) => s.role)
@@ -109,7 +109,7 @@ describe('staff, jobs and orders', () => {
   });
 
   it('runs the full flow: take order, cook, serve, eat, pay', () => {
-    const g = new Game(createInitialState(2));
+    const g = openGame(2);
     const log = attach(g);
     runUntil(g, () => log.paid.length >= 1);
     expect(log.taken.length).toBeGreaterThanOrEqual(1);
@@ -119,7 +119,7 @@ describe('staff, jobs and orders', () => {
   });
 
   it('never lets two staff claim the same job (checked every tick, 2 staff + extra waiter)', () => {
-    const g = new Game(createInitialState(9));
+    const g = openGame(9);
     const waiter = staffOf(g).find((s) => s.role === 'waiter') as Staff;
     g.state.characters.push({
       ...waiter,
@@ -135,7 +135,7 @@ describe('staff, jobs and orders', () => {
   });
 
   it('deducts the ingredient cost when cooking starts', () => {
-    const g = new Game(createInitialState(2));
+    const g = openGame(2);
     const money: number[] = [];
     g.events.on('ingredientsBought', (e) => money.push(g.state.money + e.amount));
     const before = g.state.money;
@@ -154,7 +154,7 @@ describe('staff, jobs and orders', () => {
   ];
   for (const [name, cond] of scenarios) {
     it(`cancels the jobs when the guest leaves mid-flow: ${name}`, () => {
-      const g = new Game(createInitialState(2));
+      const g = openGame(2);
       const log = attach(g);
       runUntil(g, () => cond(g));
       const order = g.state.orders.find(
@@ -183,7 +183,7 @@ describe('staff, jobs and orders', () => {
   }
 
   it('the chef waits at a full pass until the waiter frees a slot', () => {
-    const g = new Game(createInitialState(2));
+    const g = openGame(2);
     const log = attach(g);
     // Let several orders get taken, then remove the waiter: dishes pile up on the pass.
     runUntil(g, () => log.taken.length - log.served.length >= PASS_SLOTS + 1, 6000);

@@ -19,8 +19,8 @@ export const GUEST_TYPES = {
     name: 'Local',
     walkSpeed: 2,
     seatPatienceSec: 20,
-    browseSec: [3, 6],
-    eatSec: [10, 18],
+    browseSec: [2, 5],
+    eatSec: [6, 11],
     variants: 3,
   },
 } satisfies Record<string, GuestTypeDef>;

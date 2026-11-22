@@ -1,0 +1,38 @@
+import { RECIPE_IDS, type RecipeId } from '../data/recipes';
+
+export interface DayStats {
+  income: number;
+  ingredientCosts: number;
+  guestsServed: number;
+  guestsLeftNoSeat: number;
+  /** Dishes sold (paid) today, per recipe. */
+  ordersByRecipe: Partial<Record<RecipeId, number>>;
+}
+
+export function createDayStats(): DayStats {
+  return {
+    income: 0,
+    ingredientCosts: 0,
+    guestsServed: 0,
+    guestsLeftNoSeat: 0,
+    ordersByRecipe: {},
+  };
+}
+
+export function profitOf(stats: DayStats): number {
+  return stats.income - stats.ingredientCosts;
+}
+
+/** Most sold recipe of the day (first in recipe order on ties), or null when nothing sold. */
+export function bestSeller(stats: DayStats): RecipeId | null {
+  let best: RecipeId | null = null;
+  let bestN = 0;
+  for (const id of RECIPE_IDS) {
+    const n = stats.ordersByRecipe[id] ?? 0;
+    if (n > bestN) {
+      best = id;
+      bestN = n;
+    }
+  }
+  return best;
+}

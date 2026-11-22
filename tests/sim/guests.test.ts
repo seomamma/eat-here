@@ -6,6 +6,7 @@ import { isGuest } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, findPath, isWalkable } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
+import { openGame } from './helpers';
 
 const TICKS_PER_HOUR = (3600 * 1000) / TICK_MS;
 
@@ -72,7 +73,7 @@ function run(g: Game, ticks: number): void {
 }
 
 function runHour(seed: number) {
-  const g = new Game(createInitialState(seed));
+  const g = openGame(seed);
   const log = attach(g);
   run(g, TICKS_PER_HOUR);
   g.state.guestSpawn.enabled = false;
@@ -107,7 +108,7 @@ describe('guest system', () => {
   });
 
   it('full house: guests beyond the chairs wait, get angry and leave with noSeat', () => {
-    const g = new Game(createInitialState(11));
+    const g = openGame(11);
     // Keep a single chair, so every other guest has to wait.
     const chairs = g.state.furniture.filter((f) => FURNITURE[f.defId].kind === 'chair');
     g.state.furniture = g.state.furniture.filter((f) => !chairs.slice(1).includes(f));
@@ -124,7 +125,7 @@ describe('guest system', () => {
   });
 
   it('only unlocked recipes are eaten', () => {
-    const g = new Game(createInitialState(5));
+    const g = openGame(5);
     expect(g.state.recipes.pepperoni.unlocked).toBe(false);
     const log = attach(g);
     run(g, 20_000);
@@ -136,7 +137,7 @@ describe('guest system', () => {
   });
 
   it('a seated guest faces the table', () => {
-    const g = new Game(createInitialState(1));
+    const g = openGame(1);
     const seen: string[] = [];
     g.events.on('guestSeated', (e) => {
       const guest = g.state.characters.find((c) => c.id === e.guestId);

@@ -1,9 +1,4 @@
-import {
-  FIRST_GUEST_SEC,
-  GUEST_SPAWN_INTERVAL_SEC,
-  MAX_GUESTS_ALIVE,
-  TICK_MS,
-} from '../../data/balance';
+import { FIRST_GUEST_SEC, SPAWN_CURVE, MAX_GUESTS_ALIVE, TICK_MS } from '../../data/balance';
 import { GUEST_TYPES, type GuestTypeId } from '../../data/guests';
 import { DOOR_X } from '../../data/layout';
 import { isGuest, type Guest } from '../characters';
@@ -16,7 +11,11 @@ export function secToTicks(sec: number): number {
 
 /** Ticks until the next arrival, drawn from the seeded RNG. */
 function rollSpawnDelay(state: GameState): number {
-  const [min, max] = GUEST_SPAWN_INTERVAL_SEC;
+  const minute = state.clock.minuteOfDay;
+  let [min, max] = SPAWN_CURVE[0]?.intervalSec ?? [10, 10];
+  for (const seg of SPAWN_CURVE) {
+    if (seg.fromMinute <= minute) [min, max] = seg.intervalSec;
+  }
   return rngInt(state, secToTicks(min), secToTicks(max));
 }
 

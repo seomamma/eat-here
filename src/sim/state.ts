@@ -4,6 +4,8 @@ import { DOOR_X, START_STAFF } from '../data/layout';
 import type { Character, Staff } from './characters';
 import type { Job, Order } from './systems/jobs';
 import { createGrid, createStartFurniture, type Furniture, type GridState } from './grid';
+import { createDayStats, type DayStats } from './dayStats';
+import { createClock, type Clock } from './time';
 import { buildWalkGrid, isWalkable } from './pathfinding';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 
@@ -16,7 +18,9 @@ export interface GameState {
   /** Ticks simulated so far. */
   tick: number;
   money: number;
-  day: number;
+  clock: Clock;
+  /** Numbers of the current day; reset on `continueAfterReport`. */
+  dayStats: DayStats;
   grid: GridState;
   furniture: Furniture[];
   characters: Character[];
@@ -26,7 +30,7 @@ export interface GameState {
   orders: Order[];
   recipes: Record<RecipeId, { unlocked: boolean; level: number }>;
   guestSpawn: {
-    /** Set to false to stop new arrivals (tests, closing time). */
+    /** True only while the restaurant is open. */
     enabled: boolean;
     /** Ticks until the next arrival. */
     nextInTicks: number;
@@ -79,14 +83,15 @@ export function createInitialState(
     rng: seed >>> 0,
     tick: 0,
     money: 300,
-    day: 1,
+    clock: createClock(),
+    dayStats: createDayStats(),
     grid,
     furniture,
     characters: [...(opts.debugWalker ? [debugWalker(s)] : []), ...createStaff()],
     jobs: [],
     orders: [],
     recipes: createRecipes(),
-    guestSpawn: { enabled: true, nextInTicks: FIRST_GUEST_TICKS },
+    guestSpawn: { enabled: false, nextInTicks: FIRST_GUEST_TICKS },
     nextGuestId: 1,
     nextJobId: 1,
     nextOrderId: 1,

@@ -25,7 +25,10 @@ export class Emitter<Events extends object> {
 }
 
 export type GuestEmote = 'angry' | 'happy' | 'hand';
-export type GuestLeaveReason = 'done' | 'noSeat';
+export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
+
+import type { DayStats } from './dayStats';
+import type { DayPhase } from './time';
 
 /** Events the sim emits (Sim -> View/UI). */
 export interface GameEvents {
@@ -46,4 +49,9 @@ export interface GameEvents {
   dishServed: { orderId: string; guestId: string };
   /** The order was dropped because its guest left mid-flow. */
   orderDiscarded: { orderId: string; guestId: string };
+  /** The clock's displayed minute or the phase changed. */
+  clockChanged: { day: number; minuteOfDay: number; phase: DayPhase };
+  phaseChanged: { day: number; phase: DayPhase };
+  /** The restaurant is closed and empty; `stats` are the finished day's numbers. */
+  dayEnded: { day: number; stats: DayStats };
 }
