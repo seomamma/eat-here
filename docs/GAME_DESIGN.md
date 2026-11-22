@@ -14,6 +14,11 @@ A cozy, pixel-art **pizzeria management sim** for mobile. You start with a tiny 
 2. **Cozy, never stressful.** No inventory management, no fail states that punish hard, no timers that demand clicks. The game pauses when you leave.
 3. **Alive and charming.** Guests react with emotes, wander, sit, eat, and remember you. Small animations everywhere.
 4. **Retro world, modern UI.** Tiny pixel characters in a warm world, framed by clean, bold, modern interface cards.
+5. **There is always a next goal.** Motivation comes from goals, not from flashy rewards. At any moment the player can see something to strive for on three horizons:
+   - *today* — e.g. "serve 30 guests", beat yesterday's profit;
+   - *this week* — the next rank, the next recipe or facility level, a regular who is about to "unlock";
+   - *long term* — Legendary Pizzeria, the year's awards, 100 % completion.
+   Rewards are celebrated warmly but briefly (a jingle, a card, a sparkle) — never loud "slot machine" effects, countdown pressure or punishment for being away.
 
 ### Differentiation: "guests you care about" (vision note, from discovery after M2)
 
@@ -211,6 +216,8 @@ Principle: rewards should feel **warm, not compulsive** — celebrate the player
 | Happy Streak (was "Customer Frenzy") | 🟡 Reworked | No countdown. N very happy guests in a row → a celebratory "Rush!" with bonus tips. Passive, never punishing. |
 | City Permits (terrace, evening hours) | 🟡 Reworked | Taxes/bureaucracy aren't cozy. Keep **rank** as the progression spine; present unlocks like the terrace as "the neighborhood invites you…" rank rewards. **No alcohol service** (age rating + tone). |
 | Second restaurant / empire | 🔴 Not v1.0 | Large scope. v1.0 = one restaurant that expands; a second location is a v2/DLC idea. |
+
+**Next Goals card (post-MVP, supports pillar 5):** in the prep phase, a small card lists 2–3 upcoming goals across horizons (e.g. "Rank up: 38/50 fame", "Margherita Lv.3: 220 coins", "Someone loves Pepperoni… 🤔" as a regular hint). Fed by the same Moments/goal data.
 
 Pacing note: one day ≈ 4 min, so "day 60" ≈ 4 h of play. Our target (Legendary in ~8–15 h) is ~120–220 days; milestones in the rank table should be spaced accordingly.
 
