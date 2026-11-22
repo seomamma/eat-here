@@ -1,0 +1,106 @@
+# Asset List — MVP (first playable)
+
+> Status: draft v0.1. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
+> Sizes follow ART_DIRECTION.md. Naming: `<entity>_<anim>_<dir>_<frame>`.
+
+## 1. Tiles (16×16)
+
+| ID | Description | Variants |
+|---|---|---|
+| `floor_wood` | Dining room wooden floor | 2 (subtle variation) |
+| `floor_tile` | Kitchen checker tile | 1 |
+| `wall_back` | Back wall (cream plaster, brick base) | left / mid / right |
+| `wall_side` | Side walls (top-down edge) | left / right |
+| `wall_corner` | Corners | 2 |
+| `door` | Entrance door (open/closed) | 2 frames |
+| `outside_ground` | Sidewalk strip outside the door | 1 |
+
+## 2. Furniture & equipment
+
+| ID | Footprint | Sprite size | Frames / states | Notes |
+|---|---|---|---|---|
+| `table_small` | 1×1 | 16×20 | empty, with plate | 2-seat table |
+| `chair_wood` | 1×1 | 16×16 | down/up/side facing | guests sit here |
+| `oven_pizza` | 2×1 | 32×24 | idle, baking (2-frame glow) | chef cooks here |
+| `counter_pass` | 2×1 | 32×20 | empty, with dish | chef → waiter handoff |
+| `plant_potted` | 1×1 | 16×24 | Lv.1 (Lv.2–5 post-MVP) | the purchasable decor item |
+| `menu_board` (optional) | 1×1 | 16×24 | static | wall decor, pure flavor |
+
+## 3. Characters (frame 16×24)
+
+Directions: `down`, `up`, `side` (left = mirrored).
+
+| Character | Animations | Frame count |
+|---|---|---|
+| `chef` | idle (2), walk (4), cook-up (4), carry (4) | ≈ 2×3 + 4×3 + 4 + 4×3 = 34 |
+| `waiter` | idle (2), walk (4), walk_carry (4), take_order (2) | ≈ 6 + 12 + 12 + 4 = 34 |
+| `guest_local` | idle (2), walk (4), sit (1), eat (2), raise_hand (2) | ≈ 6 + 12 + 3 + 6 + 4 = 31 |
+
+Guest variety in MVP: **palette swaps** (hair, shirt, skin ramps) applied via 3–4 pre-made recolored sheets, not runtime shaders.
+
+## 4. Food & items (12×12 on 16×16)
+
+| ID | Notes |
+|---|---|
+| `dish_marinara` | |
+| `dish_margherita` | |
+| `dish_garlic_bread` | |
+| `dish_pepperoni` | |
+| `plate_empty` | after eating |
+| `coin` | 4-frame spin for pay popups |
+| `ingredient_*` icons | fresh basil, buffalo mozzarella, oregano, chili, olive oil, garlic butter… (~8, UI icons) |
+
+## 5. Emotes & world feedback (16×16 bubble)
+
+`emote_happy`, `emote_love`, `emote_tasty`, `emote_slow` (zzz), `emote_angry`, `emote_thinking` (browsing menu), `emote_hand` (wants to order), `emote_dish_<id>` (order bubble shows the dish), `sparkle` (4 frames), `stars_bar` (5 stars, empty → full).
+
+## 6. UI (HTML/CSS + SVG — not pixel art)
+
+| Element | Notes |
+|---|---|
+| Top HUD | money, fame bar, rank badge, day + clock |
+| Bottom action bar | Open/Close, Build, Recipes, Shop (Staff post-MVP) |
+| Card / panel component | shared style (border, offset shadow) |
+| Buttons | primary (tomato), success (basil), neutral |
+| Shop panel | list of furniture with price + appeal |
+| Build mode overlay | grid highlight, valid (basil) / invalid (tomato) placement, rotate/confirm/cancel |
+| Recipe panel | dish cards with level, price, upgrade button + ingredient |
+| Day report modal | income, costs, profit, guests, best dish, fame gained |
+| RANK UP modal | big rank badge, unlocks list, confetti |
+| LEVEL UP toast | dish/facility name + new level |
+| Floating texts | "+12", "+3 fame" |
+| Name tag pill | above tapped character |
+| Guest info card | name, happiness stars, favorite (on tap) |
+| Title screen | logo "Eat here!", Continue / New Game |
+| SVG icons | coin, fame star, rank crown, hammer (build), book (recipes), bag (shop), clock, play, pause |
+| Logo | "Eat here!" wordmark (Archivo Black + pizza-slice mark) |
+| Fonts | Archivo Black, Inter (OFL, bundled) |
+
+## 7. Audio (MVP: placeholders from a CC0 library, final later)
+
+| ID | Description |
+|---|---|
+| `sfx_coin` | payment |
+| `sfx_door_bell` | guest enters |
+| `sfx_oven_ding` | dish ready |
+| `sfx_pop` | emote / UI tap |
+| `sfx_place` | furniture placed |
+| `sfx_levelup` | short fanfare |
+| `sfx_rankup` | bigger fanfare |
+| `sfx_jingle_regular` | (post-MVP) "new regular!" jingle |
+| `music_day` | cozy loop, ~60–90 s |
+| `music_prep` | calm loop |
+
+## 8. Not in MVP (listed for planning)
+
+Toilet + sink, more tables/chairs styles, wall paintings, rugs, lamps, more ovens, facility Lv.2–5 visual variants, staff portraits, regular-guest unique sprites (Nonna Rosa…), more guest types, expansion tiles, seasonal decorations.
+
+## 9. Count summary (MVP)
+
+- ~12 tile sprites
+- 6 furniture items (~14 frames)
+- 3 characters (~100 frames total)
+- ~10 food/item icons, ~8 ingredient icons
+- ~10 emotes/effects
+- ~15 SVG UI icons + fonts
+- ~10 sounds/music
