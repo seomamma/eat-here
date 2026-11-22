@@ -10,7 +10,7 @@ The contrast is the identity: the *world* is soft, warm, hand-pixeled and cozy; 
 
 ### Inspiration principles (not to be copied)
 
-From the user's reference we take **only broad principles**: small expressive pixel characters, white UI surfaces, thick black outlines, bold typography, solid offset accent shadows. We do **not** reuse any characters, layouts, color sets, or compositions from the reference or from Kairosoft / Restaurant City. Our accent palette is deliberately food-themed (tomato, basil, saffron, crust) rather than the reference's purple/orange/teal.
+From the user's reference we take **only broad principles**: small expressive pixel characters, white UI surfaces, thick black outlines, bold typography, solid offset accent shadows. See **§8 Originality rules**. We do **not** reuse any characters, layouts, color sets, or compositions from the reference or from Kairosoft / Restaurant City. Our accent palette is deliberately food-themed (tomato, basil, saffron, crust) rather than the reference's purple/orange/teal.
 
 ## 2. Camera & perspective (isometric — D-025)
 
@@ -145,6 +145,18 @@ public/assets/   exported PNG + JSON atlases (generated, committed)
 
 Until the art milestone, use **flat colored rectangles/circles with outlines** generated in code or a tiny placeholder atlas. Placeholders must already respect the sizes above (16×24 characters, 16×16 tiles) so swapping art requires no code changes.
 
-## 8. Audio direction (brief)
+## 8. Originality rules (mandatory)
+
+Genre conventions are free to use: isometric view, pixel art, small chibi characters, grid building, autonomous staff and guests, leveling, rankings. **Specific creative expression is not.** Every production asset must be original.
+
+1. **No copying or tracing.** No Kairosoft (or other game) sprites, tiles, furniture, characters, UI screens, icons, logos, music or sound effects are used, traced, recolored or edited.
+2. **AI prompts:** never name an existing game, studio or artist ("in the style of Kairosoft…"), and **never feed screenshots of existing games** into image-to-image / reference / style-transfer features. Only our own style sheet, our own sketches and our own earlier assets may be used as references. Prompt + chosen output are archived in `assets/prompts/` (provenance).
+3. **Own UI layout and look.** Our HUD and menus follow our card style (§5). Avoid the genre's most recognizable specific combinations, e.g. a dark top bar with date/money + rounded green/gold-framed buttons at the bottom corners.
+4. **Own characters.** Original proportions, faces, hairstyles, outfits and names. Our 16×24 characters and palette are our own spec, not derived from a specific game's sprites.
+5. **Own name, logo and marketing.** Never describe or market the game as "a Kairosoft game", in their style, or using their titles. "Inspired by classic management sims" is fine.
+6. **Similarity reviews:** at M11 (first final art) and before release, compare our screenshots side by side with the major genre titles. Anything that reads as "the same asset" or "the same screen" gets redesigned. Log the review in DECISIONS.md.
+7. **Before commercial release:** a short review by an IP lawyer is recommended (this document is not legal advice).
+
+## 9. Audio direction (brief)
 
 Light, cheerful, acoustic/chiptune hybrid: mandolin + soft synth. Short positive SFX: coin, level-up fanfare, rank-up fanfare, "new regular" jingle, door bell, oven ding, emote pops. Music volume low by default. (Detailed list in ASSET_LIST.md.)
