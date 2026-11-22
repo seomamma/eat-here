@@ -1,5 +1,6 @@
 import { DEFAULT_SEED } from '../data/balance';
 import type { IngredientId } from '../data/ingredients';
+import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { RECIPE_IDS, RECIPES, type RecipeId } from '../data/recipes';
 import { DOOR_X, START_STAFF } from '../data/layout';
 import type { Character, Staff } from './characters';
@@ -17,6 +18,17 @@ import {
   type Counters,
   type RegularStates,
 } from './systems/regulars';
+
+export interface Styles {
+  /** "x,y" -> floor style of that tile. */
+  floor: Record<string, FloorStyleId>;
+  /** Wall segment id (`l<y>` / `r<x>`) -> wall style. */
+  wall: Record<string, WallStyleId>;
+}
+
+export function createStyles(): Styles {
+  return { floor: {}, wall: {} };
+}
 
 export interface GameState {
   version: number;
@@ -36,6 +48,8 @@ export interface GameState {
   /** Numbers of the current day; reset when the next day starts. */
   dayStats: DayStats;
   grid: GridState;
+  /** Painted floors and back walls; only tiles/segments that differ from the default are listed. */
+  styles: Styles;
   furniture: Furniture[];
   characters: Character[];
   /** Open jobs for staff (oldest first). */
@@ -114,6 +128,7 @@ export function createInitialState(
     clock: createClock(),
     dayStats: createDayStats(),
     grid,
+    styles: createStyles(),
     furniture,
     characters: [...(opts.debugWalker ? [debugWalker(s)] : []), ...createStaff()],
     jobs: [],

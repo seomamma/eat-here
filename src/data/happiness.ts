@@ -27,8 +27,17 @@ export const QUALITY_PER_LEVEL = 5;
 
 /** Decor appeal counts decor furniture within this Chebyshev radius (tiles) of the chair. */
 export const DECOR_RADIUS = 2;
-/** Upper limit of the decor points one guest can get. */
+/** Upper limit of the decor points one guest can get (furniture and floors/walls together). */
 export const DECOR_CAP = 20;
+
+/**
+ * Floors and walls count as decor appeal (M12, D-039): tiles within SURFACE_FLOOR_RADIUS of the
+ * chair and wall segments whose adjacent room tile is within SURFACE_WALL_RADIUS. Together they
+ * add at most SURFACE_CAP points, and the total decor stays under DECOR_CAP.
+ */
+export const SURFACE_FLOOR_RADIUS = 1;
+export const SURFACE_WALL_RADIUS = 2;
+export const SURFACE_CAP = 4;
 
 /** Happiness at or above this level ends the visit with a "love" emote. */
 export const LOVE_AT = 80;

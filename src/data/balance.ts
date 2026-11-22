@@ -62,3 +62,6 @@ export const GIFT_CHANCE = 0.12;
 
 /** Tips at least this big may become the day's "notable" single ledger entry (D-033). */
 export const LEDGER_NOTABLE_TIP = 3;
+
+/** Selling furniture refunds this share of its price and of the coins spent on its upgrades (M12). */
+export const SELL_REFUND_RATE = 0.5;

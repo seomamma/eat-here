@@ -14,12 +14,24 @@ import {
 import { FURNITURE } from '../../data/furniture';
 import type { Guest, GuestPhase } from '../characters';
 import type { Emitter, GameEvents } from '../events';
-import { footprintTiles, type Furniture } from '../grid';
+import { FACING_STEP, buildOccupancy, chairFacing, footprintTiles, type Furniture } from '../grid';
 import type { GameState } from '../state';
+import { appealOf, auraPoints, comfortOf } from './facilities';
 import { secToTicks } from './spawner';
+import { surfacePoints } from './surfaces';
 
 export type HappinessReason =
-  'welcome' | 'seated' | 'order' | 'food' | 'quality' | 'decor' | 'usual';
+  | 'welcome'
+  | 'seated'
+  | 'order'
+  | 'food'
+  | 'quality'
+  | 'decor'
+  | 'usual'
+  | 'comfort'
+  | 'music'
+  | 'toilet'
+  | 'snack';
 
 export interface HappinessEntry {
   reason: HappinessReason;
@@ -73,7 +85,29 @@ export function checkSlow(state: GameState, events: Emitter<GameEvents>, g: Gues
 export function onSeated(state: GameState, g: Guest): void {
   awardHappiness(g, 'welcome', HAPPINESS_POINTS.welcome);
   if (tookAtMost(state, g, SEAT_QUICK_SEC)) awardHappiness(g, 'seated', HAPPINESS_POINTS.seated);
+  const chair = g.seatId ? state.furniture.find((f) => f.id === g.seatId) : undefined;
+  if (chair) {
+    awardHappiness(g, 'comfort', seatComfort(state.furniture, chair));
+    awardHappiness(g, 'music', auraPoints(state.furniture, chair, 'music'));
+  }
   beginStep(state, g);
+}
+
+/** The table a chair faces, if any. */
+export function facedTable(
+  furniture: readonly Furniture[],
+  chair: Furniture,
+): Furniture | undefined {
+  const step = FACING_STEP[chairFacing(chair.rot)];
+  const id = buildOccupancy(furniture).get(`${chair.x + step.x},${chair.y + step.y}`);
+  const f = id ? furniture.find((o) => o.id === id) : undefined;
+  return f && FURNITURE[f.defId].kind === 'table' ? f : undefined;
+}
+
+/** "Comfy seat": comfort of the chair plus comfort of the table it faces, at their levels. */
+export function seatComfort(furniture: readonly Furniture[], chair: Furniture): number {
+  const table = facedTable(furniture, chair);
+  return comfortOf(chair) + (table ? comfortOf(table) : 0);
 }
 
 /** The waiter took the order; the next step is waiting for food. */
@@ -89,17 +123,12 @@ export function onServed(state: GameState, g: Guest): void {
     awardHappiness(g, 'quality', qualityPoints(state.recipes[g.recipeId].level));
   }
   const chair = g.seatId ? state.furniture.find((f) => f.id === g.seatId) : undefined;
-  if (chair) awardHappiness(g, 'decor', decorPoints(state.furniture, chair));
+  if (chair) awardHappiness(g, 'decor', decorPoints(state.furniture, chair, state));
 }
 
 /** Points for a dish at the given recipe level. */
 export function qualityPoints(level: number): number {
   return QUALITY_BASE + level * QUALITY_PER_LEVEL;
-}
-
-/** Appeal of one piece of furniture at its level (0 when the level has no entry). */
-function appealOf(f: Furniture): number {
-  return FURNITURE[f.defId].appeal[f.level - 1] ?? 0;
 }
 
 /** Chebyshev distance between a tile and the nearest tile of a furniture footprint. */
@@ -111,9 +140,16 @@ function tileDistance(f: Furniture, x: number, y: number): number {
   return best;
 }
 
-/** Sum of the appeal of decor within the radius of the chair, capped. */
-export function decorPoints(furniture: readonly Furniture[], chair: Furniture): number {
-  let sum = 0;
+/**
+ * Sum of the appeal of decor within the radius of the chair plus the floors and walls around it
+ * (when the state is given), capped at DECOR_CAP.
+ */
+export function decorPoints(
+  furniture: readonly Furniture[],
+  chair: Furniture,
+  surfaces?: Pick<GameState, 'grid' | 'styles'>,
+): number {
+  let sum = surfaces ? surfacePoints(surfaces, chair) : 0;
   for (const f of furniture) {
     if (FURNITURE[f.defId].kind !== 'decor') continue;
     if (tileDistance(f, chair.x, chair.y) <= DECOR_RADIUS) sum += appealOf(f);

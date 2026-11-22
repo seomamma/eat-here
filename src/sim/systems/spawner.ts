@@ -69,6 +69,8 @@ export function createGuest(state: GameState, o: NewGuest): Guest {
     timer: 0,
     seatId: null,
     waitSpot: null,
+    errand: null,
+    snackAsked: false,
     recipeId: null,
     leaveReason: null,
     x,

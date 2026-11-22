@@ -71,6 +71,13 @@ export interface GameEvents {
   /** A new piece was bought and placed. */
   furniturePlaced: { id: string; defId: FurnitureDefId; x: number; y: number; rot: Rot };
   furnitureMoved: { id: string; x: number; y: number; rot: Rot };
+  furnitureLeveledUp: { id: string; defId: FurnitureDefId; level: number };
+  /** A piece was sold; `refund` coins were paid out. */
+  furnitureSold: { id: string; defId: FurnitureDefId; refund: number };
+  /** A paint stroke was applied (tiles or wall segments), `cost` coins paid. */
+  surfacePainted: { target: 'floor' | 'wall'; count: number; cost: number };
+  /** A guest finished a vending machine or toilet visit. */
+  errandDone: { guestId: string; kind: 'vending' | 'toilet'; coins: number };
   /** The waiter finished taking the order; a cook job now exists. */
   orderTaken: { orderId: string; guestId: string; recipeId: string };
   /** Cooking started and ingredients were paid for. */

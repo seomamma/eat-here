@@ -1,13 +1,15 @@
 import { FURNITURE } from '../data/furniture';
 import { INGREDIENTS } from '../data/ingredients';
 import { REGULAR_IDS } from '../data/regulars';
+import { MAX_FURNITURE_LEVEL } from '../data/furniture';
+import { FLOOR_STYLES, WALL_STYLES } from '../data/surfaces';
 import { RECIPE_IDS } from '../data/recipes';
 import type { GameState } from './state';
 import { createInventory, rollMarket } from './systems/market';
 import { createCounters, createRegularStates } from './systems/regulars';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /** Coins paid for each removed common ingredient when upgrading a v3 save (old market minimum). */
 const COMMON_REFUND = 40;
@@ -95,6 +97,21 @@ export const MIGRATIONS: Migrations = {
       next.market = rollMarket(next as unknown as GameState, isInt(market?.day) ? market.day : 1);
     }
     return next;
+  },
+  // v4 -> v5: facility levels, floors/walls and guest errands (M12). Every piece keeps (or gets)
+  // level 1, nothing is painted, guests in the room have no errand and have not snacked.
+  4: (state) => {
+    const furniture = Array.isArray(state.furniture)
+      ? state.furniture.map((f: unknown) =>
+          isObj(f) ? { ...f, level: isInt(f.level) && f.level >= 1 ? f.level : 1 } : f,
+        )
+      : state.furniture;
+    const characters = Array.isArray(state.characters)
+      ? state.characters.map((c: unknown) =>
+          isObj(c) && c.kind === 'guest' ? { errand: null, snackAsked: false, ...c } : c,
+        )
+      : state.characters;
+    return { ...state, furniture, characters, styles: { floor: {}, wall: {} } };
   },
 };
 
@@ -210,7 +227,14 @@ export function validateState(s: Record<string, unknown>): string | null {
     if (!isObj(f) || typeof f.id !== 'string' || !isInt(f.x) || !isInt(f.y) || !isInt(f.rot))
       return 'bad:furniture';
     if (!((f.defId as string) in FURNITURE)) return 'bad:furniture.defId';
+    if (!isInt(f.level) || f.level < 1 || f.level > MAX_FURNITURE_LEVEL)
+      return 'bad:furniture.level';
   }
+  if (!isObj(s.styles) || !isObj(s.styles.floor) || !isObj(s.styles.wall)) return 'bad:styles';
+  if (!Object.values(s.styles.floor).every((v) => typeof v === 'string' && v in FLOOR_STYLES))
+    return 'bad:styles.floor';
+  if (!Object.values(s.styles.wall).every((v) => typeof v === 'string' && v in WALL_STYLES))
+    return 'bad:styles.wall';
 
   if (!Array.isArray(s.characters)) return 'bad:characters';
   for (const c of s.characters as unknown[]) {

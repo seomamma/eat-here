@@ -6,9 +6,9 @@ import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
 import { RECIPE_IDS } from '../../data/recipes';
 import { FACING_DIR, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
 import type { Emitter, GameEvents, GuestLeaveReason } from '../events';
-import { chairFacing, type Furniture } from '../grid';
+import { chairFacing, rotatedUseSpots, type Furniture } from '../grid';
 import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
-import { rngInt, rngPick } from '../rng';
+import { rngInt, rngNext, rngPick } from '../rng';
 import type { GameState } from '../state';
 import { addFame } from './fame';
 import {
@@ -106,6 +106,7 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
       g.seatId = f.id;
       g.phase = 'walkingToSeat';
       g.waitSpot = null;
+      g.errand = null; // a seat beats the snack: the claim on the machine is dropped
       return true;
     }
   }
@@ -115,6 +116,7 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
 function startLeaving(ctx: GuestContext, g: Guest, reason: GuestLeaveReason): void {
   g.phase = 'leaving';
   g.leaveReason = reason;
+  g.errand = null;
   const door = { x: DOOR_X, y: ctx.state.grid.height - 1 };
   if (!planPath(ctx, g, door, { allowStartBlocked: g.seatId !== null })) {
     // No route out (should not happen): drop the guest so it can never get stuck.
@@ -128,6 +130,140 @@ function releaseSeatIfOff(ctx: GuestContext, g: Guest): void {
   if (!g.seatId) return;
   const chair = furnitureById(ctx.state, g.seatId);
   if (!chair || Math.abs(g.x - chair.x) + Math.abs(g.y - chair.y) >= 1) g.seatId = null;
+}
+
+// ---- Errands: vending machine and toilet (M12) ------------------------------------------
+
+/** Tile a guest stands on to use the piece (its first use spot, rotated). */
+function useSpotOf(f: Furniture): { tile: TilePos; dir: IsoDir } | null {
+  const spot = rotatedUseSpots(f.defId, f.rot)[0];
+  return spot
+    ? { tile: { x: f.x + spot.dx, y: f.y + spot.dy }, dir: FACING_DIR[spot.facing] }
+    : null;
+}
+
+/** Nearest piece of the interaction kind that no guest has claimed (one user at a time). */
+function nearestFree(state: GameState, g: Guest, kind: 'vending' | 'toilet'): Furniture | null {
+  const claimed = new Set<string>();
+  for (const c of state.characters) if (isGuest(c) && c.errand) claimed.add(c.errand.furnitureId);
+  const here = currentTile(g);
+  let best: { f: Furniture; d: number } | null = null;
+  for (const f of state.furniture) {
+    if (FURNITURE[f.defId].interaction?.kind !== kind || claimed.has(f.id)) continue;
+    const spot = useSpotOf(f);
+    if (!spot) continue;
+    const d = Math.abs(spot.tile.x - here.x) + Math.abs(spot.tile.y - here.y);
+    if (!best || d < best.d) best = { f, d };
+  }
+  return best?.f ?? null;
+}
+
+/** Sends the guest to the piece and claims it; false (nothing changed) when there is no route. */
+function beginErrand(
+  ctx: GuestContext,
+  g: Guest,
+  f: Furniture,
+  allowStartBlocked: boolean,
+): boolean {
+  const def = FURNITURE[f.defId].interaction;
+  const spot = useSpotOf(f);
+  if (!def || !spot || !planPath(ctx, g, spot.tile, { allowStartBlocked })) return false;
+  g.errand = { kind: def.kind, furnitureId: f.id, stage: 'walking', timer: 0 };
+  return true;
+}
+
+/** Arrived at the piece: starts the timed use and turns to face it. Returns the piece or null. */
+function startUsing(ctx: GuestContext, g: Guest): Furniture | null {
+  const e = g.errand;
+  const f = e ? furnitureById(ctx.state, e.furnitureId) : undefined;
+  const def = f ? FURNITURE[f.defId].interaction : undefined;
+  if (!e || !f || !def) {
+    g.errand = null;
+    return null;
+  }
+  e.stage = 'using';
+  e.timer = secToTicks(def.useSec);
+  const spot = useSpotOf(f);
+  if (spot) g.dir = spot.dir;
+  return f;
+}
+
+/** A finished use: coins and happiness by the piece's level. */
+function finishUsing(ctx: GuestContext, g: Guest, f: Furniture): void {
+  const { state, events } = ctx;
+  const def = FURNITURE[f.defId].interaction;
+  g.errand = null;
+  if (!def) return;
+  const coins = def.coins?.[f.level - 1] ?? 0;
+  awardHappiness(g, def.reason, def.points[f.level - 1] ?? 0);
+  if (coins > 0) {
+    state.money += coins;
+    events.emit('moneyChanged', { money: state.money });
+  }
+  events.emit('errandDone', { guestId: g.id, kind: def.kind, coins });
+}
+
+/** A guest waiting for a seat may snack at a free vending machine (decided once per guest). */
+function updateWaitingErrand(ctx: GuestContext, g: Guest, arrived: boolean): void {
+  const { state } = ctx;
+  const e = g.errand;
+  if (e) {
+    if (e.stage === 'walking') {
+      if (arrived) startUsing(ctx, g);
+    } else if (--e.timer <= 0) {
+      const f = furnitureById(state, e.furnitureId);
+      if (f) finishUsing(ctx, g, f);
+      else g.errand = null;
+      // Back to the waiting spot (a seat claim is checked first on every tick).
+      if (g.waitSpot) planPath(ctx, g, g.waitSpot);
+    }
+    return;
+  }
+  if (g.snackAsked || !g.waitSpot || !arrived) return;
+  const f = nearestFree(state, g, 'vending');
+  const def = f ? FURNITURE[f.defId].interaction : undefined;
+  if (!f || !def) return; // no machine, or all busy: look again next tick (no dice rolled)
+  g.snackAsked = true;
+  if (rngNext(state) < def.chance) beginErrand(ctx, g, f, false);
+}
+
+/** After eating: with the toilet's chance the guest visits it before paying. */
+function maybeVisitToilet(ctx: GuestContext, g: Guest): boolean {
+  const f = nearestFree(ctx.state, g, 'toilet');
+  const def = f ? FURNITURE[f.defId].interaction : undefined;
+  if (!f || !def) return false;
+  if (rngNext(ctx.state) >= def.chance) return false;
+  if (!beginErrand(ctx, g, f, true)) return false;
+  g.phase = 'toilet';
+  return true;
+}
+
+/** The guest pays (dish plus tip), gives fame and may leave a gift; then they get up. */
+export function payAndFinish(ctx: GuestContext, g: Guest): void {
+  const { state, events } = ctx;
+  g.phase = 'paying';
+  g.timer = secToTicks(GUEST_PAY_SEC);
+  const price = g.recipeId ? priceAtLevel(g.recipeId, state.recipes[g.recipeId].level) : 0;
+  const tip = tipFor(price, g.happiness);
+  const fame = fameFor(g.happiness) * fameMultiplier(g);
+  state.money += price + tip;
+  events.emit('paid', {
+    guestId: g.id,
+    price,
+    tip,
+    amount: price + tip,
+    fame,
+    x: g.x,
+    y: g.y,
+  });
+  events.emit('moneyChanged', { money: state.money });
+  addFame(state, events, fame);
+  if (g.recipeId) recordServed(state, g.recipeId);
+  const heart = onRegularPaid(state, events, g);
+  if (heart) events.emit('guestEmote', { guestId: g.id, emote: 'heart' });
+  else if (g.happiness >= LOVE_AT) events.emit('guestEmote', { guestId: g.id, emote: 'love' });
+  rollGift(state, events, g);
+  checkMoments(state, events);
 }
 
 /** The dish arrived: the guest starts eating (called by the staff system). */
@@ -172,6 +308,8 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
           g.waitSpot = { ...spot };
           planPath(ctx, g, spot);
         }
+      } else {
+        updateWaitingErrand(ctx, g, arrived);
       }
       break;
 
@@ -210,33 +348,24 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
       break;
 
     case 'eating':
-      if (--g.timer <= 0) {
-        g.phase = 'paying';
-        g.timer = secToTicks(GUEST_PAY_SEC);
-        const price = g.recipeId ? priceAtLevel(g.recipeId, state.recipes[g.recipeId].level) : 0;
-        const tip = tipFor(price, g.happiness);
-        const fame = fameFor(g.happiness) * fameMultiplier(g);
-        state.money += price + tip;
-        events.emit('paid', {
-          guestId: g.id,
-          price,
-          tip,
-          amount: price + tip,
-          fame,
-          x: g.x,
-          y: g.y,
-        });
-        events.emit('moneyChanged', { money: state.money });
-        addFame(state, events, fame);
-        if (g.recipeId) recordServed(state, g.recipeId);
-        const heart = onRegularPaid(state, events, g);
-        if (heart) events.emit('guestEmote', { guestId: g.id, emote: 'heart' });
-        else if (g.happiness >= LOVE_AT)
-          events.emit('guestEmote', { guestId: g.id, emote: 'love' });
-        rollGift(state, events, g);
-        checkMoments(state, events);
+      if (--g.timer <= 0 && !maybeVisitToilet(ctx, g)) payAndFinish(ctx, g);
+      break;
+
+    case 'toilet': {
+      releaseSeatIfOff(ctx, g);
+      const e = g.errand;
+      if (!e) {
+        payAndFinish(ctx, g); // defensive: the errand vanished
+      } else if (e.stage === 'walking') {
+        if (arrived && !startUsing(ctx, g)) payAndFinish(ctx, g);
+      } else if (--e.timer <= 0) {
+        const f = furnitureById(state, e.furnitureId);
+        if (f) finishUsing(ctx, g, f);
+        else g.errand = null;
+        payAndFinish(ctx, g);
       }
       break;
+    }
 
     case 'paying':
       if (--g.timer <= 0) startLeaving(ctx, g, 'done');

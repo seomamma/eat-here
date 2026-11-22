@@ -9,6 +9,14 @@ import { validateBuy, validateMove } from './systems/build';
 import { addIngredient, rollMarket, validateBuyOffer } from './systems/market';
 import { nextUpgrade, validateUpgrade } from './systems/recipes';
 import type { RecipeId } from '../data/recipes';
+import type { FloorStyleId, WallStyleId } from '../data/surfaces';
+import { validateSell, validateUpgradeFurniture } from './systems/facilities';
+import {
+  setFloorStyle,
+  setWallStyle,
+  validatePaintFloor,
+  validatePaintWall,
+} from './systems/surfaces';
 import { checkMoments } from './systems/moments';
 import { replanAfterBuild } from './systems/replan';
 import { tickGuests } from './systems/guests';
@@ -22,7 +30,11 @@ export type Command =
   | { type: 'buyAndPlace'; defId: FurnitureDefId; x: number; y: number; rot: Rot }
   | { type: 'moveFurniture'; id: string; x: number; y: number; rot: Rot }
   | { type: 'buyMarketOffer'; index: number }
-  | { type: 'upgradeRecipe'; recipeId: RecipeId };
+  | { type: 'upgradeRecipe'; recipeId: RecipeId }
+  | { type: 'upgradeFurniture'; id: string }
+  | { type: 'sellFurniture'; id: string }
+  | { type: 'paintFloor'; tiles: { x: number; y: number }[]; style: FloorStyleId }
+  | { type: 'paintWall'; segments: string[]; style: WallStyleId };
 
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
@@ -58,6 +70,11 @@ export class Game {
     this.events.on('ingredientsBought', (e) => {
       this.state.dayStats.ingredientCosts += e.amount;
       recordLedger(this.state.dayStats, this.state.tick, 'ingredients', -e.amount);
+    });
+    this.events.on('errandDone', (e) => {
+      if (e.kind !== 'vending' || e.coins <= 0) return;
+      this.state.dayStats.income += e.coins;
+      recordLedger(this.state.dayStats, this.state.tick, 'vending', e.coins);
     });
     this.events.on('giftReceived', () => {
       this.state.dayStats.gifts++;
@@ -200,6 +217,14 @@ export class Game {
         return this.buyMarketOffer(cmd.index);
       case 'upgradeRecipe':
         return this.upgradeRecipe(cmd.recipeId);
+      case 'upgradeFurniture':
+        return this.upgradeFurniture(cmd.id);
+      case 'sellFurniture':
+        return this.sellFurniture(cmd.id);
+      case 'paintFloor':
+        return this.paintFloor(cmd.tiles, cmd.style);
+      case 'paintWall':
+        return this.paintWall(cmd.segments, cmd.style);
     }
   }
 
@@ -237,6 +262,67 @@ export class Game {
     this.afterFurnitureChange();
     this.events.emit('furnitureMoved', { id, x, y, rot });
     return { ok: true };
+  }
+
+  private upgradeFurniture(id: string): CommandResult {
+    const { state } = this;
+    const check = validateUpgradeFurniture(state, id);
+    if (!check.ok) return check;
+    const piece = state.furniture.find((f) => f.id === id);
+    if (!piece) return { ok: false, reason: 'unknownFurniture' };
+    state.money -= check.cost;
+    piece.level++;
+    recordLedger(
+      state.dayStats,
+      state.tick,
+      'upgrade',
+      -check.cost,
+      `${piece.defId}:${piece.level}`,
+    );
+    this.events.emit('moneyChanged', { money: state.money });
+    this.events.emit('furnitureLeveledUp', { id, defId: piece.defId, level: piece.level });
+    return { ok: true };
+  }
+
+  private sellFurniture(id: string): CommandResult {
+    const { state } = this;
+    const check = validateSell(state, id);
+    if (!check.ok) return check;
+    const piece = state.furniture.find((f) => f.id === id);
+    if (!piece) return { ok: false, reason: 'unknownFurniture' };
+    state.furniture = state.furniture.filter((f) => f.id !== id);
+    state.money += check.refund;
+    recordLedger(state.dayStats, state.tick, 'sale', check.refund, piece.defId);
+    this.afterFurnitureChange();
+    this.events.emit('moneyChanged', { money: state.money });
+    this.events.emit('furnitureSold', { id, defId: piece.defId, refund: check.refund });
+    return { ok: true };
+  }
+
+  private paintFloor(tiles: { x: number; y: number }[], style: FloorStyleId): CommandResult {
+    const { state } = this;
+    const check = validatePaintFloor(state, tiles, style);
+    if (!check.ok) return check;
+    for (const t of tiles) setFloorStyle(state, t.x, t.y, style);
+    this.finishPaint('floor', `floor:${style}`, check.cost, check.changed);
+    return { ok: true };
+  }
+
+  private paintWall(segments: string[], style: WallStyleId): CommandResult {
+    const { state } = this;
+    const check = validatePaintWall(state, segments, style);
+    if (!check.ok) return check;
+    for (const id of segments) setWallStyle(state, id, style);
+    this.finishPaint('wall', `wall:${style}`, check.cost, check.changed);
+    return { ok: true };
+  }
+
+  private finishPaint(target: 'floor' | 'wall', label: string, cost: number, count: number): void {
+    const { state } = this;
+    state.money -= cost;
+    recordLedger(state.dayStats, state.tick, 'furniture', -cost, label, count);
+    this.events.emit('moneyChanged', { money: state.money });
+    this.events.emit('surfacePainted', { target, count, cost });
   }
 
   private buyMarketOffer(index: number): CommandResult {

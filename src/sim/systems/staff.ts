@@ -10,6 +10,7 @@ import {
 } from '../characters';
 import { findPath, isWalkable, type TilePos } from '../pathfinding';
 import { startEating, type GuestContext } from './guests';
+import { stationSpeed } from './facilities';
 import { onOrderTaken } from './happiness';
 import {
   addJob,
@@ -157,17 +158,32 @@ function arrive(ctx: GuestContext, s: Staff, job: Job): void {
       events.emit('ingredientsBought', { orderId: order.id, amount: recipe.ingredientCost });
       events.emit('moneyChanged', { money: state.money });
       s.stage = 'bake';
-      startWork(s, 'cook', recipe.cookTimeSec / stats.cooking, face);
+      startWork(
+        s,
+        'cook',
+        (recipe.cookTimeSec / stats.cooking) * stationSpeed(state, 'oven'),
+        face,
+      );
       break;
     }
     case 'goPass':
       if (job.kind === 'cook') {
         if (!reservePassSlot(state, order)) return; // pass full: wait here and retry
         s.stage = 'place';
-        startWork(s, 'placeDish', STAFF_ACTION_SEC.placeDish / stats.service, face);
+        startWork(
+          s,
+          'placeDish',
+          (STAFF_ACTION_SEC.placeDish / stats.service) * stationSpeed(state, 'pass'),
+          face,
+        );
       } else {
         s.stage = 'pickUp';
-        startWork(s, 'pickUpDish', STAFF_ACTION_SEC.pickUpDish / stats.service, face);
+        startWork(
+          s,
+          'pickUpDish',
+          (STAFF_ACTION_SEC.pickUpDish / stats.service) * stationSpeed(state, 'pass'),
+          face,
+        );
       }
       break;
     case 'goGuest':

@@ -4,7 +4,7 @@ import { secToTicks } from './spawner';
 import { GUEST_TYPES } from '../../data/guests';
 import { getJob, resetStaff } from './jobs';
 import { beginStage } from './staff';
-import type { GuestContext } from './guests';
+import { payAndFinish, type GuestContext } from './guests';
 
 /** True when every tile of the path after the one being entered is still walkable. */
 function pathStillOk(ctx: GuestContext, c: Character): boolean {
@@ -43,7 +43,11 @@ function replanGuest(ctx: GuestContext, g: Guest): void {
   } else if (g.phase === 'leaving') {
     g.path = [];
     g.phase = 'gone'; // no way out: drop the guest so nobody can get stuck
+  } else if (g.phase === 'toilet') {
+    g.errand = null; // cannot reach the toilet any more: skip the visit and pay
+    payAndFinish(ctx, g);
   } else if (g.waitSpot) {
+    g.errand = null; // a snack trip that lost its route is dropped
     g.waitSpot = null; // the waiting spot is unreachable: pick again once standing still
   }
 }

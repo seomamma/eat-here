@@ -2,7 +2,15 @@ import { LEDGER_NOTABLE_TIP } from '../data/balance';
 import { RECIPE_IDS, type RecipeId } from '../data/recipes';
 
 export type LedgerKind =
-  'dish' | 'tip' | 'ingredients' | 'furniture' | 'market' | 'upgrade' | 'moment';
+  | 'dish'
+  | 'tip'
+  | 'vending'
+  | 'ingredients'
+  | 'furniture'
+  | 'market'
+  | 'upgrade'
+  | 'moment'
+  | 'sale';
 
 /**
  * One line of the day's money ledger (D-033). `amount` is signed (+ income, - spending).
@@ -19,11 +27,11 @@ export interface LedgerEntry {
 }
 
 /**
- * Bounding rule: dish, tip and ingredient events are folded into ONE aggregate entry per kind
- * (summed amount + count); only the day's single biggest tip of at least NOTABLE_TIP is split
- * out as its own entry. Furniture, market and upgrade purchases are kept individually (the player
- * triggers them, and money limits how many fit in a day). The ledger resets every day, so it is
- * bounded by 3 aggregates + 1 notable tip + the day's purchases.
+ * Bounding rule: dish, tip, vending and ingredient events are folded into ONE aggregate entry per
+ * kind (summed amount + count); only the day's single biggest tip of at least NOTABLE_TIP is
+ * split out as its own entry. Furniture, market, upgrade, sale and moment entries are kept
+ * individually (the player triggers them, and money limits how many fit in a day). The ledger
+ * resets every day, so it is bounded by 4 aggregates + 1 notable tip + the day's purchases.
  */
 export interface Ledger {
   entries: LedgerEntry[];
@@ -87,10 +95,18 @@ export function recordLedger(
   kind: LedgerKind,
   amount: number,
   label = '',
+  /** Items the single entry stands for (e.g. tiles of one paint stroke). */
+  count = 1,
 ): void {
   const { ledger } = stats;
-  if (kind === 'furniture' || kind === 'market' || kind === 'upgrade' || kind === 'moment') {
-    ledger.entries.push({ tick, kind, amount, label, count: 1 });
+  if (
+    kind === 'furniture' ||
+    kind === 'market' ||
+    kind === 'upgrade' ||
+    kind === 'moment' ||
+    kind === 'sale'
+  ) {
+    ledger.entries.push({ tick, kind, amount, label, count });
     return;
   }
   let agg = aggregate(ledger, kind);

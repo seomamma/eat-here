@@ -1,6 +1,7 @@
 import fixtureText from '../fixtures/save-v1.json?raw';
 import fixtureV2Text from '../fixtures/save-v2.json?raw';
 import fixtureV3Text from '../fixtures/save-v3.json?raw';
+import fixtureV4Text from '../fixtures/save-v4.json?raw';
 import { describe, expect, it } from 'vitest';
 import { INGREDIENTS, INGREDIENT_IDS } from '../../src/data/ingredients';
 import { isGuest, isStaff } from '../../src/sim/characters';
@@ -220,7 +221,7 @@ describe('migrate', () => {
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     const { state } = res;
-    expect(state.version).toBe(4);
+    expect(state.version).toBe(SAVE_VERSION);
     expect(Object.keys(state.inventory).sort()).toEqual([...INGREDIENT_IDS].sort());
     expect(state.inventory.buffalo_mozzarella).toBe(1);
     // 2 oregano + 1 fresh basil = 3 x 40 coins on top of the saved 685.
@@ -256,5 +257,70 @@ describe('migrate', () => {
     };
     f.state.regulars = { nonna_rosa: { unlocked: 'yes' } };
     expect(deserialize(JSON.stringify(f))).toEqual({ ok: false, reason: 'bad:regulars' });
+  });
+
+  it('migrates a v4 save to v5: levels stay, nothing painted, guests get no errand', () => {
+    const raw = JSON.parse(fixtureV4Text) as { version: number; state: Record<string, unknown> };
+    expect(raw.version).toBe(4);
+    expect(raw.state.styles).toBeUndefined();
+    const res = deserialize(fixtureV4Text);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const { state } = res;
+    expect(state.version).toBe(SAVE_VERSION);
+    expect(state.styles).toEqual({ floor: {}, wall: {} });
+    expect(state.furniture.length).toBeGreaterThan(5);
+    expect(state.furniture.every((f) => f.level === 1)).toBe(true);
+    const guests = state.characters.filter(isGuest);
+    expect(guests.length).toBeGreaterThan(0);
+    for (const c of guests) {
+      expect(c.errand).toBeNull();
+      expect(c.snackAsked).toBe(false);
+    }
+    // Same money, fame and RNG as the v4 file: the migration only adds fields.
+    expect(state.money).toBe(raw.state.money);
+    expect(state.rng).toBe(raw.state.rng);
+    const again = deserialize(fixtureV4Text);
+    expect(again.ok && again.state).toEqual(state);
+    // A migrated game continues exactly like one loaded from a freshly saved v5 copy.
+    const a = new Game(state);
+    const b = new Game(load(serialize(state, AT)));
+    step(a, 900);
+    step(b, 900);
+    expect(serialize(b.state, AT)).toBe(serialize(a.state, AT));
+  });
+
+  it('rejects a broken styles block or furniture level', () => {
+    const f = JSON.parse(serialize(createInitialState(1), AT)) as {
+      state: { styles: unknown; furniture: { level: number }[] };
+    };
+    const good = JSON.stringify(f);
+    f.state.styles = { floor: { '3,3': 'lava' }, wall: {} };
+    expect(deserialize(JSON.stringify(f))).toEqual({ ok: false, reason: 'bad:styles.floor' });
+    f.state.styles = { floor: {}, wall: {} };
+    expect(deserialize(JSON.stringify(f)).ok).toBe(true);
+    (f.state.furniture[0] as { level: number }).level = 9;
+    expect(deserialize(JSON.stringify(f))).toEqual({ ok: false, reason: 'bad:furniture.level' });
+    expect(deserialize(good).ok).toBe(true);
+  });
+
+  it('a save with upgrades, a toilet and paint round-trips', () => {
+    const a = new Game(createInitialState(33));
+    a.state.money = 9999;
+    a.state.rank = 3;
+    const spot = findFreeSpot(a.state, 'toilet');
+    if (!spot) throw new Error('no spot');
+    a.dispatch({ type: 'buyAndPlace', defId: 'toilet', ...spot, rot: 0 });
+    const toilet = a.state.furniture.find((f) => f.defId === 'toilet');
+    a.dispatch({ type: 'upgradeFurniture', id: toilet?.id ?? '' });
+    a.dispatch({ type: 'paintFloor', tiles: [{ x: 5, y: 6 }], style: 'terracotta' });
+    a.dispatch({ type: 'paintWall', segments: ['l4'], style: 'brick' });
+    step(a, 600);
+    const b = new Game(load(serialize(a.state, AT)));
+    expect(b.state.styles).toEqual({ floor: { '5,6': 'terracotta' }, wall: { l4: 'brick' } });
+    expect(b.state.furniture.find((f) => f.defId === 'toilet')?.level).toBe(2);
+    step(a, 1500);
+    step(b, 1500);
+    expect(serialize(b.state, AT)).toBe(serialize(a.state, AT));
   });
 });

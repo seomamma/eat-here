@@ -48,9 +48,23 @@ export type GuestPhase =
   | 'wantsToOrder'
   | 'waitingForFood'
   | 'eating'
+  | 'toilet'
   | 'paying'
   | 'leaving'
   | 'gone';
+
+/**
+ * A short trip to a piece of furniture (M12): a guest waiting for a seat snacks at the vending
+ * machine, a guest who finished eating visits the toilet. The claim on the piece is the
+ * `furnitureId` here, so only one guest uses it at a time.
+ */
+export interface Errand {
+  kind: 'vending' | 'toilet';
+  furnitureId: string;
+  stage: 'walking' | 'using';
+  /** Ticks left of the `using` stage. */
+  timer: number;
+}
 
 export interface Guest extends CharacterBase {
   kind: 'guest';
@@ -64,6 +78,10 @@ export interface Guest extends CharacterBase {
   seatId: string | null;
   /** Spot near the door this guest waits at, or null. */
   waitSpot: TilePos | null;
+  /** Active trip to the vending machine or toilet, or null. */
+  errand: Errand | null;
+  /** True once the guest has decided about the vending machine (they only try once). */
+  snackAsked: boolean;
   recipeId: RecipeId | null;
   leaveReason: GuestLeaveReason | null;
   /** Cosmetic first name (seeded pick at spawn). */

@@ -1,6 +1,6 @@
 import { FURNITURE, type FurnitureDefId, type Rot } from '../../data/furniture';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
-import { SHOP_ITEMS } from '../../data/shop';
+import { SHOP_ITEMS, unlockRank } from '../../data/shop';
 import { isGuest, isStaff } from '../characters';
 import {
   FACING_STEP,
@@ -17,7 +17,7 @@ import type { GameState } from '../state';
 
 export type PlacementReason =
   'outOfBounds' | 'notFloor' | 'overlap' | 'blocksWay' | 'characterHere';
-export type BuyReason = PlacementReason | 'notNow' | 'notInShop' | 'notEnoughMoney';
+export type BuyReason = PlacementReason | 'notNow' | 'notInShop' | 'locked' | 'notEnoughMoney';
 export type MoveReason = PlacementReason | 'notNow' | 'unknownFurniture' | 'inUse';
 
 export type PlacementResult = { ok: true } | { ok: false; reason: PlacementReason };
@@ -117,6 +117,9 @@ export function isInUse(state: GameState, f: Furniture): boolean {
     }
     case 'oven':
       return staff.some((s) => s.stage === 'goOven' || s.stage === 'bake');
+    case 'vending':
+    case 'toilet':
+      return guests.some((g) => g.errand?.furnitureId === f.id);
     case 'pass':
       return (
         state.orders.some((o) => o.slot !== null) ||
@@ -128,13 +131,13 @@ export function isInUse(state: GameState, f: Furniture): boolean {
 }
 
 /** Every tile that must stay reachable from the door, given the furniture layout. */
-function reachabilityOk(state: GameState, furniture: readonly Furniture[]): boolean {
+export function reachabilityOk(state: GameState, furniture: readonly Furniture[]): boolean {
   const walk = buildWalkGrid(state.grid, furniture);
   const reached = reachableFrom(walk, { x: DOOR_X, y: state.grid.height - 1 });
   const ok = (t: TilePos) => reached.has(t.y * walk.width + t.x);
   for (const f of furniture) {
     const kind = FURNITURE[f.defId].kind;
-    if (kind === 'oven' || kind === 'pass') {
+    if (kind === 'oven' || kind === 'pass' || kind === 'vending' || kind === 'toilet') {
       for (const s of rotatedUseSpots(f.defId, f.rot)) {
         if (!ok({ x: f.x + s.dx, y: f.y + s.dy })) return false;
       }
@@ -194,6 +197,7 @@ export function validateBuy(
 ): BuyResult {
   if (state.clock.phase === 'night') return { ok: false, reason: 'notNow' };
   if (!SHOP_ITEMS.includes(defId)) return { ok: false, reason: 'notInShop' };
+  if (state.rank < unlockRank(defId)) return { ok: false, reason: 'locked' };
   if (state.money < FURNITURE[defId].price) return { ok: false, reason: 'notEnoughMoney' };
   return validatePlacement(state, defId, x, y, rot);
 }
