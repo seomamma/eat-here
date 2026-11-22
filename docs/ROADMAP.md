@@ -91,9 +91,9 @@
 - Auto-pause on tab/app hidden.
 
 **Acceptance criteria**
-- [ ] A full day plays from Open to Report without input.
-- [ ] Report numbers match the sim's day stats (unit tested).
-- [ ] Switching tabs pauses the game; returning resumes exactly where it was.
+- [x] A full day plays from Open to Report without input.
+- [x] Report numbers match the sim's day stats (unit tested).
+- [x] Switching tabs pauses the game; returning resumes exactly where it was.
 
 ### M6 — Happiness, fame & rank
 **Goal:** the "make guests happy → grow" feeling.

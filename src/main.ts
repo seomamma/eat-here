@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { render, h } from 'preact';
+import { bindLifecycle } from './platform/lifecycle';
 import { Game } from './sim/game';
 import { createInitialState } from './sim/state';
 import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
@@ -16,6 +17,7 @@ import '@fontsource/inter/800.css';
 const debug = new URLSearchParams(location.search).has('debug');
 const sim = new Game(createInitialState(undefined, { debugWalker: debug }));
 bindStore(sim);
+bindLifecycle(sim);
 
 if (debug) {
   (window as unknown as { __sim: Game }).__sim = sim;

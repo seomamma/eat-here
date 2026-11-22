@@ -1,5 +1,6 @@
 import { STRINGS } from '../../data/strings';
-import { day, money } from '../store';
+import { formatClock, weekdayIndex } from '../../sim/time';
+import { day, minuteOfDay, money } from '../store';
 import { Card } from './Card';
 
 function CoinIcon() {
@@ -24,7 +25,13 @@ export function Hud() {
     <div class="top-bar">
       <Card accent="tomato">
         <h1 class="card-title">{STRINGS.gameTitle}</h1>
-        <p class="card-subtitle">{STRINGS.hudSubtitle(day.value)}</p>
+        <p class="card-subtitle">
+          {STRINGS.hudDayLine(
+            day.value,
+            STRINGS.weekdays[weekdayIndex(day.value)] ?? '',
+            formatClock(minuteOfDay.value),
+          )}
+        </p>
       </Card>
       <Card accent="saffron">
         <div class="money" role="status" aria-label={STRINGS.moneyLabel}>
