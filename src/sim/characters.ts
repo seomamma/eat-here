@@ -1,5 +1,6 @@
 import { DEBUG_WALKER_SPEED, TICK_MS } from '../data/balance';
 import type { GuestTypeId } from '../data/guests';
+import type { Facing } from '../data/furniture';
 import type { StaffRole } from '../data/staff';
 import type { RecipeId } from '../data/recipes';
 import type { GuestLeaveReason } from './events';
@@ -11,6 +12,14 @@ import type { TilePos } from './pathfinding';
  * +y down-left, -x up-left, -y up-right.
  */
 export type IsoDir = 'dr' | 'dl' | 'ur' | 'ul';
+
+/** Screen direction of a furniture facing (use spots, chairs). */
+export const FACING_DIR: Record<Facing, IsoDir> = {
+  up: 'ur',
+  down: 'dl',
+  left: 'ul',
+  right: 'dr',
+};
 
 export interface CharacterBase {
   id: string;

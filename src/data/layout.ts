@@ -18,16 +18,16 @@ export interface LayoutFurniture {
   rot?: Rot;
 }
 
-/** Starting restaurant: oven + pass in the kitchen, 2 tables with 2 chairs each. */
+/** Starting restaurant: oven + pass in the kitchen, 2 tables with 2 chairs each (chairs face their table). */
 export const START_FURNITURE: readonly LayoutFurniture[] = [
   { defId: 'oven_pizza', x: 2, y: 1 },
   { defId: 'counter_pass', x: 5, y: 3 },
   { defId: 'table_small', x: 3, y: 6 },
-  { defId: 'chair_wood', x: 2, y: 6 },
-  { defId: 'chair_wood', x: 4, y: 6, rot: 1 },
+  { defId: 'chair_wood', x: 2, y: 6, rot: 1 },
+  { defId: 'chair_wood', x: 4, y: 6, rot: 3 },
   { defId: 'table_small', x: 6, y: 8 },
-  { defId: 'chair_wood', x: 5, y: 8 },
-  { defId: 'chair_wood', x: 7, y: 8, rot: 1 },
+  { defId: 'chair_wood', x: 5, y: 8, rot: 1 },
+  { defId: 'chair_wood', x: 7, y: 8, rot: 3 },
 ];
 
 /** Starting staff and their idle spots: chef in the kitchen, waiter near the pass (waiter side). */

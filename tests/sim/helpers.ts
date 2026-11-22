@@ -11,7 +11,6 @@ const LUNCH_TICK = Math.round((12.5 * 60 - minuteAtTick(0)) / (minuteAtTick(1) -
  */
 export function openGame(seed?: number): Game {
   const g = new Game(createInitialState(seed));
-  g.dispatch({ type: 'openRestaurant' });
   const tick = g.tickOnce.bind(g);
   g.tickOnce = () => {
     g.state.clock.dayTick = LUNCH_TICK;

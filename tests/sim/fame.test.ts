@@ -98,7 +98,6 @@ describe('rank up', () => {
 describe('pause reasons', () => {
   it('stays paused until every reason is resumed', () => {
     const g = new Game(createInitialState(1));
-    g.dispatch({ type: 'openRestaurant' });
     g.pause('rankUp');
     g.pause();
     g.resume();
@@ -114,7 +113,6 @@ describe('pause reasons', () => {
 
   it('stops ticking inside an update when a tick pauses the sim', () => {
     const g = new Game(createInitialState(1));
-    g.dispatch({ type: 'openRestaurant' });
     g.events.on('guestArrived', () => g.pause('rankUp'));
     for (let i = 0; i < 200 && !g.isPaused; i++) g.update(100);
     expect(g.isPaused).toBe(true);

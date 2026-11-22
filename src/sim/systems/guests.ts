@@ -4,9 +4,9 @@ import { FURNITURE } from '../../data/furniture';
 import { GUEST_TYPES } from '../../data/guests';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
 import { RECIPE_IDS, RECIPES } from '../../data/recipes';
-import { dirFromStep, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
+import { FACING_DIR, isGuest, stepCharacter, type Guest, type IsoDir } from '../characters';
 import type { Emitter, GameEvents, GuestLeaveReason } from '../events';
-import { buildOccupancy, type Furniture } from '../grid';
+import { chairFacing, type Furniture } from '../grid';
 import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
@@ -22,13 +22,6 @@ export interface GuestContext {
   events: Emitter<GameEvents>;
 }
 
-const NEIGHBOURS: readonly [number, number][] = [
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-  [0, -1],
-];
-
 function chairs(state: GameState): Furniture[] {
   return state.furniture.filter((f) => FURNITURE[f.defId].kind === 'chair');
 }
@@ -37,15 +30,9 @@ function furnitureById(state: GameState, id: string): Furniture | undefined {
   return state.furniture.find((f) => f.id === id);
 }
 
-/** Direction a guest sitting on the chair faces: towards an adjacent table (else front). */
-export function seatFacing(state: GameState, chair: Furniture): IsoDir {
-  const occupancy = buildOccupancy(state.furniture);
-  for (const [dx, dy] of NEIGHBOURS) {
-    const id = occupancy.get(`${chair.x + dx},${chair.y + dy}`);
-    const f = id ? furnitureById(state, id) : undefined;
-    if (f && FURNITURE[f.defId].kind === 'table') return dirFromStep(dx, dy, 'dr');
-  }
-  return 'dr';
+/** Direction a guest sitting on the chair faces: the way the chair points. */
+export function seatFacing(chair: Furniture): IsoDir {
+  return FACING_DIR[chairFacing(chair.rot)];
 }
 
 function currentTile(g: Guest): TilePos {
@@ -168,7 +155,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
           startLeaving(ctx, g, 'noSeat');
           break;
         }
-        g.dir = seatFacing(state, chair);
+        g.dir = seatFacing(chair);
         g.phase = 'browsing';
         g.timer = randomTicks(state, type.browseSec);
         onSeated(state, g);

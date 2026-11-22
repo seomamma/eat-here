@@ -25,6 +25,7 @@ import {
   tipFor,
 } from '../../src/sim/systems/happiness';
 import { secToTicks, spawnGuest } from '../../src/sim/systems/spawner';
+import { NIGHT_TICKS } from '../../src/sim/time';
 import { openGame } from './helpers';
 
 /** A freshly spawned guest on a fresh state, seated on the first chair. */
@@ -303,7 +304,6 @@ describe('day stats', () => {
     const g = new Game(createInitialState(2));
     const paid: { amount: number; tip: number; fame: number }[] = [];
     g.events.on('paid', (e) => paid.push(e));
-    g.dispatch({ type: 'openRestaurant' });
     for (let i = 0; i < 10_000 && g.state.clock.phase !== 'report'; i++) g.tickOnce();
     const s = g.state.dayStats;
     expect(paid.length).toBeGreaterThan(10);
@@ -313,6 +313,7 @@ describe('day stats', () => {
     expect(s.tips).toBeGreaterThan(0);
     expect(s.fameGained).toBeGreaterThan(0);
     g.dispatch({ type: 'continueAfterReport' });
+    for (let i = 0; i < NIGHT_TICKS; i++) g.tickOnce();
     expect(g.state.dayStats).toMatchObject({ tips: 0, fameGained: 0 });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FURNITURE, type FurnitureDefId } from '../../src/data/furniture';
+import { FURNITURE, type FurnitureDefId, type Rot } from '../../src/data/furniture';
 import { SHOP_ITEMS } from '../../src/data/shop';
 import { STRINGS } from '../../src/data/strings';
 import { isGuest } from '../../src/sim/characters';
@@ -8,19 +8,14 @@ import { createInitialState, type GameState } from '../../src/sim/state';
 import {
   findFreeSpot,
   isChairUsable,
+  autoFaceRot,
   validateBuy,
   validatePlacement,
 } from '../../src/sim/systems/build';
 import { DAY_TICKS } from '../../src/sim/time';
 
 /** Puts a piece straight into the state (no validation) to build up a scenario. */
-function put(
-  state: GameState,
-  defId: FurnitureDefId,
-  x: number,
-  y: number,
-  rot: 0 | 1 = 0,
-): string {
+function put(state: GameState, defId: FurnitureDefId, x: number, y: number, rot: Rot = 0): string {
   const id = `t${state.furniture.length}`;
   state.furniture.push({ id, defId, x, y, rot, level: 1 });
   return id;
@@ -100,6 +95,14 @@ describe('validatePlacement', () => {
   it('blocks waiting spots and staff idle spots', () => {
     const s = createInitialState(1);
     expect(reason(validatePlacement(s, 'plant_potted', 3, 10, 0))).toBe('blocksWay');
+    // Staff stand on their idle spots: refused because someone is there.
+    expect(reason(validatePlacement(s, 'plant_potted', 4, 2, 0))).toBe('characterHere');
+    expect(reason(validatePlacement(s, 'plant_potted', 6, 4, 0))).toBe('characterHere');
+    // With the staff elsewhere the idle spots themselves stay protected.
+    s.characters = [];
+    s.characters.push(
+      ...createInitialState(1).characters.map((c) => ({ ...c, x: 5, y: 10, prevX: 5, prevY: 10 })),
+    );
     expect(reason(validatePlacement(s, 'plant_potted', 4, 2, 0))).toBe('blocksWay'); // chef home
     expect(reason(validatePlacement(s, 'plant_potted', 6, 4, 0))).toBe('blocksWay'); // waiter home
   });
@@ -144,6 +147,55 @@ describe('isChairUsable', () => {
     const lone = { id: 'x', defId: 'chair_wood', x: 7, y: 5, rot: 0, level: 1 } as const;
     expect(isChairUsable(s, lone)).toBe(false);
   });
+
+  it('is usable only when the chair faces the adjacent table (all 4 facings)', () => {
+    const s = createInitialState(1);
+    s.furniture = [];
+    put(s, 'table_small', 5, 5);
+    // rot: 0 faces down (+y), 1 right (+x), 2 up (-y), 3 left (-x).
+    const spots: { x: number; y: number; facesTable: Rot }[] = [
+      { x: 5, y: 4, facesTable: 0 }, // table below the chair
+      { x: 4, y: 5, facesTable: 1 }, // table to the right
+      { x: 5, y: 6, facesTable: 2 }, // table above
+      { x: 6, y: 5, facesTable: 3 }, // table to the left
+    ];
+    for (const p of spots) {
+      for (const rot of [0, 1, 2, 3] as const) {
+        const chair = { id: 'c', defId: 'chair_wood', x: p.x, y: p.y, rot, level: 1 } as const;
+        expect(isChairUsable(s, chair), `${p.x},${p.y} rot ${rot}`).toBe(rot === p.facesTable);
+      }
+    }
+  });
+
+  it('a chair that faces away from its table or has none is never usable', () => {
+    const s = createInitialState(1);
+    const chair = s.furniture.find((f) => f.id === idAt(s, 2, 6));
+    if (!chair) throw new Error('no chair');
+    expect(isChairUsable(s, { ...chair, rot: 3 })).toBe(false); // faces the wall side
+    expect(isChairUsable(s, { ...chair, rot: 0 })).toBe(false);
+    expect(isChairUsable(s, { ...chair, rot: 2 })).toBe(false);
+  });
+});
+
+describe('autoFaceRot', () => {
+  it('faces the adjacent table, else defaults to rot 0', () => {
+    const s = createInitialState(1);
+    s.furniture = [];
+    put(s, 'table_small', 5, 5);
+    expect(autoFaceRot(s.furniture, 5, 4)).toBe(0);
+    expect(autoFaceRot(s.furniture, 4, 5)).toBe(1);
+    expect(autoFaceRot(s.furniture, 5, 6)).toBe(2);
+    expect(autoFaceRot(s.furniture, 6, 5)).toBe(3);
+    expect(autoFaceRot(s.furniture, 8, 8)).toBe(0);
+  });
+
+  it('start layout chairs face their tables', () => {
+    const s = createInitialState(1);
+    for (const f of s.furniture.filter((o) => o.defId === 'chair_wood')) {
+      expect(isChairUsable(s, f)).toBe(true);
+      expect(autoFaceRot(s.furniture, f.x, f.y)).toBe(f.rot);
+    }
+  });
 });
 
 describe('buyAndPlace', () => {
@@ -156,13 +208,24 @@ describe('buyAndPlace', () => {
     expect(reason(validateBuy(s, 'oven_pizza', 7, 5, 0))).toBe('notInShop');
   });
 
-  it('is refused outside prep', () => {
+  it('works in every phase except night', () => {
+    for (const phase of ['open', 'closing', 'report'] as const) {
+      const g = new Game(createInitialState(1));
+      g.state.money = 1000;
+      g.state.clock.phase = phase;
+      expect(
+        g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 }),
+      ).toEqual({ ok: true });
+    }
+  });
+
+  it('is refused at night', () => {
     const g = new Game(createInitialState(1));
     g.state.money = 1000;
-    g.dispatch({ type: 'openRestaurant' });
+    g.state.clock.phase = 'night';
     expect(g.dispatch({ type: 'buyAndPlace', defId: 'plant_potted', x: 7, y: 5, rot: 0 })).toEqual({
       ok: false,
-      reason: 'notPrep',
+      reason: 'notNow',
     });
     expect(g.state.money).toBe(1000);
     expect(g.state.furniture).toHaveLength(8);
@@ -228,14 +291,16 @@ describe('buyAndPlace', () => {
 });
 
 describe('moveFurniture', () => {
-  it('is refused outside prep', () => {
+  it('is refused at night but works while open', () => {
     const g = new Game(createInitialState(1));
-    g.dispatch({ type: 'openRestaurant' });
     const id = idAt(g.state, 3, 6);
+    g.state.clock.phase = 'night';
     expect(g.dispatch({ type: 'moveFurniture', id, x: 3, y: 8, rot: 0 })).toEqual({
       ok: false,
-      reason: 'notPrep',
+      reason: 'notNow',
     });
+    g.state.clock.phase = 'open';
+    expect(g.dispatch({ type: 'moveFurniture', id, x: 3, y: 8, rot: 0 })).toEqual({ ok: true });
   });
 
   it('moves a valid piece and refuses an invalid one', () => {
@@ -281,7 +346,6 @@ function playDay(g: Game) {
   });
   let served = 0;
   g.events.on('paid', () => served++);
-  g.dispatch({ type: 'openRestaurant' });
   for (let i = 0; i < DAY_TICKS * 3 && g.state.clock.phase !== 'report'; i++) g.tickOnce();
   return { seatedAt, decor, left, served };
 }
@@ -290,8 +354,8 @@ describe('after building', () => {
   it('guests use the moved tables and chairs; nobody gets stuck', () => {
     const g = new Game(createInitialState(1));
     const [c1, c2, t1] = [idAt(g.state, 2, 6), idAt(g.state, 4, 6), idAt(g.state, 3, 6)];
-    expect(g.dispatch({ type: 'moveFurniture', id: c1, x: 1, y: 9, rot: 0 }).ok).toBe(true);
-    expect(g.dispatch({ type: 'moveFurniture', id: c2, x: 3, y: 9, rot: 1 }).ok).toBe(true);
+    expect(g.dispatch({ type: 'moveFurniture', id: c1, x: 1, y: 9, rot: 1 }).ok).toBe(true);
+    expect(g.dispatch({ type: 'moveFurniture', id: c2, x: 3, y: 9, rot: 3 }).ok).toBe(true);
     expect(g.dispatch({ type: 'moveFurniture', id: t1, x: 2, y: 9, rot: 0 }).ok).toBe(true);
     const day = playDay(g);
     expect(g.state.clock.phase).toBe('report');

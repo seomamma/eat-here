@@ -5,7 +5,8 @@ import { bestSeller, profitOf } from '../../src/sim/dayStats';
 import type { DayStats } from '../../src/sim/dayStats';
 import { Game } from '../../src/sim/game';
 import { createInitialState } from '../../src/sim/state';
-import { DAY_TICKS, formatClock, weekdayIndex } from '../../src/sim/time';
+import { FIRST_GUEST_TICKS } from '../../src/sim/systems/spawner';
+import { DAY_TICKS, NIGHT_TICKS, formatClock, formatHour, weekdayIndex } from '../../src/sim/time';
 
 const MAX_DAY_TICKS = DAY_TICKS * 3;
 
@@ -26,31 +27,28 @@ function playDay(g: Game) {
   g.events.on('phaseChanged', (e) => log.phases.push(e.phase));
   g.events.on('dayEnded', (e) => log.ended.push(e));
   const moneyBefore = g.state.money;
-  expect(g.dispatch({ type: 'openRestaurant' })).toEqual({ ok: true });
   for (let i = 0; i < MAX_DAY_TICKS && g.state.clock.phase !== 'report'; i++) g.tickOnce();
   return { log, moneyBefore };
 }
 
 describe('day cycle', () => {
-  it('starts in prep with the clock stopped and no guests', () => {
+  it('starts straight in the open day at 10:00 and the first guest arrives', () => {
     const g = new Game(createInitialState(1));
-    for (let i = 0; i < 600; i++) g.tickOnce();
-    expect(g.state.clock).toMatchObject({ day: 1, phase: 'prep', minuteOfDay: 600, dayTick: 0 });
-    expect(g.state.characters.filter(isGuest)).toHaveLength(0);
+    expect(g.state.clock).toMatchObject({ day: 1, phase: 'open', minuteOfDay: 600, dayTick: 0 });
+    expect(g.state.guestSpawn.enabled).toBe(true);
+    for (let i = 0; i < FIRST_GUEST_TICKS + 2; i++) g.tickOnce();
+    expect(g.state.characters.filter(isGuest).length).toBeGreaterThan(0);
   });
 
   it('validates commands against the phase', () => {
     const g = new Game(createInitialState(1));
     expect(g.dispatch({ type: 'continueAfterReport' })).toMatchObject({ ok: false });
-    expect(g.dispatch({ type: 'openRestaurant' })).toEqual({ ok: true });
-    expect(g.dispatch({ type: 'openRestaurant' })).toMatchObject({ ok: false });
-    expect(g.dispatch({ type: 'continueAfterReport' })).toMatchObject({ ok: false });
   });
 
-  it('runs open -> closing -> report -> next prep; day takes about 4 real minutes', () => {
+  it('runs open -> closing -> report -> night -> next open; day takes about 4 real minutes', () => {
     const g = new Game(createInitialState(1));
     const { log } = playDay(g);
-    expect(log.phases).toEqual(['open', 'closing', 'report']);
+    expect(log.phases).toEqual(['closing', 'report']);
     expect(g.state.clock.dayTick).toBeGreaterThanOrEqual(DAY_TICKS);
     expect((DAY_TICKS * TICK_MS) / 1000).toBe(240);
     expect(g.state.characters.filter(isGuest)).toHaveLength(0);
@@ -59,9 +57,36 @@ describe('day cycle', () => {
     const t = g.state.clock.minuteOfDay;
     for (let i = 0; i < 100; i++) g.tickOnce();
     expect(g.state.clock.minuteOfDay).toBe(t);
+    expect(g.state.clock.phase).toBe('report');
+    const phases: string[] = [];
+    const started: number[] = [];
+    g.events.on('phaseChanged', (e) => phases.push(e.phase));
+    g.events.on('dayStarted', (e) => started.push(e.day));
     expect(g.dispatch({ type: 'continueAfterReport' })).toEqual({ ok: true });
-    expect(g.state.clock).toMatchObject({ day: 2, phase: 'prep', minuteOfDay: 600 });
+    expect(g.state.clock).toMatchObject({ day: 1, phase: 'night' });
+    // Night lasts its duration; no guests spawn meanwhile.
+    for (let i = 0; i < NIGHT_TICKS - 1; i++) g.tickOnce();
+    expect(g.state.clock.phase).toBe('night');
+    expect(g.state.characters.filter(isGuest)).toHaveLength(0);
+    g.tickOnce();
+    expect(g.state.clock).toMatchObject({ day: 2, phase: 'open', minuteOfDay: 600, dayTick: 0 });
+    expect(g.state.guestSpawn).toMatchObject({ enabled: true, nextInTicks: FIRST_GUEST_TICKS });
+    expect(phases).toEqual(['night', 'open']);
+    expect(started).toEqual([2]);
     expect(g.state.dayStats).toMatchObject({ income: 0, ingredientCosts: 0, guestsServed: 0 });
+  });
+
+  it('plays three days in a row with only continueAfterReport between them', () => {
+    const g = new Game(createInitialState(5));
+    for (let day = 1; day <= 3; day++) {
+      expect(g.state.clock).toMatchObject({ day, phase: 'open' });
+      for (let i = 0; i < MAX_DAY_TICKS && g.state.clock.phase !== 'report'; i++) g.tickOnce();
+      expect(g.state.clock.phase).toBe('report');
+      expect(g.state.dayStats.guestsServed).toBeGreaterThan(0);
+      expect(g.dispatch({ type: 'continueAfterReport' })).toEqual({ ok: true });
+      for (let i = 0; i < NIGHT_TICKS; i++) g.tickOnce();
+    }
+    expect(g.state.clock).toMatchObject({ day: 4, phase: 'open', minuteOfDay: 600 });
   });
 
   it('closing: nobody new arrives, waiting guests leave as "closed" (not angry)', () => {
@@ -105,6 +130,7 @@ describe('day cycle', () => {
     playDay(g);
     const money = g.state.money;
     g.dispatch({ type: 'continueAfterReport' });
+    for (let i = 0; i < NIGHT_TICKS; i++) g.tickOnce();
     const { log } = playDay(g);
     expect(g.state.clock.day).toBe(2);
     expect(log.ended[0]?.stats.income).toBe(log.paid.reduce((n, a) => n + a, 0));
@@ -116,6 +142,10 @@ describe('time helpers', () => {
   it('derives weekday from day (Day 1 = Monday)', () => {
     expect([1, 2, 7, 8].map(weekdayIndex)).toEqual([0, 1, 6, 0]);
   });
+  it('formats hours only for the HUD', () => {
+    expect(formatHour(600)).toBe('10:00');
+    expect(formatHour(1319.9)).toBe('21:00');
+  });
   it('formats HH:MM', () => {
     expect(formatClock(600)).toBe('10:00');
     expect(formatClock(1319.9)).toBe('21:59');
@@ -126,7 +156,6 @@ describe('time helpers', () => {
 describe('pause', () => {
   it('does not advance while paused and does not catch up on resume', () => {
     const g = new Game(createInitialState(1));
-    g.dispatch({ type: 'openRestaurant' });
     g.update(TICK_MS * 3);
     expect(g.state.tick).toBe(3);
     g.pause();

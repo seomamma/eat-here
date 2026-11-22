@@ -67,6 +67,8 @@ export interface GameEvents {
   /** The clock's displayed minute or the phase changed. */
   clockChanged: { day: number; minuteOfDay: number; phase: DayPhase };
   phaseChanged: { day: number; phase: DayPhase };
+  /** A new day began (after the night transition) at opening time. */
+  dayStarted: { day: number };
   /** The restaurant is closed and empty; `stats` are the finished day's numbers. */
   dayEnded: { day: number; stats: DayStats };
 }

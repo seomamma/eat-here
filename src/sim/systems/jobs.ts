@@ -2,7 +2,7 @@ import { PASS_SLOTS } from '../../data/balance';
 import { FURNITURE } from '../../data/furniture';
 import type { JobKind } from '../../data/staff';
 import type { RecipeId } from '../../data/recipes';
-import { isGuest, isStaff, type Guest, type IsoDir, type Staff } from '../characters';
+import { FACING_DIR, isGuest, isStaff, type Guest, type IsoDir, type Staff } from '../characters';
 import type { Emitter, GameEvents } from '../events';
 import { rotatedUseSpots, type Furniture } from '../grid';
 import type { TilePos } from '../pathfinding';
@@ -32,9 +32,6 @@ export interface Job {
   assigneeId: string | null;
   createdTick: number;
 }
-
-type Facing = 'up' | 'down' | 'left' | 'right';
-const FACING_DIR: Record<Facing, IsoDir> = { up: 'ur', down: 'dl', left: 'ul', right: 'dr' };
 
 export function getOrder(state: GameState, id: string): Order | undefined {
   return state.orders.find((o) => o.id === id);

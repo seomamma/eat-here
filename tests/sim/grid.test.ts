@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FURNITURE } from '../../src/data/furniture';
 import {
+  FACING_STEP,
   buildOccupancy,
+  chairFacing,
   canPlace,
   furnitureAt,
   footprintTiles,
@@ -108,6 +110,60 @@ describe('rotation', () => {
       { dx: -1, dy: 0, facing: 'right' },
       { dx: 1, dy: 0, facing: 'left' },
     ]);
+  });
+});
+
+describe('rotation 2 and 3 (back views)', () => {
+  it('swaps the footprint on odd rotations only', () => {
+    expect([0, 1, 2, 3].map((r) => rotatedFootprint('oven_pizza', r as 0 | 1 | 2 | 3))).toEqual([
+      [2, 1],
+      [1, 2],
+      [2, 1],
+      [1, 2],
+    ]);
+  });
+
+  it('turns a 2x1 oven around: chef stands behind it at rot 2, to its side at rot 3', () => {
+    expect(rotatedUseSpots('oven_pizza', 2)).toEqual([{ dx: 1, dy: -1, facing: 'down' }]);
+    expect(rotatedUseSpots('oven_pizza', 3)).toEqual([{ dx: -1, dy: 1, facing: 'right' }]);
+    expect(footprintTiles('oven_pizza', 5, 5, 3)).toEqual([
+      { x: 5, y: 5 },
+      { x: 5, y: 6 },
+    ]);
+  });
+
+  it('keeps the pass counter spots on opposite sides and in order for every rot', () => {
+    expect(rotatedUseSpots('counter_pass', 2)).toEqual([
+      { dx: 1, dy: 1, facing: 'up' },
+      { dx: 1, dy: -1, facing: 'down' },
+    ]);
+    expect(rotatedUseSpots('counter_pass', 3)).toEqual([
+      { dx: 1, dy: 1, facing: 'left' },
+      { dx: -1, dy: 1, facing: 'right' },
+    ]);
+  });
+
+  it('a chair faces down, right, up, left for rot 0..3', () => {
+    expect(([0, 1, 2, 3] as const).map(chairFacing)).toEqual(['down', 'right', 'up', 'left']);
+    for (const rot of [0, 1, 2, 3] as const) {
+      expect(rotatedUseSpots('chair_wood', rot)[0]).toMatchObject({ dx: 0, dy: 0 });
+      expect(rotatedFootprint('chair_wood', rot)).toEqual([1, 1]);
+    }
+  });
+
+  it('every use spot of every piece stays next to its footprint for all rotations', () => {
+    for (const defId of ['oven_pizza', 'counter_pass'] as const) {
+      for (const rot of [0, 1, 2, 3] as const) {
+        const tiles = footprintTiles(defId, 5, 5, rot);
+        for (const sp of rotatedUseSpots(defId, rot)) {
+          const t = { x: 5 + sp.dx, y: 5 + sp.dy };
+          expect(tiles.some((o) => o.x === t.x && o.y === t.y)).toBe(false);
+          // The spot looks at the piece: one step in its facing lands on the footprint.
+          const step = FACING_STEP[sp.facing];
+          expect(tiles.some((o) => o.x === t.x + step.x && o.y === t.y + step.y)).toBe(true);
+        }
+      }
+    }
   });
 });
 

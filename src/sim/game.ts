@@ -5,15 +5,15 @@ import { isGuest, isStaff, stepCharacter } from './characters';
 import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
 import type { GameState } from './state';
-import { validateBuy, validatePlacement } from './systems/build';
+import { validateBuy, validateMove } from './systems/build';
+import { replanAfterBuild } from './systems/replan';
 import { tickGuests } from './systems/guests';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 import { tickStaff } from './systems/staff';
-import { DAY_TICKS, minuteAtTick, resetClockForDay, type DayPhase } from './time';
+import { DAY_TICKS, NIGHT_TICKS, minuteAtTick, resetClockForDay, type DayPhase } from './time';
 
 export type Command =
   | { type: 'debugWalkTo'; x: number; y: number }
-  | { type: 'openRestaurant' }
   | { type: 'continueAfterReport' }
   | { type: 'buyAndPlace'; defId: FurnitureDefId; x: number; y: number; rot: Rot }
   | { type: 'moveFurniture'; id: string; x: number; y: number; rot: Rot };
@@ -121,9 +121,13 @@ export class Game {
     });
   }
 
-  /** Advances the day clock (open/closing only) and moves open -> closing -> report. */
+  /** Advances the day clock: open -> closing -> report (waits for the player) -> night -> open. */
   private tickClock(): void {
     const { clock } = this.state;
+    if (clock.phase === 'night') {
+      if (--clock.nightTicks <= 0) this.startDay(clock.day + 1);
+      return;
+    }
     if (clock.phase !== 'open' && clock.phase !== 'closing') return;
     const before = Math.floor(clock.minuteOfDay);
     clock.dayTick++;
@@ -143,6 +147,17 @@ export class Game {
     }
   }
 
+  /** Morning: clock at opening time, fresh day stats, guests start arriving again. */
+  private startDay(day: number): void {
+    const { clock, guestSpawn } = this.state;
+    resetClockForDay(clock, day);
+    this.state.dayStats = createDayStats();
+    guestSpawn.enabled = true;
+    guestSpawn.nextInTicks = FIRST_GUEST_TICKS;
+    this.setPhase('open');
+    this.events.emit('dayStarted', { day });
+  }
+
   /** No guests, no orders or jobs in flight, and every staff member idle with empty hands. */
   private isRestaurantEmpty(): boolean {
     const { state } = this;
@@ -158,8 +173,6 @@ export class Game {
     switch (cmd.type) {
       case 'debugWalkTo':
         return this.debugWalkTo(cmd.x, cmd.y);
-      case 'openRestaurant':
-        return this.openRestaurant();
       case 'continueAfterReport':
         return this.continueAfterReport();
       case 'buyAndPlace':
@@ -167,6 +180,12 @@ export class Game {
       case 'moveFurniture':
         return this.moveFurniture(cmd.id, cmd.x, cmd.y, cmd.rot);
     }
+  }
+
+  /** After any furniture change: rebuild the walk grid and re-plan every affected walk. */
+  private afterFurnitureChange(): void {
+    this.invalidateWalkGrid();
+    replanAfterBuild({ state: this.state, walk: this.walk(), events: this.events });
   }
 
   /** Buys a shop item and places it in one step; nothing changes unless all checks pass. */
@@ -179,43 +198,30 @@ export class Game {
     state.money -= price;
     state.spentOnBuilding += price;
     state.furniture.push({ id, defId, x, y, rot, level: 1 });
-    this.invalidateWalkGrid();
+    this.afterFurnitureChange();
     this.events.emit('moneyChanged', { money: state.money });
     this.events.emit('furniturePlaced', { id, defId, x, y, rot });
     return { ok: true };
   }
 
   private moveFurniture(id: string, x: number, y: number, rot: Rot): CommandResult {
-    const { state } = this;
-    if (state.clock.phase !== 'prep') return { ok: false, reason: 'notPrep' };
-    const piece = state.furniture.find((f) => f.id === id);
-    if (!piece) return { ok: false, reason: 'unknownFurniture' };
-    const check = validatePlacement(state, piece.defId, x, y, rot, id);
+    const check = validateMove(this.state, id, x, y, rot);
     if (!check.ok) return check;
+    const piece = this.state.furniture.find((f) => f.id === id);
+    if (!piece) return { ok: false, reason: 'unknownFurniture' };
     piece.x = x;
     piece.y = y;
     piece.rot = rot;
-    this.invalidateWalkGrid();
+    this.afterFurnitureChange();
     this.events.emit('furnitureMoved', { id, x, y, rot });
-    return { ok: true };
-  }
-
-  private openRestaurant(): CommandResult {
-    const { clock, guestSpawn } = this.state;
-    if (clock.phase !== 'prep') return { ok: false, reason: 'not_in_prep' };
-    resetClockForDay(clock, clock.day);
-    guestSpawn.enabled = true;
-    guestSpawn.nextInTicks = FIRST_GUEST_TICKS;
-    this.setPhase('open');
     return { ok: true };
   }
 
   private continueAfterReport(): CommandResult {
     const { clock } = this.state;
     if (clock.phase !== 'report') return { ok: false, reason: 'not_in_report' };
-    resetClockForDay(clock, clock.day + 1);
-    this.state.dayStats = createDayStats();
-    this.setPhase('prep');
+    clock.nightTicks = NIGHT_TICKS;
+    this.setPhase('night');
     return { ok: true };
   }
 

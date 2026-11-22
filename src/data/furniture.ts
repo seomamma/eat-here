@@ -25,8 +25,11 @@ export interface FurnitureDef {
   spriteOrigin: readonly [number, number];
 }
 
-/** Orientation: 0 = as drawn, 1 = mirrored (footprint and use spots transposed). */
-export type Rot = 0 | 1;
+/**
+ * Orientation (D-030): 0 = front view as drawn, 1 = front mirrored (footprint and use spots
+ * transposed), 2 = back view (turned 180 degrees), 3 = back view mirrored.
+ */
+export type Rot = 0 | 1 | 2 | 3;
 
 export const FURNITURE = {
   table_small: {
@@ -44,8 +47,7 @@ export const FURNITURE = {
     footprint: [1, 1],
     price: 25,
     appeal: [1, 2, 3, 4, 6],
-    // The guest sits on the chair itself. Real facing (towards the table) is
-    // derived from the neighbouring table when guests are added (M3).
+    // The guest sits on the chair itself, facing the chair's direction (rot 0 = down).
     useSpots: [{ dx: 0, dy: 0, facing: 'down' }],
     spriteOrigin: [16, 19],
   },

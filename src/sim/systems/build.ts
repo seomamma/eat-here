@@ -1,9 +1,11 @@
 import { FURNITURE, type FurnitureDefId, type Rot } from '../../data/furniture';
 import { DOOR_X, WAITING_SPOTS } from '../../data/layout';
 import { SHOP_ITEMS } from '../../data/shop';
-import { isStaff } from '../characters';
+import { isGuest, isStaff } from '../characters';
 import {
+  FACING_STEP,
   buildOccupancy,
+  chairFacing,
   footprintTiles,
   inBounds,
   rotatedUseSpots,
@@ -13,11 +15,14 @@ import {
 import { buildWalkGrid, isWalkable, type TilePos, type WalkGrid } from '../pathfinding';
 import type { GameState } from '../state';
 
-export type PlacementReason = 'outOfBounds' | 'notFloor' | 'overlap' | 'blocksWay';
-export type BuyReason = PlacementReason | 'notPrep' | 'notInShop' | 'notEnoughMoney';
+export type PlacementReason =
+  'outOfBounds' | 'notFloor' | 'overlap' | 'blocksWay' | 'characterHere';
+export type BuyReason = PlacementReason | 'notNow' | 'notInShop' | 'notEnoughMoney';
+export type MoveReason = PlacementReason | 'notNow' | 'unknownFurniture' | 'inUse';
 
 export type PlacementResult = { ok: true } | { ok: false; reason: PlacementReason };
 export type BuyResult = { ok: true } | { ok: false; reason: BuyReason };
+export type MoveResult = { ok: true } | { ok: false; reason: MoveReason };
 
 const NEIGHBOURS: readonly [number, number][] = [
   [1, 0],
@@ -49,19 +54,77 @@ function reachableFrom(walk: WalkGrid, from: TilePos): Set<number> {
   return seen;
 }
 
-/** True when a table stands next to tile (x, y): a chair there can be used by guests. */
-export function hasAdjacentTable(furniture: readonly Furniture[], x: number, y: number): boolean {
-  const occupancy = buildOccupancy(furniture);
-  return NEIGHBOURS.some(([dx, dy]) => {
-    const id = occupancy.get(`${x + dx},${y + dy}`);
-    const f = id ? furniture.find((o) => o.id === id) : undefined;
-    return f !== undefined && FURNITURE[f.defId].kind === 'table';
-  });
+/** True when a table stands on the tile a chair at (x, y) with this rotation faces. */
+export function chairFacesTable(
+  furniture: readonly Furniture[],
+  x: number,
+  y: number,
+  rot: Rot,
+): boolean {
+  const step = FACING_STEP[chairFacing(rot)];
+  const id = buildOccupancy(furniture).get(`${x + step.x},${y + step.y}`);
+  const f = id ? furniture.find((o) => o.id === id) : undefined;
+  return f !== undefined && FURNITURE[f.defId].kind === 'table';
 }
 
-/** Guests only pick chairs with an adjacent table. */
+/** Guests only pick chairs that face a table (a table next to the chair, in its direction). */
 export function isChairUsable(state: Pick<GameState, 'furniture'>, chair: Furniture): boolean {
-  return hasAdjacentTable(state.furniture, chair.x, chair.y);
+  return chairFacesTable(state.furniture, chair.x, chair.y, chair.rot);
+}
+
+/**
+ * Default rotation of a chair newly put at (x, y): faces an adjacent table if there is one
+ * (first match in rotation order), else rot 0.
+ */
+export function autoFaceRot(furniture: readonly Furniture[], x: number, y: number): Rot {
+  for (const rot of [0, 1, 2, 3] as const) {
+    if (chairFacesTable(furniture, x, y, rot)) return rot;
+  }
+  return 0;
+}
+
+/** Tiles characters occupy: current tile(s) (both when between two) and the one being entered. */
+function characterTiles(state: GameState): Set<string> {
+  const out = new Set<string>();
+  for (const c of state.characters) {
+    for (const x of new Set([Math.floor(c.x), Math.ceil(c.x)])) {
+      for (const y of new Set([Math.floor(c.y), Math.ceil(c.y)])) out.add(`${x},${y}`);
+    }
+    const next = c.path[0];
+    if (next) out.add(`${next.x},${next.y}`);
+  }
+  return out;
+}
+
+/**
+ * A piece that cannot be moved right now: a chair claimed by a guest, a table a seated guest
+ * faces, the oven while a chef works at it, a pass with reserved dishes or staff using it.
+ */
+export function isInUse(state: GameState, f: Furniture): boolean {
+  const guests = state.characters.filter(isGuest);
+  const staff = state.characters.filter(isStaff);
+  switch (FURNITURE[f.defId].kind) {
+    case 'chair':
+      return guests.some((g) => g.seatId === f.id);
+    case 'table': {
+      const mine = new Set(footprintTiles(f.defId, f.x, f.y, f.rot).map((t) => `${t.x},${t.y}`));
+      return guests.some((g) => {
+        const chair = g.seatId ? state.furniture.find((o) => o.id === g.seatId) : undefined;
+        if (!chair) return false;
+        const step = FACING_STEP[chairFacing(chair.rot)];
+        return mine.has(`${chair.x + step.x},${chair.y + step.y}`);
+      });
+    }
+    case 'oven':
+      return staff.some((s) => s.stage === 'goOven' || s.stage === 'bake');
+    case 'pass':
+      return (
+        state.orders.some((o) => o.slot !== null) ||
+        staff.some((s) => s.stage === 'goPass' || s.stage === 'place' || s.stage === 'pickUp')
+      );
+    default:
+      return false;
+  }
 }
 
 /** Every tile that must stay reachable from the door, given the furniture layout. */
@@ -81,6 +144,11 @@ function reachabilityOk(state: GameState, furniture: readonly Furniture[]): bool
     }
   }
   for (const c of state.characters) if (isStaff(c) && !ok(c.home)) return false;
+  // Nobody may be walled in: every walkable tile a character stands on stays connected.
+  for (const key of characterTiles(state)) {
+    const [x, y] = key.split(',').map(Number) as [number, number];
+    if (isWalkable(walk, x, y) && !ok({ x, y })) return false;
+  }
   return WAITING_SPOTS.every(ok);
 }
 
@@ -107,6 +175,10 @@ export function validatePlacement(
     if (type !== 'floor_wood' && type !== 'floor_tile') return { ok: false, reason: 'notFloor' };
   }
   if (tiles.some((t) => occupied.has(`${t.x},${t.y}`))) return { ok: false, reason: 'overlap' };
+  const standing = characterTiles(state);
+  if (tiles.some((t) => standing.has(`${t.x},${t.y}`))) {
+    return { ok: false, reason: 'characterHere' };
+  }
   const piece: Furniture = { id: '__placing', defId, x, y, rot, level: 1 };
   if (!reachabilityOk(state, [...others, piece])) return { ok: false, reason: 'blocksWay' };
   return { ok: true };
@@ -120,10 +192,25 @@ export function validateBuy(
   y: number,
   rot: Rot,
 ): BuyResult {
-  if (state.clock.phase !== 'prep') return { ok: false, reason: 'notPrep' };
+  if (state.clock.phase === 'night') return { ok: false, reason: 'notNow' };
   if (!SHOP_ITEMS.includes(defId)) return { ok: false, reason: 'notInShop' };
   if (state.money < FURNITURE[defId].price) return { ok: false, reason: 'notEnoughMoney' };
   return validatePlacement(state, defId, x, y, rot);
+}
+
+/** Everything `moveFurniture` checks (phase, piece in use, placement); a pure query for the UI. */
+export function validateMove(
+  state: GameState,
+  id: string,
+  x: number,
+  y: number,
+  rot: Rot,
+): MoveResult {
+  if (state.clock.phase === 'night') return { ok: false, reason: 'notNow' };
+  const piece = state.furniture.find((f) => f.id === id);
+  if (!piece) return { ok: false, reason: 'unknownFurniture' };
+  if (isInUse(state, piece)) return { ok: false, reason: 'inUse' };
+  return validatePlacement(state, piece.defId, x, y, rot, id);
 }
 
 /** Valid tile closest to the room centre for a new piece (rot 0), or null when none fits. */

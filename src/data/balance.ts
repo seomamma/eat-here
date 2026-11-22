@@ -43,3 +43,5 @@ export const DAY_CLOSE_MINUTE = 1320;
 export const DAY_REAL_SEC = 240;
 /** Day 1 is a Monday; weekday index = (day - 1) % 7. */
 export const DAYS_PER_WEEK = 7;
+/** Real seconds the night transition (report closed -> next morning) lasts at 1x speed. */
+export const NIGHT_REAL_SEC = 2.5;

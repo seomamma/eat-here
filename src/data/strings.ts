@@ -5,7 +5,7 @@ export const STRINGS = {
   weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   hudDayLine: (day: number, weekday: string, time: string) =>
     `Day ${day} \u00b7 ${weekday} \u00b7 ${time}`,
-  openButton: 'Open!',
+  hudNight: 'Night',
   build: {
     buildButton: 'Build',
     shopButton: 'Shop',
@@ -22,7 +22,9 @@ export const STRINGS = {
       overlap: 'Something is already here',
       blocksWay: 'Blocks the way',
       notEnoughMoney: 'Not enough money',
-      notPrep: 'Only before opening',
+      notNow: 'Not at night',
+      inUse: 'In use',
+      characterHere: 'Someone is standing here',
       notInShop: 'Not for sale',
       unknownFurniture: 'Unknown item',
     } as Record<string, string>,
@@ -36,6 +38,9 @@ export const STRINGS = {
   },
   statusOpen: (closesAt: string) => `Open \u00b7 closes ${closesAt}`,
   statusClosing: 'Closing\u2026',
+  statusNight: 'Night',
+  pausedWhileBuilding: 'Paused while building',
+  night: { day: (day: number) => `Day ${day}` },
   report: {
     title: (day: number) => `Day ${day} closed`,
     income: 'Income',

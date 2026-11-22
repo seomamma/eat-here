@@ -24,7 +24,7 @@ export interface GameState {
   /** Restaurant rank, 1-based (src/data/ranks.ts). */
   rank: number;
   clock: Clock;
-  /** Numbers of the current day; reset on `continueAfterReport`. */
+  /** Numbers of the current day; reset when the next day starts. */
   dayStats: DayStats;
   grid: GridState;
   furniture: Furniture[];
@@ -35,7 +35,7 @@ export interface GameState {
   orders: Order[];
   recipes: Record<RecipeId, { unlocked: boolean; level: number }>;
   guestSpawn: {
-    /** True only while the restaurant is open. */
+    /** True while the restaurant admits guests (open phase). */
     enabled: boolean;
     /** Ticks until the next arrival. */
     nextInTicks: number;
@@ -100,7 +100,7 @@ export function createInitialState(
     jobs: [],
     orders: [],
     recipes: createRecipes(),
-    guestSpawn: { enabled: false, nextInTicks: FIRST_GUEST_TICKS },
+    guestSpawn: { enabled: true, nextInTicks: FIRST_GUEST_TICKS },
     nextGuestId: 1,
     nextFurnitureId: furniture.length + 1,
     nextJobId: 1,

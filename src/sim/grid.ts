@@ -67,17 +67,51 @@ const MIRRORED_FACING: Record<Facing, Facing> = {
   right: 'down',
 };
 
-/** Footprint [width, height] after rotation (swapped for rot 1). */
+const OPPOSITE_FACING: Record<Facing, Facing> = {
+  up: 'down',
+  down: 'up',
+  left: 'right',
+  right: 'left',
+};
+
+/** Grid step of a facing (+x = right, +y = down). */
+export const FACING_STEP: Record<Facing, { x: number; y: number }> = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+/** Footprint [width, height] after rotation (swapped on odd rotations). */
 export function rotatedFootprint(defId: FurnitureDefId, rot: Rot = 0): readonly [number, number] {
   const [w, h] = FURNITURE[defId].footprint;
-  return rot === 1 ? [h, w] : [w, h];
+  return rot % 2 === 1 ? [h, w] : [w, h];
 }
 
-/** Use spots (relative to the furniture origin) after rotation. */
+/**
+ * Use spots (relative to the furniture origin) after rotation. Odd rotations transpose the
+ * piece (mirror across x = y); rotations 2 and 3 additionally turn it 180 degrees.
+ */
 export function rotatedUseSpots(defId: FurnitureDefId, rot: Rot = 0): UseSpot[] {
-  return FURNITURE[defId].useSpots.map((s) =>
-    rot === 1 ? { dx: s.dy, dy: s.dx, facing: MIRRORED_FACING[s.facing] } : { ...s },
-  );
+  let [w, h] = FURNITURE[defId].footprint;
+  let spots: UseSpot[] = FURNITURE[defId].useSpots.map((s) => ({ ...s }));
+  if (rot % 2 === 1) {
+    spots = spots.map((s) => ({ dx: s.dy, dy: s.dx, facing: MIRRORED_FACING[s.facing] }));
+    [w, h] = [h, w];
+  }
+  if (rot >= 2) {
+    spots = spots.map((s) => ({
+      dx: w - 1 - s.dx,
+      dy: h - 1 - s.dy,
+      facing: OPPOSITE_FACING[s.facing],
+    }));
+  }
+  return spots;
+}
+
+/** Direction a chair (or any single-seat piece) faces: the facing of its first use spot. */
+export function chairFacing(rot: Rot): Facing {
+  return rotatedUseSpots('chair_wood', rot)[0]?.facing ?? 'down';
 }
 
 /** Tiles covered by a footprint placed at (x, y) with the given rotation. */

@@ -103,7 +103,7 @@ function workFacing(ctx: GuestContext, s: Staff, job: Job): IsoDir {
 }
 
 /** Plans the walk of the current stage; on failure the target stays null and it is retried. */
-function beginStage(ctx: GuestContext, s: Staff, job: Job): boolean {
+export function beginStage(ctx: GuestContext, s: Staff, job: Job): boolean {
   for (const t of stageTargets(ctx, s, job)) {
     // A staff member between tiles first finishes the step it is on.
     const from = s.path[0] ?? tileOf(s);
