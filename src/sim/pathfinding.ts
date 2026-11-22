@@ -54,12 +54,27 @@ function less(a: Node, b: Node): boolean {
   return a.seq < b.seq;
 }
 
+export interface PathOptions {
+  /** The goal tile may be blocked (e.g. a claimed chair); other blocked tiles stay impassable. */
+  allowGoalBlocked?: boolean;
+  /** The start tile may be blocked (e.g. a guest standing up from a chair). */
+  allowStartBlocked?: boolean;
+}
+
 /**
  * A* over walkable tiles, 4-directional, Manhattan heuristic. Returns the tiles from `start`
- * to `goal` inclusive, or null when either end is not walkable or the goal is unreachable.
+ * to `goal` inclusive, or null when either end is not walkable (unless allowed by `opts`, and
+ * still inside the grid) or the goal is unreachable. Blocked tiles are never passed through.
  */
-export function findPath(w: WalkGrid, start: TilePos, goal: TilePos): TilePos[] | null {
-  if (!isWalkable(w, start.x, start.y) || !isWalkable(w, goal.x, goal.y)) return null;
+export function findPath(
+  w: WalkGrid,
+  start: TilePos,
+  goal: TilePos,
+  opts: PathOptions = {},
+): TilePos[] | null {
+  if (!inBounds(w, start.x, start.y) || !inBounds(w, goal.x, goal.y)) return null;
+  if (!opts.allowStartBlocked && !isWalkable(w, start.x, start.y)) return null;
+  if (!opts.allowGoalBlocked && !isWalkable(w, goal.x, goal.y)) return null;
   if (start.x === goal.x && start.y === goal.y) return [{ x: start.x, y: start.y }];
 
   const heuristic = (x: number, y: number) => Math.abs(x - goal.x) + Math.abs(y - goal.y);
@@ -118,8 +133,8 @@ export function findPath(w: WalkGrid, start: TilePos, goal: TilePos): TilePos[] 
     for (const [dx, dy] of NEIGHBOURS) {
       const nx = cx + dx;
       const ny = cy + dy;
-      if (!isWalkable(w, nx, ny)) continue;
       const idx = ny * w.width + nx;
+      if (!isWalkable(w, nx, ny) && !(opts.allowGoalBlocked && idx === goalIdx)) continue;
       const g = cur.g + 1;
       const known = best.get(idx);
       if (known !== undefined && known <= g) continue;

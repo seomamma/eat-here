@@ -1,16 +1,15 @@
 import { MAX_TICKS_PER_UPDATE, TICK_MS } from '../data/balance';
 import { stepCharacter } from './characters';
-import { Emitter } from './events';
+import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
 import type { GameState } from './state';
+import { tickGuests } from './systems/guests';
 
 export type Command = { type: 'debugWalkTo'; x: number; y: number };
 
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
-export interface GameEvents {
-  walkerArrived: { id: string };
-}
+export type { GameEvents };
 
 /** Owns GameState, runs fixed ticks and validates commands. Pure TS: no Phaser, no DOM. */
 export class Game {
@@ -54,8 +53,9 @@ export class Game {
   /** Runs exactly one tick (also used directly by tests). */
   tickOnce(): void {
     this.state.tick++;
+    tickGuests({ state: this.state, walk: this.walk(), events: this.events });
     for (const c of this.state.characters) {
-      if (stepCharacter(c)) this.events.emit('walkerArrived', { id: c.id });
+      if (c.kind === 'debug' && stepCharacter(c)) this.events.emit('walkerArrived', { id: c.id });
     }
   }
 

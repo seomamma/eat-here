@@ -34,3 +34,11 @@ export function startTile(x: number, y: number): TileType {
   if (y === GRID_HEIGHT - 1 && x === DOOR_X) return 'door';
   return y <= KITCHEN_ROWS ? 'floor_tile' : 'floor_wood';
 }
+
+/** Spots near the door where guests without a seat wait (guests may overlap). */
+export const WAITING_SPOTS: readonly { x: number; y: number }[] = [
+  { x: 3, y: 10 },
+  { x: 5, y: 10 },
+  { x: 2, y: 10 },
+  { x: 6, y: 10 },
+];

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_TICKS_PER_UPDATE, TICK_MS } from '../../src/data/balance';
+import { DEFAULT_SEED, MAX_TICKS_PER_UPDATE, TICK_MS } from '../../src/data/balance';
 import { Game } from '../../src/sim/game';
 import { buildWalkGrid, isWalkable } from '../../src/sim/pathfinding';
 import { createInitialState } from '../../src/sim/state';
 
 describe('Game loop', () => {
   it('accumulates real time into fixed ticks and exposes alpha', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     g.update(TICK_MS * 0.5);
     expect(g.state.tick).toBe(0);
     expect(g.alpha).toBeCloseTo(0.5);
@@ -16,14 +16,14 @@ describe('Game loop', () => {
   });
 
   it('applies the speed multiplier', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     g.speed = 2;
     g.update(TICK_MS);
     expect(g.state.tick).toBe(2);
   });
 
   it('caps ticks per update and drops the backlog', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     g.update(60_000);
     expect(g.state.tick).toBe(MAX_TICKS_PER_UPDATE);
     expect(g.alpha).toBeGreaterThanOrEqual(0);
@@ -33,7 +33,7 @@ describe('Game loop', () => {
   });
 
   it('ignores non-positive and NaN deltas', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     g.update(-5);
     g.update(NaN);
     expect(g.state.tick).toBe(0);
@@ -41,7 +41,7 @@ describe('Game loop', () => {
 
   it('simulates the same at 30 and 60 fps', () => {
     const run = (fps: number) => {
-      const g = new Game(createInitialState());
+      const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
       g.dispatch({ type: 'debugWalkTo', x: 8, y: 10 });
       for (let i = 0; i < fps * 2; i++) g.update(1000 / fps);
       const w = g.state.characters[0];
@@ -56,7 +56,7 @@ describe('Game loop', () => {
 
 describe('debugWalkTo', () => {
   it('walks to a reachable tile and stays on walkable tiles', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const walk = buildWalkGrid(g.state.grid, g.state.furniture);
     const arrived: string[] = [];
     g.events.on('walkerArrived', (e) => arrived.push(e.id));
@@ -75,7 +75,7 @@ describe('debugWalkTo', () => {
   });
 
   it('rejects unreachable tiles and changes nothing', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const before = JSON.stringify(g.state);
     for (const [x, y] of [
       [0, 5], // wall
@@ -92,7 +92,7 @@ describe('debugWalkTo', () => {
   });
 
   it('can be redirected mid-walk without teleporting or leaving the grid', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const w = g.state.characters[0];
     if (!w) throw new Error('no walker');
     g.dispatch({ type: 'debugWalkTo', x: 8, y: 8 });
@@ -106,7 +106,7 @@ describe('debugWalkTo', () => {
   });
 
   it('sets facing from the movement direction', () => {
-    const g = new Game(createInitialState());
+    const g = new Game(createInitialState(DEFAULT_SEED, { debugWalker: true }));
     const w = g.state.characters[0];
     if (!w) throw new Error('no walker');
     g.dispatch({ type: 'debugWalkTo', x: w.x + 1, y: w.y });
@@ -119,7 +119,7 @@ describe('debugWalkTo', () => {
   });
 
   it('spawns on a free floor tile next to the door', () => {
-    const s = createInitialState();
+    const s = createInitialState(DEFAULT_SEED, { debugWalker: true });
     const walk = buildWalkGrid(s.grid, s.furniture);
     const w = s.characters[0];
     expect(w && isWalkable(walk, w.x, w.y)).toBe(true);

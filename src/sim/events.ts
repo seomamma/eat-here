@@ -23,3 +23,17 @@ export class Emitter<Events extends object> {
     for (const h of [...set]) (h as (p: Events[K]) => void)(payload);
   }
 }
+
+export type GuestEmote = 'angry' | 'happy';
+export type GuestLeaveReason = 'done' | 'noSeat';
+
+/** Events the sim emits (Sim -> View/UI). */
+export interface GameEvents {
+  walkerArrived: { id: string };
+  guestArrived: { guestId: string };
+  guestSeated: { guestId: string; seatId: string };
+  guestEmote: { guestId: string; emote: GuestEmote };
+  paid: { guestId: string; amount: number; x: number; y: number };
+  guestLeft: { guestId: string; reason: GuestLeaveReason };
+  moneyChanged: { money: number };
+}

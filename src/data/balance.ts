@@ -10,3 +10,12 @@ export const DEFAULT_SEED = 1;
 
 /** Debug walker walking speed in tiles per second. */
 export const DEBUG_WALKER_SPEED = 2.5;
+
+/** Seconds until the first guest of a new game arrives. */
+export const FIRST_GUEST_SEC = 2;
+/** Random gap between guest arrivals [min, max], in seconds. */
+export const GUEST_SPAWN_INTERVAL_SEC = [4, 10] as const;
+/** No new guests spawn while this many are in the restaurant (keeps the door tidy). */
+export const MAX_GUESTS_ALIVE = 12;
+/** Seconds a guest stays seated after paying before getting up. */
+export const GUEST_PAY_SEC = 1;

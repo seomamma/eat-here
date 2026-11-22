@@ -1,8 +1,10 @@
 import { DEFAULT_SEED } from '../data/balance';
+import { RECIPE_IDS, RECIPES, type RecipeId } from '../data/recipes';
 import { DOOR_X } from '../data/layout';
 import type { Character } from './characters';
 import { createGrid, createStartFurniture, type Furniture, type GridState } from './grid';
 import { buildWalkGrid, isWalkable } from './pathfinding';
+import { FIRST_GUEST_TICKS } from './systems/spawner';
 
 export interface GameState {
   version: number;
@@ -17,6 +19,15 @@ export interface GameState {
   grid: GridState;
   furniture: Furniture[];
   characters: Character[];
+  recipes: Record<RecipeId, { unlocked: boolean; level: number }>;
+  guestSpawn: {
+    /** Set to false to stop new arrivals (tests, closing time). */
+    enabled: boolean;
+    /** Ticks until the next arrival. */
+    nextInTicks: number;
+  };
+  /** Counter for guest ids. */
+  nextGuestId: number;
 }
 
 /** Nearest free floor tile to the door (just inside the room). */
@@ -37,7 +48,21 @@ function spawnTile(grid: GridState, furniture: Furniture[]): { x: number; y: num
   return best;
 }
 
-export function createInitialState(seed: number = DEFAULT_SEED): GameState {
+export function createRecipes(): GameState['recipes'] {
+  const out = {} as GameState['recipes'];
+  for (const id of RECIPE_IDS) out[id] = { unlocked: RECIPES[id].unlock === 'start', level: 1 };
+  return out;
+}
+
+export interface InitialStateOptions {
+  /** Adds the tap-to-walk debug walker (?debug). Off by default. */
+  debugWalker?: boolean;
+}
+
+export function createInitialState(
+  seed: number = DEFAULT_SEED,
+  opts: InitialStateOptions = {},
+): GameState {
   const grid = createGrid();
   const furniture = createStartFurniture();
   const s = spawnTile(grid, furniture);
@@ -50,17 +75,22 @@ export function createInitialState(seed: number = DEFAULT_SEED): GameState {
     day: 1,
     grid,
     furniture,
-    characters: [
-      {
-        id: 'debug1',
-        kind: 'debug',
-        x: s.x,
-        y: s.y,
-        prevX: s.x,
-        prevY: s.y,
-        path: [],
-        dir: 'dr',
-      },
-    ],
+    characters: opts.debugWalker ? [debugWalker(s)] : [],
+    recipes: createRecipes(),
+    guestSpawn: { enabled: true, nextInTicks: FIRST_GUEST_TICKS },
+    nextGuestId: 1,
+  };
+}
+
+function debugWalker(s: { x: number; y: number }): Character {
+  return {
+    id: 'debug1',
+    kind: 'debug',
+    x: s.x,
+    y: s.y,
+    prevX: s.x,
+    prevY: s.y,
+    path: [],
+    dir: 'dr',
   };
 }

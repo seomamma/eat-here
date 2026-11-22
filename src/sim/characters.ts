@@ -1,4 +1,7 @@
 import { DEBUG_WALKER_SPEED, TICK_MS } from '../data/balance';
+import type { GuestTypeId } from '../data/guests';
+import type { RecipeId } from '../data/recipes';
+import type { GuestLeaveReason } from './events';
 import type { TilePos } from './pathfinding';
 
 /**
@@ -7,9 +10,8 @@ import type { TilePos } from './pathfinding';
  */
 export type IsoDir = 'dr' | 'dl' | 'ur' | 'ul';
 
-export interface Character {
+interface CharacterBase {
   id: string;
-  kind: 'debug';
   /** Position in tile units; integer values are tile centres. Only axis-aligned movement. */
   x: number;
   y: number;
@@ -19,6 +21,43 @@ export interface Character {
   /** Tiles still to visit, in order. Empty = standing still. */
   path: TilePos[];
   dir: IsoDir;
+}
+
+export interface DebugWalker extends CharacterBase {
+  kind: 'debug';
+}
+
+/** Guest state machine (GAME_DESIGN §4). `gone` is transient: such guests are removed at once. */
+export type GuestPhase =
+  | 'arriving'
+  | 'waitingForSeat'
+  | 'walkingToSeat'
+  | 'browsing'
+  | 'eating'
+  | 'paying'
+  | 'leaving'
+  | 'gone';
+
+export interface Guest extends CharacterBase {
+  kind: 'guest';
+  typeId: GuestTypeId;
+  /** Palette variant index (0-based, below the type's `variants`). */
+  variant: number;
+  phase: GuestPhase;
+  /** Ticks left in the current timed phase (patience, browsing, eating, paying). */
+  timer: number;
+  /** Claimed chair (furniture id) or null. The claim is what prevents double booking. */
+  seatId: string | null;
+  /** Spot near the door this guest waits at, or null. */
+  waitSpot: TilePos | null;
+  recipeId: RecipeId | null;
+  leaveReason: GuestLeaveReason | null;
+}
+
+export type Character = DebugWalker | Guest;
+
+export function isGuest(c: Character): c is Guest {
+  return c.kind === 'guest';
 }
 
 const TICK_S = TICK_MS / 1000;
@@ -32,7 +71,7 @@ export function dirFromStep(dx: number, dy: number, fallback: IsoDir): IsoDir {
 }
 
 /** Advances one character by one tick along its path. Returns true when it arrived this tick. */
-export function stepCharacter(c: Character, speed: number = DEBUG_WALKER_SPEED): boolean {
+export function stepCharacter(c: CharacterBase, speed: number = DEBUG_WALKER_SPEED): boolean {
   c.prevX = c.x;
   c.prevY = c.y;
   if (c.path.length === 0) return false;
