@@ -54,10 +54,10 @@
 - Portrait default zoom: one integer step closer than "fit whole room" when the fit leaves the room small (player pans around), found in M1b review.
 
 **Acceptance criteria**
-- [ ] Character walks around furniture, never through walls/furniture.
-- [ ] Tapping an unreachable tile does nothing (no crash).
+- [x] Character walks around furniture, never through walls/furniture.
+- [x] Tapping an unreachable tile does nothing (no crash).
 - [ ] Movement is smooth at 30 and 60 fps and at 2× sim speed.
-- [ ] Pathfinding tests: straight line, around obstacle, unreachable, start = goal.
+- [x] Pathfinding tests: straight line, around obstacle, unreachable, start = goal.
 
 ### M3 — Guests (self-service loop)
 **Goal:** guests arrive, sit, "eat" and pay — no staff yet (food appears automatically).
