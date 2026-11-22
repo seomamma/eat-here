@@ -184,3 +184,8 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 ### D-037 Regulars and moments are plain state plus data (M11)
 **Status:** Accepted
 **Decision:** Moments (`src/data/moments.ts`) and regulars (`src/data/regulars.ts`) are typed data; regular unlocks and story beats are generated into moments. State holds `momentsSeen`, `counters` (`served`, `servedLevel` per recipe) and one `RegularState` per regular (`unlocked, hearts, visits, lastVisitDay, lastHeartDay` plus the day's seeded arrival `plan` and a pending `companionDue`). Triggers are re-checked after a dish is paid, at a new day and after a recipe upgrade. A regular is an ordinary `Guest` with `regularId` and a fixed `look`; a companion (Mia) is an ordinary guest with `companionOf` that prefers the free chair nearest her partner's. The moment card pauses the sim with its own pause reason, like RANK UP. Next Goals are computed from state (`sim/systems/goals.ts`); the "!" dot is UI-only. **Why:** keeps the sim pure and saveable, lets later content (magazine, awards, events) reuse moments, and needs no group system yet (M15).
+
+### D-038 The room grows with rank (moves expansion forward)
+**Status:** Accepted (user request at M12)
+**Decision:** Each rank-up from Rank 2 unlocks more floor space: the sim grid is allocated at its final size and the room is an unlocked rectangle inside it that grows on rank-up; the door and all existing furniture keep their coordinates; new floor is plain wood. Implemented as M12b right after the M12 catalog. (The terrace and a second floor stay in M17.)
+**Why:** "Level up → more space" is the clearest reward for growing, and the bigger catalog in M12 needs room.

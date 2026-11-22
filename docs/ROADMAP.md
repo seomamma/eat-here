@@ -193,6 +193,7 @@ Order chosen to (1) validate our main differentiator early ("guests you care abo
 | M11 | **Regulars & Moments** | Moments engine (data-driven trigger → card → reward), named regulars with unlock conditions, weekday visits, "The usual!" bonus, friendship hearts, story beats, "new regular" popup + jingle, Guests book in Menu, Next Goals card |
 | M11b | Recipe levels 1–5 & surroundings | D-036 recipe leveling; outdoor surroundings: street + sidewalk in front of the door, backyard soil, trees and bushes around the building (view-only) |
 | M12 | Facility levels & more furniture | Furniture Lv.1–5 with upgrade UI and visual variants; more tables/chairs/decor (incl. low dividers); money sink |
+| M12b | Room grows with rank | Rank-ups unlock more space: the room expands (walls move outwards), door and existing furniture stay put (user request) |
 | M13 | Art foundation | Style bible, palette lock, asset pipeline + `assets:check`, first final sprites (chef, waiter, guests, room, MVP furniture) |
 | M14 | Staff growth | Hiring pool, XP, levels, traits, more staff |
 | M15 | Groups & bigger tables | Guests arriving as groups (couples, friends, families), 4-seat tables, group seating |
