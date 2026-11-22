@@ -175,24 +175,32 @@
 
 **Acceptance criteria**
 - [x] A new player reaches Rank 2 in about 3–5 in-game days. (`npm run balance`, scripted player, 10 seeds: day 4 on nine, day 3 on one; D-034. A human will be somewhat slower.)
-- [ ] 20-minute playtest by the user with no blocking bugs; feedback captured in DECISIONS.md / backlog.
-- [ ] **MVP sign-off by the user.**
+- [x] Playtest by the user (desktop + phone, plus a second tester via a web build) with no blocking bugs; feedback: HUD layout change (M10b).
+- [x] **MVP sign-off by the user** ("everything works", go for Phase B).
 
-## Phase B — Make it ours (after MVP sign-off)
+### M10b — Portrait HUD layout (user feedback)
+- Portrait: **Menu button bottom-left**; **status badge (Open/Closing/Night) top-left**; to its right **money + "Day X" + time**; the "EAT HERE!" title card is removed from the in-game HUD (it stays on the title screen). Fame bar stays below. Landscape follows the same order in one top row.
 
-| Milestone | Content |
-|---|---|
-| M11 Art foundation | Style bible sheet, palette lock, asset pipeline scripts (`assets:check`), first final sprites (chef, waiter, guest, room) replace placeholders |
-| M12 Facility levels | Furniture Lv.1–5, upgrade UI, visual variants, level-up juice |
-| M13 Regulars | Named regulars with unlock conditions + weekday visits + jingle popup (Nonna Rosa first) |
-| M14 Staff growth | Hiring pool, XP, levels, training, more staff |
-| M15 Toilet & wandering | Toilet facility, guests look at decor, more decor items |
-| M16 Guest types | 3–4 new types with preferences, unlocked by rank |
-| M17 Expansion | Bigger room / second floor, Ranks 3–6 content, wages/rent |
-| M18 Secret recipes | Taste profiles, free ingredient experimentation, recipe book |
-| M19 Ending & completion | Legendary Pizzeria finale, continue-play, 100 % tracker |
-| M20 Mobile release prep | Capacitor builds, performance on devices, store assets, settings |
+**Acceptance criteria**
+- [ ] Layout as described in portrait 390×844 and 360×740; landscape tidy; nothing overlaps the room more than before; money breakdown still opens from the money card.
 
-Phase B order may change based on MVP playtest feedback.
+## Phase B — Make it ours (order agreed after MVP sign-off)
 
-**Proposal (not yet approved):** move **M13 Regulars** to right after MVP sign-off, before M11 art, because "guests you care about" is our main differentiator (GAME_DESIGN §1) and should be validated early — then a small **web demo** (e.g. itch.io) for friends/early players and short dev-clips to test interest before months of content work.
+Order chosen to (1) validate our main differentiator early ("guests you care about"), (2) give money a purpose (money piles up after ~day 7), (3) pay down placeholder art before content multiplies.
+
+| # | Milestone | Content |
+|---|---|---|
+| M11 | **Regulars & Moments** | Moments engine (data-driven trigger → card → reward), named regulars with unlock conditions, weekday visits, "The usual!" bonus, friendship hearts, story beats, "new regular" popup + jingle, Guests book in Menu, Next Goals card |
+| M12 | Facility levels & more furniture | Furniture Lv.1–5 with upgrade UI and visual variants; more tables/chairs/decor (incl. low dividers); money sink |
+| M13 | Art foundation | Style bible, palette lock, asset pipeline + `assets:check`, first final sprites (chef, waiter, guests, room, MVP furniture) |
+| M14 | Staff growth | Hiring pool, XP, levels, traits, more staff |
+| M15 | Groups & bigger tables | Guests arriving as groups (couples, friends, families), 4-seat tables, group seating |
+| M16 | Themed Areas & guest types | Children's Area → families, Animal Area → dog owners with dogs, reading nook → students; appeal tags + guest preferences |
+| M17 | Expansion | Bigger room, terrace, Ranks 3–6 content, wages/rent |
+| M18 | Magazine, Mystery Critic & Awards | Moments-driven reviews, critic guest, yearly awards (trophies as decor, better suppliers) |
+| M19 | Secret recipes | Taste profiles, free experimentation, recipe book |
+| M20 | Ending & completion | Legendary Pizzeria finale, continue-play, 100 % tracker |
+| M21 | Mobile release prep | Capacitor builds, device performance, store assets |
+
+Toilet & wandering (old M15) folds into M12/M16 as furniture + happiness sources.
+
