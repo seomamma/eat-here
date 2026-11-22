@@ -5,12 +5,12 @@ import { BuildOverlay } from '../BuildOverlay';
 import { CameraController } from '../CameraController';
 import { screenToTile, tileToScreen } from '../iso';
 import { generatePlaceholderTextures } from '../placeholderTextures';
+import { SurroundingsRenderer } from '../SurroundingsRenderer';
+import { GROUND_BG_COLOR, generateSurroundingsTextures } from '../surroundingsTextures';
 import { buildMode, ghost, ghostRect, moveGhostTo, startMoving } from '../../ui/build';
 import { selectGuest, selectedGuestId } from '../../ui/selection';
 import type { ObjectDrag } from '../CameraController';
 import { WorldRenderer } from '../WorldRenderer';
-
-const CANVAS_COLOR = 0xf6f3ee;
 
 export class WorldScene extends Phaser.Scene {
   private sim!: Game;
@@ -26,8 +26,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor(CANVAS_COLOR);
+    this.cameras.main.setBackgroundColor(GROUND_BG_COLOR);
     generatePlaceholderTextures(this.textures);
+    generateSurroundingsTextures(this.textures);
+    new SurroundingsRenderer(this);
     const state = this.sim.state;
     this.world = new WorldRenderer(this);
     this.world.sync(state);
@@ -43,7 +45,11 @@ export class WorldScene extends Phaser.Scene {
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => unsubs.forEach((u) => u()));
     if (new URLSearchParams(location.search).has('debug')) this.exposeDebugHook();
-    const camera = new CameraController(this, WorldRenderer.roomBounds(state));
+    const camera = new CameraController(
+      this,
+      SurroundingsRenderer.panBounds(WorldRenderer.roomBounds(state)),
+      WorldRenderer.roomBounds(state),
+    );
     camera.setObjectDrag(this.objectDrag());
     // Debug aid: tap a tile to outline it and send the debug walker there.
     camera.onTap((world) => {

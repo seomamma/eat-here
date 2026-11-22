@@ -1023,6 +1023,9 @@
   font-weight: 800;
   color: var(--tomato);
 }
+.recipe-ing-meta {
+  margin-top: 6px;
+}
 .recipe-ing-item {
   font-size: 12px;
   font-weight: 700;

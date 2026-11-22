@@ -34,8 +34,8 @@ import {
 } from './placeholderTextures';
 
 /** Floors sit below everything; back walls are never in front of anything. */
-const DEPTH_FLOOR = -20000;
-const DEPTH_BACK_WALL = -10000;
+export const DEPTH_FLOOR = -20000;
+export const DEPTH_BACK_WALL = -10000;
 /** Low walls and door frame sort just in front of the objects on their own tile. */
 const DEPTH_FRONT_BIAS = 0.5;
 /** Debug overlays on top of the world. */

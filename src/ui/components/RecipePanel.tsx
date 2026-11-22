@@ -74,16 +74,7 @@ function RecipeCard(props: { id: RecipeId }) {
             <div class="recipe-ing">
               <span class="recipe-ing-name">{R.nextLevel(up.level)}</span>
               {ing ? (
-                <>
-                  <span class="recipe-ing-item">{ing.name}</span>
-                  <span class="shop-meta">
-                    <RarityBadge rarity={ing.rarity} />
-                    <span class={owned > 0 ? 'owned owned--yes' : 'owned'}>{R.owned(owned)}</span>
-                    {ing.rarity === 'exclusive' && (
-                      <span class="exclusive-hint">{STRINGS.exclusiveHint}</span>
-                    )}
-                  </span>
-                </>
+                <span class="recipe-ing-item">{ing.name}</span>
               ) : (
                 <span class="shop-meta">{R.coinsOnly}</span>
               )}
@@ -102,6 +93,15 @@ function RecipeCard(props: { id: RecipeId }) {
           </div>
         ) : (
           <div class="recipe-max">{R.maxLevel}</div>
+        )}
+        {up && ing && (
+          <div class="shop-meta recipe-ing-meta">
+            <RarityBadge rarity={ing.rarity} />
+            <span class={owned > 0 ? 'owned owned--yes' : 'owned'}>{R.owned(owned)}</span>
+            {ing.rarity === 'exclusive' && (
+              <span class="exclusive-hint">{STRINGS.exclusiveHint}</span>
+            )}
+          </div>
         )}
         {up && !check.ok && (
           <div class="recipe-reason" role="status">

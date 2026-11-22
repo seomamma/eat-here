@@ -13,7 +13,7 @@ import { TILE_H, TILE_W } from './iso';
  */
 
 /** World palette subset (ART_DIRECTION §4). */
-const C = {
+export const C = {
   outline: '#2B1D16',
   wood1: '#5C3A21',
   wood2: '#8A5A34',
@@ -158,10 +158,10 @@ export const SPARKLE_TEX = { large: 'sparkle_l', small: 'sparkle_s' } as const;
 export const EMOTE_SIZE = 16;
 export const COIN_SIZE = 7;
 
-type Pixel = string | null;
+export type Pixel = string | null;
 
 /** Pixel buffer with hex colours; null = transparent. */
-class Raster {
+export class Raster {
   readonly px: Pixel[];
   constructor(
     readonly w: number,
@@ -183,7 +183,7 @@ function hexToRgb(c: string): [number, number, number] {
 }
 
 /** Uploads a raster as an exact-size canvas texture (alpha is only ever 0 or 255). */
-function upload(textures: Phaser.Textures.TextureManager, key: string, r: Raster): void {
+export function upload(textures: Phaser.Textures.TextureManager, key: string, r: Raster): void {
   if (textures.exists(key)) return;
   const tex = textures.createCanvas(key, r.w, r.h);
   if (!tex) throw new Error(`Could not create texture ${key}`);
@@ -198,14 +198,14 @@ function upload(textures: Phaser.Textures.TextureManager, key: string, r: Raster
   tex.refresh();
 }
 
-function fromFn(w: number, h: number, fn: (x: number, y: number) => Pixel): Raster {
+export function fromFn(w: number, h: number, fn: (x: number, y: number) => Pixel): Raster {
   const r = new Raster(w, h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) r.set(x, y, fn(x, y));
   return r;
 }
 
 /** Cheap deterministic hash for speckles (no RNG state; art only). */
-function hash(a: number, b: number, c: number): number {
+export function hash(a: number, b: number, c: number): number {
   let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0;
   h = (h ^ (h >>> 13)) * 1274126177;
   return ((h ^ (h >>> 16)) >>> 0) % 1000;
@@ -216,7 +216,7 @@ function hash(a: number, b: number, c: number): number {
 // ---------------------------------------------------------------------------------------
 
 /** Tile-local coordinates (i along x, j along y, both 0..1) of a 32x16 diamond pixel, or null outside. */
-function diamondUV(px: number, py: number): { i: number; j: number } | null {
+export function diamondUV(px: number, py: number): { i: number; j: number } | null {
   const X = px + 0.5 - TILE_W / 2;
   const Y = py + 0.5;
   const i = (X / 16 + Y / 8) / 2;
@@ -765,7 +765,7 @@ function sparkle(size: 3 | 5): Raster {
 
 type Face = 'top' | 'left' | 'right';
 
-interface Part {
+export interface Part {
   /** Footprint sub-rectangle in tile units (i along x, j along y). */
   i0: number;
   j0: number;
@@ -785,12 +785,12 @@ interface Part {
 }
 
 /** Shorthand for a wood-ish box. */
-function part(p: Omit<Part, 'decal'> & { decal?: Part['decal'] }): Part {
+export function part(p: Omit<Part, 'decal'> & { decal?: Part['decal'] }): Part {
   return p;
 }
 
 /** Rasterises painter-ordered boxes with a per-part 1px outline. `o` = top corner pixel. */
-function boxes(w: number, h: number, ox: number, oy: number, parts: Part[]): Raster {
+export function boxes(w: number, h: number, ox: number, oy: number, parts: Part[]): Raster {
   const r = new Raster((w + h) * 16, oy + (w + h) * 8);
   const sorted = [...parts].sort((a, b) => a.i0 + a.j0 + a.z0 / 64 - (b.i0 + b.j0 + b.z0 / 64));
   for (const p of sorted) {

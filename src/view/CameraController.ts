@@ -59,8 +59,10 @@ export class CameraController {
 
   constructor(
     private readonly scene: Phaser.Scene,
-    /** World-space rectangle that must stay reachable (the visible room). */
+    /** World-space rectangle the camera may pan over (the room plus some surroundings). */
     private readonly bounds: Bounds,
+    /** What the default zoom fits and centres: the visible room. */
+    private readonly fitBounds: Bounds = bounds,
   ) {
     this.cam = scene.cameras.main;
     this.cam.setOrigin(0, 0);
@@ -98,15 +100,16 @@ export class CameraController {
   /** Re-fits the room into the available area (also on resize / rotation). */
   fit(): void {
     const a = this.available();
-    const bw = this.bounds.maxX - this.bounds.minX;
-    const bh = this.bounds.maxY - this.bounds.minY;
+    const fb = this.fitBounds;
+    const bw = fb.maxX - fb.minX;
+    const bh = fb.maxY - fb.minY;
     this.zoom = clampZoom(Math.floor(Math.min(a.width / bw, a.height / bh)));
     const portrait = this.scene.scale.height > this.scene.scale.width;
     if (portrait && bw * this.zoom < PORTRAIT_MIN_FILL * a.width)
       this.zoom = clampZoom(this.zoom + 1);
     // Centre the room in the available area.
-    this.offsetX = a.left + (a.width - bw * this.zoom) / 2 - this.bounds.minX * this.zoom;
-    this.offsetY = a.top + (a.height - bh * this.zoom) / 2 - this.bounds.minY * this.zoom;
+    this.offsetX = a.left + (a.width - bw * this.zoom) / 2 - fb.minX * this.zoom;
+    this.offsetY = a.top + (a.height - bh * this.zoom) / 2 - fb.minY * this.zoom;
     this.apply();
   }
 
