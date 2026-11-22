@@ -78,10 +78,10 @@
 - Ingredient cost deducted per dish.
 
 **Acceptance criteria**
-- [ ] Full flow visible with 1 chef and 1 waiter, using 3 starting recipes.
-- [ ] Never two staff on the same job; jobs for guests who left are cancelled.
-- [ ] Headless test: one day with fixed seed — orders taken = dishes cooked = dishes served (±in-flight), no stuck staff.
-- [ ] Manual: watch 5 minutes, nothing freezes or walks through walls.
+- [x] Full flow visible with 1 chef and 1 waiter, using 3 starting recipes.
+- [x] Never two staff on the same job; jobs for guests who left are cancelled.
+- [x] Headless test: one day with fixed seed — orders taken = dishes cooked = dishes served (±in-flight), no stuck staff.
+- [x] Manual: watch 5 minutes, nothing freezes or walks through walls.
 
 ### M5 — The day cycle
 **Goal:** prep → open → close → report.
