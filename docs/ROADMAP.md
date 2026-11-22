@@ -203,5 +203,19 @@ Order chosen to (1) validate our main differentiator early ("guests you care abo
 | M20 | Ending & completion | Legendary Pizzeria finale, continue-play, 100 % tracker |
 | M21 | Mobile release prep | Capacitor builds, device performance, store assets |
 
+### M11 — Regulars & Moments
+
+Verified (tests, `npm run balance` and Playwright at 390×844 and 844×390, DSF 2):
+- [x] Moments engine: data-driven triggers (`src/data/moments.ts`), fired ids in `state.momentsSeen` (once only), rewards (coins with a `moment` ledger entry, ingredient, fame, regular unlock) applied in the sim, `momentTriggered` event.
+- [x] Nonna Rosa unlocks exactly when a Margherita is served at Lv.3, Oliver at the 10th Pepperoni served; each shows a "became a regular!" card with jingle.
+- [x] Regulars arrive once on their weekday (Nonna: Friday lunch, Oliver: Tuesday dinner) at a seeded time inside their window, with fixed name and look, extra seat patience; locked regulars never visit.
+- [x] "Their usual!" (+10) when the favorite is on the menu; fame from regulars ×2.
+- [x] Hearts: +1 per visit with happiness ≥ 70, at most one per day, cap 5; beats fire at the right hearts (Nonna 2♥ Buffalo Mozzarella, 4♥ +150 fame; Oliver 2♥, 3♥, 5♥ +120 coins).
+- [x] Mia comes along with Oliver from 3♥ (70 % of visits), follows once he has a seat and takes the nearest free chair to his; no double-claimed chairs, everyone leaves by the report.
+- [x] Save version 3 with a v2 → v3 migration (fixture `tests/fixtures/save-v2.json`); a save taken mid-visit continues identically.
+- [x] UI: moment card (pauses the sim, queues), Guests book (hearts, favorite, next visit, silhouettes with hints), guest card badge and hearts, Next Goals card in the Menu with a "!" dot on the Menu button.
+- [x] View: unique placeholder looks (grey bun and shawl, red cap, ponytail), heart emote; audio: new-regular jingle, gift chime for beats.
+- [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build` pass; `npm run balance` still runs and reports when each regular unlocks (Nonna ≈ day 4.5, Oliver ≈ day 5.5 on average for the scripted player).
+
 Toilet & wandering (old M15) folds into M12/M16 as furniture + happiness sources.
 
