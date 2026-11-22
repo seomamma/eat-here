@@ -1,0 +1,43 @@
+# Locked world palette (ART_DIRECTION §4). One line per colour: <char> <RRGGBB> <name>.
+# The char is what sprite maps (assets/sprites/**/*.px) use; '.' is always transparent.
+# Only the shadow ellipse may use the one translucent entry (RRGGBB@alpha).
+k 2B1D16 outline
+a 5C3A21 wood1
+b 8A5A34 wood2
+c B9824F wood3
+d E0B07A wood4
+e 7A2E1F brick1
+f B5473A brick2
+g D9725A brick3
+h F3E6CF cream1
+i E3D0AE cream2
+j C7B08A cream3
+l 9E1F1F tomato1
+m D93A2B tomato2
+n F0664A tomato3
+p 244D2B basil1
+q 3E7A3A basil2
+r 6FAE4E basil3
+s A9D46F basil4
+t C98A2E cheese1
+u EDB94A cheese2
+v FBE29A cheese3
+w 2F3F5C cool1
+x 4A6A8F cool2
+y 8FB3D0 cool3
+z DCE9F2 cool4
+W FFFFFF white
+A FBE0C4 skin_fair_hi
+B F2C7A0 skin_fair
+C D9A27C skin_fair_lo
+D E3AB80 skin_tan_hi
+E C98E66 skin_tan
+F B07A54 skin_tan_lo
+G A06A48 skin_deep_hi
+H 7A4A30 skin_deep
+I 5A3725 skin_deep_lo
+J B9B4B0 grey_hair
+K 8E8A88 grey_hair_lo
+Z C77B3C copper
+Q 9A5A2B copper_lo
+~ 000000@89 shadow

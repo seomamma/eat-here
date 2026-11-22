@@ -1,0 +1,71 @@
+sprite dish_marinara 12x12 pivot 6,11 kind dish
+
+anim still none fps 1
+frame
+....kkkk....
+...kdddck...
+..kddmmcck..
+.kdmmmmrrck.
+kddmrrmmmcck
+kdmmmmmmmmck
+kdmvmmmrrmck
+kccmmrrmmcck
+.kcmmmmmmck.
+..kccmmcck..
+...kcccck...
+....kkkk....
+
+
+sprite dish_margherita 12x12 pivot 6,11 kind dish
+
+anim still none fps 1
+frame
+....kkkk....
+...kdddck...
+..kddvvcck..
+.kdvmmuuvck.
+kdduuuummcck
+kdvuurquuvck
+kdvuuuruuvck
+kccummummcck
+.kcvuuuuvck.
+..kccvvcck..
+...kcccck...
+....kkkk....
+
+
+sprite dish_garlic_bread 12x12 pivot 6,11 kind dish
+
+anim still none fps 1
+frame
+..kkkkkkkk..
+.kddddddddk.
+kdcrcccrccdk
+kduuuruuuudk
+kdcccccccdk.
+.kddddddddk.
+.kddddddddk.
+kdcrcccrccdk
+kduuuruuuudk
+kdcccccccdk.
+.kddddddddk.
+..kkkkkkkk..
+
+
+sprite dish_pepperoni 12x12 pivot 6,11 kind dish
+
+anim still none fps 1
+frame
+....kkkk....
+...kdddck...
+..kddvvcck..
+.kdvffuuvck.
+kddufuuffcck
+kdvuuuffuvck
+kdvuuufuuvck
+kccuffuffcck
+.kcvfuufvck.
+..kccvvcck..
+...kcccck...
+....kkkk....
+

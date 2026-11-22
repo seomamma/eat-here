@@ -1,0 +1,1667 @@
+{
+ "version": 1,
+ "entities": {
+  "bubble_order": {
+   "kind": "ui",
+   "w": 18,
+   "h": 19,
+   "pivot": [
+    9,
+    18
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "bubble_order_still_none_0"
+     ]
+    }
+   }
+  },
+  "chair_wood": {
+   "kind": "prop",
+   "w": 32,
+   "h": 35,
+   "pivot": [
+    16,
+    19
+   ],
+   "anims": {
+    "still_back": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "chair_wood_still_back_0"
+     ]
+    },
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "chair_wood_still_front_0"
+     ]
+    }
+   }
+  },
+  "chef": {
+   "kind": "character",
+   "w": 24,
+   "h": 24,
+   "pivot": [
+    12,
+    23
+   ],
+   "anims": {
+    "bake_back": {
+     "fps": 6,
+     "loop": true,
+     "frames": [
+      "chef_bake_back_0",
+      "chef_bake_back_1",
+      "chef_bake_back_2",
+      "chef_bake_back_3"
+     ]
+    },
+    "carry_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "chef_carry_back_0",
+      "chef_carry_back_1",
+      "chef_carry_back_2",
+      "chef_carry_back_3"
+     ]
+    },
+    "carry_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "chef_carry_front_0",
+      "chef_carry_front_1",
+      "chef_carry_front_2",
+      "chef_carry_front_3"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "chef_idle_back_0",
+      "chef_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "chef_idle_front_0",
+      "chef_idle_front_1"
+     ]
+    },
+    "stoke_back": {
+     "fps": 4,
+     "loop": true,
+     "frames": [
+      "chef_stoke_back_0",
+      "chef_stoke_back_1",
+      "chef_stoke_back_2",
+      "chef_stoke_back_3"
+     ]
+    },
+    "take_back": {
+     "fps": 6,
+     "loop": true,
+     "frames": [
+      "chef_take_back_0",
+      "chef_take_back_1",
+      "chef_take_back_2",
+      "chef_take_back_3"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "chef_walk_back_0",
+      "chef_walk_back_1",
+      "chef_walk_back_2",
+      "chef_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "chef_walk_front_0",
+      "chef_walk_front_1",
+      "chef_walk_front_2",
+      "chef_walk_front_3"
+     ]
+    }
+   }
+  },
+  "coin": {
+   "kind": "ui",
+   "w": 7,
+   "h": 7,
+   "pivot": [
+    3,
+    3
+   ],
+   "anims": {
+    "spin_none": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "coin_spin_none_0",
+      "coin_spin_none_1",
+      "coin_spin_none_2",
+      "coin_spin_none_3"
+     ]
+    }
+   }
+  },
+  "counter_pass": {
+   "kind": "prop",
+   "w": 48,
+   "h": 39,
+   "pivot": [
+    16,
+    15
+   ],
+   "anims": {
+    "still_back": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "counter_pass_still_back_0"
+     ]
+    },
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "counter_pass_still_front_0"
+     ]
+    }
+   }
+  },
+  "dish_garlic_bread": {
+   "kind": "dish",
+   "w": 12,
+   "h": 12,
+   "pivot": [
+    6,
+    11
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "dish_garlic_bread_still_none_0"
+     ]
+    }
+   }
+  },
+  "dish_margherita": {
+   "kind": "dish",
+   "w": 12,
+   "h": 12,
+   "pivot": [
+    6,
+    11
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "dish_margherita_still_none_0"
+     ]
+    }
+   }
+  },
+  "dish_marinara": {
+   "kind": "dish",
+   "w": 12,
+   "h": 12,
+   "pivot": [
+    6,
+    11
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "dish_marinara_still_none_0"
+     ]
+    }
+   }
+  },
+  "dish_pepperoni": {
+   "kind": "dish",
+   "w": 12,
+   "h": 12,
+   "pivot": [
+    6,
+    11
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "dish_pepperoni_still_none_0"
+     ]
+    }
+   }
+  },
+  "door_frame": {
+   "kind": "prop",
+   "w": 16,
+   "h": 40,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "door_frame_still_none_0"
+     ]
+    }
+   }
+  },
+  "door_mat": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "door_mat_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_angry": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_angry_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_hand": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_hand_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_heart": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_heart_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_love": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_love_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_slow": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_slow_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_tasty": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_tasty_still_none_0"
+     ]
+    }
+   }
+  },
+  "floor_herringbone": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "floor_herringbone_still_none_0"
+     ]
+    }
+   }
+  },
+  "floor_terracotta": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "floor_terracotta_still_none_0"
+     ]
+    }
+   }
+  },
+  "floor_tile": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "floor_tile_still_none_0"
+     ]
+    }
+   }
+  },
+  "floor_wood_0": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "floor_wood_0_still_none_0"
+     ]
+    }
+   }
+  },
+  "floor_wood_1": {
+   "kind": "floor",
+   "w": 32,
+   "h": 16,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "floor_wood_1_still_none_0"
+     ]
+    }
+   }
+  },
+  "guest": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_eat_back_0",
+      "guest_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_eat_front_0",
+      "guest_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest_hand_back_0",
+      "guest_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest_hand_front_0",
+      "guest_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_idle_back_0",
+      "guest_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_idle_front_0",
+      "guest_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest_walk_back_0",
+      "guest_walk_back_1",
+      "guest_walk_back_2",
+      "guest_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest_walk_front_0",
+      "guest_walk_front_1",
+      "guest_walk_front_2",
+      "guest_walk_front_3"
+     ]
+    }
+   }
+  },
+  "guest1": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_eat_back_0",
+      "guest1_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_eat_front_0",
+      "guest1_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest1_hand_back_0",
+      "guest1_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest1_hand_front_0",
+      "guest1_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_idle_back_0",
+      "guest1_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_idle_front_0",
+      "guest1_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest1_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest1_walk_back_0",
+      "guest1_walk_back_1",
+      "guest1_walk_back_2",
+      "guest1_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest1_walk_front_0",
+      "guest1_walk_front_1",
+      "guest1_walk_front_2",
+      "guest1_walk_front_3"
+     ]
+    }
+   }
+  },
+  "guest2": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_eat_back_0",
+      "guest2_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_eat_front_0",
+      "guest2_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest2_hand_back_0",
+      "guest2_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest2_hand_front_0",
+      "guest2_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_idle_back_0",
+      "guest2_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_idle_front_0",
+      "guest2_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest2_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest2_walk_back_0",
+      "guest2_walk_back_1",
+      "guest2_walk_back_2",
+      "guest2_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest2_walk_front_0",
+      "guest2_walk_front_1",
+      "guest2_walk_front_2",
+      "guest2_walk_front_3"
+     ]
+    }
+   }
+  },
+  "guest3": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_eat_back_0",
+      "guest3_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_eat_front_0",
+      "guest3_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest3_hand_back_0",
+      "guest3_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "guest3_hand_front_0",
+      "guest3_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_idle_back_0",
+      "guest3_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_idle_front_0",
+      "guest3_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "guest3_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest3_walk_back_0",
+      "guest3_walk_back_1",
+      "guest3_walk_back_2",
+      "guest3_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "guest3_walk_front_0",
+      "guest3_walk_front_1",
+      "guest3_walk_front_2",
+      "guest3_walk_front_3"
+     ]
+    }
+   }
+  },
+  "mia": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_eat_back_0",
+      "mia_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_eat_front_0",
+      "mia_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "mia_hand_back_0",
+      "mia_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "mia_hand_front_0",
+      "mia_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_idle_back_0",
+      "mia_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_idle_front_0",
+      "mia_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "mia_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "mia_walk_back_0",
+      "mia_walk_back_1",
+      "mia_walk_back_2",
+      "mia_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "mia_walk_front_0",
+      "mia_walk_front_1",
+      "mia_walk_front_2",
+      "mia_walk_front_3"
+     ]
+    }
+   }
+  },
+  "nonna_rosa": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_eat_back_0",
+      "nonna_rosa_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_eat_front_0",
+      "nonna_rosa_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_hand_back_0",
+      "nonna_rosa_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_hand_front_0",
+      "nonna_rosa_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_idle_back_0",
+      "nonna_rosa_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_idle_front_0",
+      "nonna_rosa_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_walk_back_0",
+      "nonna_rosa_walk_back_1",
+      "nonna_rosa_walk_back_2",
+      "nonna_rosa_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "nonna_rosa_walk_front_0",
+      "nonna_rosa_walk_front_1",
+      "nonna_rosa_walk_front_2",
+      "nonna_rosa_walk_front_3"
+     ]
+    }
+   }
+  },
+  "oliver": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_eat_back_0",
+      "oliver_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_eat_front_0",
+      "oliver_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "oliver_hand_back_0",
+      "oliver_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "oliver_hand_front_0",
+      "oliver_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_idle_back_0",
+      "oliver_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_idle_front_0",
+      "oliver_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "oliver_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "oliver_walk_back_0",
+      "oliver_walk_back_1",
+      "oliver_walk_back_2",
+      "oliver_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "oliver_walk_front_0",
+      "oliver_walk_front_1",
+      "oliver_walk_front_2",
+      "oliver_walk_front_3"
+     ]
+    }
+   }
+  },
+  "oven_copper": {
+   "kind": "prop",
+   "w": 48,
+   "h": 47,
+   "pivot": [
+    16,
+    23
+   ],
+   "anims": {
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "oven_copper_still_front_0"
+     ]
+    }
+   }
+  },
+  "oven_pizza": {
+   "kind": "prop",
+   "w": 48,
+   "h": 47,
+   "pivot": [
+    16,
+    23
+   ],
+   "anims": {
+    "bake_front": {
+     "fps": 4.5,
+     "loop": true,
+     "frames": [
+      "oven_pizza_bake_front_0",
+      "oven_pizza_bake_front_1"
+     ]
+    },
+    "still_back": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "oven_pizza_still_back_0"
+     ]
+    },
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "oven_pizza_still_front_0"
+     ]
+    }
+   }
+  },
+  "oven_woodpile": {
+   "kind": "prop",
+   "w": 10,
+   "h": 9,
+   "pivot": [
+    5,
+    8
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "oven_woodpile_still_none_0"
+     ]
+    }
+   }
+  },
+  "shadow": {
+   "kind": "shadow",
+   "w": 16,
+   "h": 6,
+   "pivot": [
+    8,
+    3
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "shadow_still_none_0"
+     ]
+    }
+   }
+  },
+  "table_small": {
+   "kind": "prop",
+   "w": 32,
+   "h": 31,
+   "pivot": [
+    16,
+    15
+   ],
+   "anims": {
+    "still_back": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "table_small_still_back_0"
+     ]
+    },
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "table_small_still_front_0"
+     ]
+    }
+   }
+  },
+  "waiter": {
+   "kind": "character",
+   "w": 16,
+   "h": 24,
+   "pivot": [
+    8,
+    23
+   ],
+   "anims": {
+    "carry_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "waiter_carry_back_0",
+      "waiter_carry_back_1",
+      "waiter_carry_back_2",
+      "waiter_carry_back_3"
+     ]
+    },
+    "carry_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "waiter_carry_front_0",
+      "waiter_carry_front_1",
+      "waiter_carry_front_2",
+      "waiter_carry_front_3"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "waiter_idle_back_0",
+      "waiter_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "waiter_idle_front_0",
+      "waiter_idle_front_1"
+     ]
+    },
+    "order_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "waiter_order_back_0",
+      "waiter_order_back_1"
+     ]
+    },
+    "order_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "waiter_order_front_0",
+      "waiter_order_front_1"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "waiter_walk_back_0",
+      "waiter_walk_back_1",
+      "waiter_walk_back_2",
+      "waiter_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "waiter_walk_front_0",
+      "waiter_walk_front_1",
+      "waiter_walk_front_2",
+      "waiter_walk_front_3"
+     ]
+    }
+   }
+  },
+  "wall_back_l": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_blue_tiles": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_blue_tiles_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_brick": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_brick_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_end": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_end_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_end_blue_tiles": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_end_blue_tiles_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_end_brick": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_end_brick_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_end_green_stripes": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_end_green_stripes_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_l_green_stripes": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_l_green_stripes_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_blue_tiles": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_blue_tiles_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_brick": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_brick_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_end": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_end_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_end_blue_tiles": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_end_blue_tiles_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_end_brick": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_end_brick_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_end_green_stripes": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_end_green_stripes_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_back_r_green_stripes": {
+   "kind": "wall",
+   "w": 16,
+   "h": 48,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_back_r_green_stripes_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_front_l": {
+   "kind": "lowwall",
+   "w": 16,
+   "h": 12,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_front_l_still_none_0"
+     ]
+    }
+   }
+  },
+  "wall_front_r": {
+   "kind": "lowwall",
+   "w": 16,
+   "h": 12,
+   "pivot": [
+    0,
+    0
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "wall_front_r_still_none_0"
+     ]
+    }
+   }
+  }
+ }
+}

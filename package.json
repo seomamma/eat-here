@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "balance": "node scripts/run-balance.mjs",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "assets:build": "node scripts/assets/build.mjs",
+    "assets:check": "node scripts/assets/check.mjs"
   },
   "dependencies": {
     "@preact/signals": "2.11.4",

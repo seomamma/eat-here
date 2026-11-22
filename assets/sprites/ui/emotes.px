@@ -1,0 +1,156 @@
+sprite emote_hand 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.kvvvvvvvvvvvvk.
+kvvvvkvkvkvvvvvk
+kvvvkBkBkBkvvvvk
+kvvvkBBBBBBkvvvk
+kvvvkBBBBBBkvvvk
+kvvvvkBBBBkvvvvk
+kvvvvvkBBkvvvvvk
+kvvvvvvkkvvvvvvk
+kvvvvvvvvvvvvvvk
+kvvvvvvvvvvvvvvk
+.kvvvvvvvvvvvvk.
+..kkkkkvvkkkkk..
+......kvvk......
+......kvk.......
+.......k........
+
+
+sprite emote_tasty 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.kvvvvvvvvvvvvk.
+kvvvvvkkkkvvvvvk
+kvvvvkuuuukvvvvk
+kvvvkukuukukvvvk
+kvvvkuuuuuukvvvk
+kvvvkukuukukvvvk
+kvvvvkukkukvvvvk
+kvvvvvkkkkvvvvvk
+kvvvvvvvvvvvvvvk
+kvvvvvvvvvvvvvvk
+.kvvvvvvvvvvvvk.
+..kkkkkvvkkkkk..
+......kvvk......
+......kvk.......
+.......k........
+
+
+sprite emote_love 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.khhhhhhhhhhhhk.
+khhhhhhhhhhhhhhk
+khhhhkkhkkhhhhhk
+khhhkmmkmmkhhhhk
+khhhkmnmmmkhhhhk
+khhhhkmmmkhhhhhk
+khhhhhkmkhhhhhhk
+khhhhhhkhhhhhhhk
+khhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhk
+.khhhhhhhhhhhhk.
+..kkkkkhhkkkkk..
+......khhk......
+......khk.......
+.......k........
+
+
+sprite emote_heart 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.kmmmmmmmmmmmmk.
+kmmmmmmmmmmmmmmk
+kmmmmkkmkkmmmmmk
+kmmmkhhkhhkmmmmk
+kmmmkhhhhhkmmmmk
+kmmmmkhhhkmmmmmk
+kmmmmmkhkmmmmmmk
+kmmmmmmkmmmmmmmk
+kmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmk
+.kmmmmmmmmmmmmk.
+..kkkkkmmkkkkk..
+......kmmk......
+......kmk.......
+.......k........
+
+
+sprite emote_slow 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.kyyyyyyyyyyyyk.
+kyyyyyyyyyyyyyyk
+kyyywwwwwyyyyyyk
+kyyyyyywyyyyyyyk
+kyyyyywyywwwyyyk
+kyyywwwwwywyyyyk
+kyyyyyyyywyyyyyk
+kyyyyyyyywwwyyyk
+kyyyyyyyyyyyyyyk
+kyyyyyyyyyyyyyyk
+.kyyyyyyyyyyyyk.
+..kkkkkyykkkkk..
+......kyyk......
+......kyk.......
+.......k........
+
+
+sprite emote_angry 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.kmmmmmmmmmmmmk.
+kmmmmmmmmmmmmmmk
+kmmmmhhmmhhmmmmk
+kmmmmhmmmmhmmmmk
+kmmmmmmhhmmmmmmk
+kmmmmmmhhmmmmmmk
+kmmmmhmmmmhmmmmk
+kmmmmhhmmhhmmmmk
+kmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmk
+.kmmmmmmmmmmmmk.
+..kkkkkmmkkkkk..
+......kmmk......
+......kmk.......
+.......k........
+
+
+sprite bubble_order 18x19 pivot 9,18 kind ui
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkkkk..
+.khhhhhhhhhhhhhhk.
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhhhk
+.khhhhhhhhhhhhhhk.
+..kkkkkkhhkkkkkk..
+.......khhk.......
+.......khk........
+........k.........
+

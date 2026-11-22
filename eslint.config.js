@@ -9,9 +9,9 @@ export default tseslint.config(
   prettier,
   {
     // Node scripts (balance runner).
-    files: ['scripts/**/*.mjs'],
+    files: ['scripts/**/*.mjs', 'assets/author/**/*.mjs'],
     languageOptions: {
-      globals: { URL: 'readonly', process: 'readonly', console: 'readonly' },
+      globals: { URL: 'readonly', process: 'readonly', console: 'readonly', Buffer: 'readonly' },
     },
   },
   {
