@@ -243,7 +243,8 @@ Recommended design (keep it simple first):
 2. **Low dividers / half walls / fences** as placeable furniture to visually separate areas — gives the "room" feeling without the cost of full room detection.
 3. **Real rooms with walls** (flood-fill enclosed areas, doors, room types) only if corners feel too limited after playtesting — they add wall drawing in iso, doors in pathfinding and room recognition.
 4. **Groups**: families and friends arrive as groups and need a table with enough chairs — requires multi-seat tables and group seating logic (a prerequisite for families).
-5. **Terrace** = part of the restaurant expansion milestone: a new outdoor zone with its own floor tiles and weather-flavored appeal.
+5. **Dog owners & the pet corner** (user favourite): with a pet corner, **dog owners** start coming **with their dogs** — the dog trots behind its owner, lies down under the table or plays in the pet corner. Guests near a complete pet corner get extra happiness ("Cute dogs! +10"), dog owners get a bigger bonus, and the corner adds fame. Dogs come in a few breeds/colours (palette swaps) — a strong "shareable moment" source.
+6. **Terrace** = part of the restaurant expansion milestone: a new outdoor zone with its own floor tiles and weather-flavored appeal.
 
 **Next Goals card (post-MVP, supports pillar 5):** in the prep phase, a small card lists 2–3 upcoming goals across horizons (e.g. "Rank up: 38/50 fame", "Margherita Lv.3: 220 coins", "Someone loves Pepperoni… 🤔" as a regular hint). Fed by the same Moments/goal data.
 
