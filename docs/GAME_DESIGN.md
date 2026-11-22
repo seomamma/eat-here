@@ -234,16 +234,16 @@ Principle: rewards should feel **warm, not compulsive** — celebrate the player
 | City Permits (terrace, evening hours) | 🟡 Reworked | Taxes/bureaucracy aren't cozy. Keep **rank** as the progression spine; present unlocks like the terrace as "the neighborhood invites you…" rank rewards. **No alcohol service** (age rating + tone). |
 | Second restaurant / empire | 🔴 Not v1.0 | Large scope. v1.0 = one restaurant that expands; a second location is a v2/DLC idea. |
 
-### Themed corners, rooms & the terrace (idea after M7b — planned, post-MVP)
+### Themed areas (Children's Area, Animal Area…), rooms & the terrace (idea after M7b — planned, post-MVP)
 
-Build cute themed areas that attract specific guest types: a **kids' play corner** brings more **families with small children**, a **pet-friendly corner** brings dog owners (with their dogs!), a **reading nook** brings students, etc. The **terrace** (outdoor seating) is a rank-up unlock that expands the restaurant outside.
+Build cute themed areas that attract specific guest types: a **Children's Area** brings more **families with small children**, a **Animal Area** brings dog owners (with their dogs!), a **reading nook** brings students, etc. The **terrace** (outdoor seating) is a rank-up unlock that expands the restaurant outside.
 
 Recommended design (keep it simple first):
 1. **Themed corners via furniture sets**, not enclosed rooms: a corner is recognized when its set pieces stand close together (e.g. play rug + toy box + small slide within a few tiles). A complete set raises the arrival weight of its guest type and gives its own appeal tag. Data-driven: `corners.ts` lists required pieces + effect.
 2. **Low dividers / half walls / fences** as placeable furniture to visually separate areas — gives the "room" feeling without the cost of full room detection.
 3. **Real rooms with walls** (flood-fill enclosed areas, doors, room types) only if corners feel too limited after playtesting — they add wall drawing in iso, doors in pathfinding and room recognition.
 4. **Groups**: families and friends arrive as groups and need a table with enough chairs — requires multi-seat tables and group seating logic (a prerequisite for families).
-5. **Dog owners & the pet corner** (user favourite): with a pet corner, **dog owners** start coming **with their dogs** — the dog trots behind its owner, lies down under the table or plays in the pet corner. Guests near a complete pet corner get extra happiness ("Cute dogs! +10"), dog owners get a bigger bonus, and the corner adds fame. Dogs come in a few breeds/colours (palette swaps) — a strong "shareable moment" source.
+5. **Dog owners & the Animal Area** (user favourite): with a Animal Area, **dog owners** start coming **with their dogs** — the dog trots behind its owner, lies down under the table or plays in the Animal Area. Guests near a complete Animal Area get extra happiness ("Cute dogs! +10"), dog owners get a bigger bonus, and the corner adds fame. Dogs come in a few breeds/colours (palette swaps) — a strong "shareable moment" source.
 6. **Terrace** = part of the restaurant expansion milestone: a new outdoor zone with its own floor tiles and weather-flavored appeal.
 
 **Next Goals card (post-MVP, supports pillar 5):** in the prep phase, a small card lists 2–3 upcoming goals across horizons (e.g. "Rank up: 38/50 fame", "Margherita Lv.3: 220 coins", "Someone loves Pepperoni… 🤔" as a regular hint). Fed by the same Moments/goal data.
