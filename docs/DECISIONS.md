@@ -40,7 +40,7 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 **Why:** Fits the audience and cozy design; no monetization pressure on the economy.
 
 ### D-008 Building only in prep phase (MVP)
-**Status:** Accepted (assumption — revisit after MVP)
+**Status:** Superseded by D-029
 **Decision:** Buying/placing/moving furniture only while the restaurant is closed.
 **Alternatives:** Build anytime with time paused; build anytime live.
 **Why:** Avoids edge cases (moving a table a guest is sitting at, paths invalidated mid-walk). Can be relaxed later.
@@ -141,3 +141,18 @@ Format: each decision has an ID, status, the decision, alternatives considered, 
 ### D-028 Happiness scale: good basic service ≈ 3 stars; rank thresholds ×7
 **Status:** Accepted (M6 review)
 **Decision:** Always-awarded "Nice little place" +10 on sitting down; seated quickly +15 (limit 15 s), order taken quickly +10, food quickly +15; dish quality 10 + 5 × level (Lv1 15 … Lv5 35); decor and fame/tip formulas unchanged; rank fame thresholds 0 / 350 / 1400 / 4200 / 10500 / 28000. **Why:** with the draft numbers an average guest showed ~1.4 stars, which reads as "unhappy" — wrong for a cozy game. Basic good service now shows ~2.5–3 stars; recipe levels and decor are how you reach 5. Rank thresholds scaled to keep Rank 2 around day 3 (measured over 10 seeds × 6 days: Rank 2 on day 3 in all 10, ~136 fame/day, avg happiness ~60).
+
+### D-029 Automatic day/night cycle; shop always open; build mode pauses time (supersedes D-008)
+**Status:** Accepted (user request after M7)
+**Decision:** No "Open!" button and no prep phase. Day runs 10:00–22:00, closes, shows the day report, then a short night transition and the next day starts automatically. Shop, Market and Recipes are always available; Build mode pauses the sim while placing/moving. Furniture in use can't be moved; nothing is placed on tiles where characters stand; characters re-plan paths after a change. The HUD clock shows hours only.
+**Why:** The user wants the flow to feel continuous and alive, and spending money whenever you have it. Pausing during build keeps the edge cases (D-008's reason) manageable.
+
+### D-030 Furniture has 4 orientations
+**Status:** Accepted (user request after M7)
+**Decision:** `rot` is 0–3. Art draws **2 orientations (front-facing and back-facing)**; the other two are mirrored. 2×1 footprints swap on odd rotations. A chair is usable only when it **faces an adjacent table**; when placed next to a table it auto-faces it by default, and the player can rotate freely (warning when it faces no table).
+**Why:** Players expect to turn a chair any way, including "backwards". Cost: one extra drawn view per furniture piece.
+
+### D-031 Rare upgrade ingredients as collectibles (clarifies D-016)
+**Status:** Accepted (user request at M8)
+**Decision:** Leveling a dish costs coins **and** a special ingredient item. Items are collectibles in an inventory (Market with daily random offers, gifts from very happy guests, rank-up rewards). Daily cooking stays abstract with no stock (D-016 unchanged).
+**Why:** The user wants some upgrade items to be hard to get — a collection goal that supports "always a next goal" without inventory stress.

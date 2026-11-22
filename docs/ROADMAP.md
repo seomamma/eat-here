@@ -118,15 +118,31 @@
 - [x] Guests seated near the plant gain decor points (visible in their info card).
 - [x] Moving tables/chairs works and guests use the new positions.
 
-### M8 — Recipe leveling
-**Goal:** "salt on the fries" — level up dishes.
-- Recipe panel: each dish with level, price, next ingredient upgrade + cost.
-- Upgrading: money spent, level up toast + sound, higher price and quality.
+### M7b — Flowing days, always-open shop, 4-way rotation (D-029, D-030)
+**Goal:** the restaurant runs day after day by itself; you can shop and build any time.
+- Remove the prep phase and Open! button. After the report → night transition (~2–3 s, darkened room, moon, "Day N+1") → next day starts at 10:00 automatically.
+- HUD clock shows hours only + sun/moon icon.
+- Shop and Build available in every phase; Build mode pauses the sim; in-use furniture can't be moved; no placing on tiles with characters; characters re-plan paths after changes.
+- Furniture rotation 0–3 (back-facing placeholder sprites + mirroring); chairs must face an adjacent table to be used; auto-face on placement.
 
 **Acceptance criteria**
-- [ ] Each of the 4 dishes can be upgraded Lv.1→3.
+- [ ] Several days play in a row with only the "Next day" tap between them.
+- [ ] Buying and placing a plant mid-day works; time is frozen while placing and resumes after.
+- [ ] Moving an occupied chair/table is refused with a clear reason; no character gets stuck after a mid-day change (tested).
+- [ ] A chair can be rotated through all 4 directions; guests only sit on chairs facing a table.
+
+### M8 — Recipe leveling with rare ingredients (D-031)
+**Goal:** "salt on the fries" — level up dishes with special ingredients that are a little hard to get.
+- Ingredient data (rarity, which dish/level they unlock) + inventory in state.
+- Sources: Market tab in the Shop (3 seeded daily offers), gifts from very happy guests (popup), rank-up reward.
+- Recipe panel: each dish with level, price, next upgrade (ingredient owned? + coins).
+- Upgrading: coins + ingredient spent, LEVEL UP moment, higher price and quality.
+
+**Acceptance criteria**
+- [ ] Each of the 4 dishes can be upgraded Lv.1→3 when you own the ingredient and coins; refused otherwise (unit tested).
+- [ ] Market offers change every morning and are deterministic per seed; gifts happen occasionally (measured rate reported).
 - [ ] Higher level dishes give more happiness and income (unit tested).
-- [ ] LEVEL UP feedback is clearly visible and audible.
+- [ ] LEVEL UP and "gift" feedback are clearly visible (sound in M10).
 
 ### M9 — Save & load
 **Goal:** progress persists.

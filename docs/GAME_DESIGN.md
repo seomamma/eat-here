@@ -47,33 +47,38 @@ Browser first (HTML5), then iOS/Android. **Portrait and landscape** both support
 
 ## 2. Core gameplay loop
 
+Days flow automatically (D-029) — there is no "Open" button.
+
 ```
-   ┌─────────────── PREP PHASE (time stopped) ───────────────┐
-   │  build / move furniture · buy decor · upgrade recipes   │
-   │  upgrade furniture · hire/train staff (post-MVP)        │
-   └───────────────────────────┬─────────────────────────────┘
-                               ▼  tap "Open!"
-   ┌─────────────── BUSINESS DAY (~4 min real time) ─────────┐
-   │  guests arrive → sit → order → chef cooks →             │
+   ┌─────────────── BUSINESS DAY (10:00–22:00, ~4 min) ──────┐
+   │  guests arrive → sit → order → chef cooks →              │
    │  waiter serves → guest eats, enjoys decor → pays → leaves│
-   │  each guest fills a happiness meter → fame + tips       │
-   └───────────────────────────┬─────────────────────────────┘
-                               ▼  22:00 closing
-   ┌─────────────── DAY REPORT ──────────────────────────────┐
-   │  income, costs, guests served, best dish, fame gained   │
-   │  RANK UP? new unlocks! · new regular? (post-MVP)        │
-   └───────────────────────────┴──────► next day (autosave)
+   │  each guest fills a happiness meter → fame + tips        │
+   │  Shop / Build / Recipes always available                 │
+   │  (Build mode pauses time while you place furniture)      │
+   └───────────────────────────┬──────────────────────────────┘
+                               ▼  22:00 closing, last guests finish
+   ┌─────────────── DAY REPORT ───────────────────────────────┐
+   │  income, costs, guests served, best dish, fame gained    │
+   │  RANK UP? new unlocks! · new regular? (post-MVP)         │
+   └───────────────────────────┬──────────────────────────────┘
+                               ▼  "Next day"
+   ┌─────────────── NIGHT (short transition) ─────────────────┐
+   │  room darkens, moon, "Day N+1" → morning, doors open     │
+   │  (autosave) · new Market offers                          │
+   └──────────────────────────────────────────────────────────┘
 ```
 
 **Short loop (seconds):** watch a guest's happiness meter fill, coins pop.
-**Medium loop (one day):** earn money → spend it in prep phase.
+**Medium loop (one day):** earn money → spend it in the shop, market and recipe book.
 **Long loop (many days):** fame → rank ups → unlock recipes, furniture, guest types, bigger restaurant.
 
 ## 3. Time
 
-- One **business day** = in-game 10:00–22:00 ≈ **4 minutes real time** at 1× speed (tunable).
+- One **business day** = in-game 10:00–22:00 ≈ **4 minutes real time** at 1× speed (tunable). The HUD shows **hours only** (e.g. "Day 3 · Wed · 13:00") plus a sun/moon icon.
+- After closing and the day report, a short **night transition** plays and the next day starts by itself (D-029).
 - The game has a calendar (Day 1, Mon–Sun, weeks, seasons later). Weekdays matter for regulars (e.g. Nonna Rosa comes on Fridays).
-- **Prep phase:** time is stopped. All building and purchasing happens here (MVP decision; see DECISIONS.md D-008).
+- **Shop, Market and Recipes are always available.** **Build mode pauses time** while placing/moving furniture; furniture in use (occupied chair, its table, an oven that is baking, a pass holding dishes) can't be moved, and nothing can be placed on a tile where someone stands.
 - **Pause:** the game auto-pauses when the app/tab loses focus. **No offline progress.**
 - Speed control (1× / 2×) post-MVP.
 
@@ -146,13 +151,24 @@ Staff pick jobs from a shared **job queue** (see ARCHITECTURE.md). Idle staff re
 | Garlic Bread | 6 | 1 | 4 s | start |
 | Pepperoni | 13 | 4 | 8 s | Rank 2 |
 
-Costs are **abstract**: each sold dish deducts its ingredient cost. No stock, no shortages.
+Costs are **abstract**: each sold dish deducts its ingredient cost. No stock, no shortages. (Special upgrade ingredients are separate collectibles, see below.)
 
-### Recipe leveling (MVP: simple version)
+### Recipe leveling with rare ingredients (MVP)
 
-Each dish has a **level (1–5)**. To level up, you buy an **ingredient upgrade** in the prep phase (e.g. Margherita + *Fresh Basil* → Lv.2, + *Buffalo Mozzarella* → Lv.3). Each level: higher quality points, slightly higher price. Big "LEVEL UP!" animation.
+Each dish has a **level (1–5; MVP ships 1–3)**. Leveling a dish needs **coins + one special ingredient item** (D-031). Each level: +5 quality points ("Tasty dish"), +15 % price, a big "LEVEL UP!" moment.
 
-MVP ships with levels 1–3 for each dish.
+| Dish | Lv.2 needs | Lv.3 needs |
+|---|---|---|
+| Marinara | Oregano (common) | San Marzano Tomatoes (rare) |
+| Margherita | Fresh Basil (common) | Buffalo Mozzarella (rare) |
+| Garlic Bread | Garlic Butter (common) | Aged Parmesan (rare) |
+| Pepperoni | Chili Flakes (common) | Hot Honey (rare) |
+
+**Special ingredients are collectibles**, not stock: you never need them for daily cooking (cooking costs stay abstract, D-016). They are only spent when leveling a dish. Rarity tiers: common, rare (epic/legendary later). Sources — deliberately a little hard to get:
+- **Market** (tab in the Shop): every morning 3 random offers (seeded), each buyable once that day. Commons are cheap; a rare shows up only now and then and is pricey.
+- **Gifts from guests:** a guest who leaves very happy (≥ 80) has a small chance to leave an ingredient — *"Nora left you a gift: Buffalo Mozzarella!"*. Rares are more likely here.
+- **Rank-up rewards:** each rank up gives one ingredient (Rank 2 → a rare).
+- Later: regulars, awards, suppliers (GAME_DESIGN §10b).
 
 ### Secret recipes (post-MVP: experimental version)
 

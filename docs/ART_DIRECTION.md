@@ -21,7 +21,7 @@ From the user's reference we take **only broad principles**: small expressive pi
   - inverse for taps: `x = floor((sx/16 + sy/8) / 2)`, `y = floor((sy/8 − sx/16) / 2)`
 - **Walls:** the two **back** walls (top-left and top-right edges) are drawn full height. The two **front** walls are drawn as a **low cut-away** (a few px high) so the interior stays visible. The door sits in a front wall.
 - **Characters:** 2 drawn facings — **down-right (front)** and **up-right (back)**; down-left and up-left are mirrored → 4 directions.
-- **Furniture:** drawn in 1 orientation; the other is the mirrored sprite (rot 0/1). Footprints rotate accordingly (2×1 ↔ 1×2).
+- **Furniture:** 4 orientations (D-030): 2 drawn (front-facing, back-facing), the other two mirrored. Footprints rotate accordingly (2×1 ↔ 1×2 on odd rotations).
 - **Depth sorting:** by `x + y` of an object's front-most footprint tile (higher = in front), tie-broken by `x`. Characters use their interpolated `x + y`.
 
 ## 3. Resolution & scaling
