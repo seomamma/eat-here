@@ -152,20 +152,31 @@ describe('level effects', () => {
     expect(qualityPoints(3) - qualityPoints(2)).toBe(5);
   });
 
-  it('guests pay the new price and are happier after an upgrade (seeded day)', () => {
-    const base = game(4);
-    const basePaid = playDay(base);
-    expect(basePaid.every((p) => p.price === RECIPES[p.recipeId as 'marinara'].price)).toBe(true);
-
-    const up = game(4);
-    for (const id of RECIPE_IDS) up.state.recipes[id].level = 3;
-    const upPaid = playDay(up);
-    expect(upPaid.length).toBeGreaterThan(5);
-    for (const p of upPaid) expect(p.price).toBe(priceAtLevel(p.recipeId as 'marinara', 3));
+  it('guests pay the new price and are happier after an upgrade (seeded days)', () => {
     const avg = (xs: { happiness: number }[]) =>
       xs.reduce((a, p) => a + p.happiness, 0) / xs.length;
+    const basePaid: { happiness: number }[] = [];
+    const upPaid: { happiness: number }[] = [];
+    let baseIncome = 0;
+    let upIncome = 0;
+    // Service speed varies from seed to seed, so compare a few seeded days together.
+    for (const seed of [4, 5, 6]) {
+      const base = game(seed);
+      const paid = playDay(base);
+      expect(paid.every((p) => p.price === RECIPES[p.recipeId as 'marinara'].price)).toBe(true);
+      basePaid.push(...paid);
+      baseIncome += base.state.dayStats.income;
+
+      const up = game(seed);
+      for (const id of RECIPE_IDS) up.state.recipes[id].level = 3;
+      const paidUp = playDay(up);
+      expect(paidUp.length).toBeGreaterThan(5);
+      for (const p of paidUp) expect(p.price).toBe(priceAtLevel(p.recipeId as 'marinara', 3));
+      upPaid.push(...paidUp);
+      upIncome += up.state.dayStats.income;
+    }
     expect(avg(upPaid)).toBeGreaterThan(avg(basePaid) + 5);
-    expect(up.state.dayStats.income).toBeGreaterThan(base.state.dayStats.income);
+    expect(upIncome).toBeGreaterThan(baseIncome);
   });
 });
 

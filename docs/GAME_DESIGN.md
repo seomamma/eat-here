@@ -114,7 +114,9 @@ Every guest arrives with an **empty bar** (0–100, shown as 5 stars filling up 
 
 Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left without table.
 
-**On leaving:** `fame += happiness / 10` (draft), `tip = price × happiness / 200`.
+**On leaving:** `fame += floor(happiness / 10)`, `tip = round(price × happiness / 140)` (M10: a 90-happiness Pepperoni guest tips 8, a 90-happiness Margherita guest 6, so the day's "Big tip" highlight is usually 6 or more).
+
+**Patience and arrivals (M10):** a guest waits up to **30 s** for a free seat. Arrival gaps are 9–15 s off-peak and 5–8 s at the lunch (12–14) and dinner (18–21) peaks, scaled by the rank's arrival-rate bonus (Rank 2 ×1.05, Rank 3 ×1.15). With the four starting seats this keeps roughly 5–15 % of the guests leaving for lack of a seat once the pizzeria is busy (about 1–5 % on the first days).
 
 ### Guest types
 
@@ -193,6 +195,7 @@ All furniture is data-driven: size (footprint), price, **appeal**, function (sea
 - Income: dish price + tip. Costs: ingredient cost per dish. Rent/wages: **post-MVP** (shown in day report as "daily costs" once added).
 - Prices (draft): Potted Plant 150, recipe ingredient upgrades 100–400.
 - Target feel: player can afford **one meaningful purchase every 1–2 days** early on.
+- Measured (M10, `npm run balance`: scripted player, 10 seeds × 10 days): the first plant is bought on day 1 (300 start coins); a day earns about +250 profit (ingredients paid) on days 1–3 and about +320 from Rank 2; Rank 2 arrives on day 4 (day 3 on one seed); average guest happiness 65–76; tips grow from a day's biggest 5–6 (before Pepperoni) to 8–11.
 
 ## 9. Fame & Restaurant Rank
 
@@ -201,7 +204,7 @@ Fame accumulates from happy guests. Hitting thresholds triggers a **RANK UP!** w
 | Rank | Name | Fame needed | Unlocks |
 |---|---|---|---|
 | 1 | Hole in the Wall | 0 | start |
-| 2 | Neighborhood Spot | 350 | Pepperoni, more guests per day |
+| 2 | Neighborhood Spot | 500 | Pepperoni, more guests per day |
 | 3 | Local Favorite | 1400 | new decor, staff hiring (post-MVP) |
 | 4 | Talk of the Town | 4200 | expansion, new guest type |
 | 5 | City Classic | 10500 | regulars, more ovens |

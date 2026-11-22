@@ -10,6 +10,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "balance": "node scripts/run-balance.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

@@ -34,7 +34,7 @@ export const LOVE_AT = 80;
 /** Fame per guest on leaving = floor(happiness / FAME_DIVISOR). */
 export const FAME_DIVISOR = 10;
 /** Tip = round(price * happiness / TIP_DIVISOR). */
-export const TIP_DIVISOR = 200;
+export const TIP_DIVISOR = 140;
 
 /** Happiness points per displayed star (5 stars = 100). */
 export const HAPPINESS_PER_STAR = 20;

@@ -8,6 +8,13 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    // Node scripts (balance runner).
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { URL: 'readonly', process: 'readonly', console: 'readonly' },
+    },
+  },
+  {
     files: ['src/sim/**/*.ts'],
     rules: {
       'no-restricted-imports': [

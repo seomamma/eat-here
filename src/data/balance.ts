@@ -22,11 +22,11 @@ export const SPAWN_CURVE: readonly {
   fromMinute: number;
   intervalSec: readonly [number, number];
 }[] = [
-  { fromMinute: 600, intervalSec: [8, 14] },
-  { fromMinute: 720, intervalSec: [4, 7] },
-  { fromMinute: 840, intervalSec: [8, 14] },
-  { fromMinute: 1080, intervalSec: [4, 7] },
-  { fromMinute: 1260, intervalSec: [8, 14] },
+  { fromMinute: 600, intervalSec: [9, 15] },
+  { fromMinute: 720, intervalSec: [5, 8] },
+  { fromMinute: 840, intervalSec: [9, 15] },
+  { fromMinute: 1080, intervalSec: [5, 8] },
+  { fromMinute: 1260, intervalSec: [9, 15] },
 ];
 /** No new guests spawn while this many are in the restaurant (keeps the door tidy). */
 export const MAX_GUESTS_ALIVE = 12;

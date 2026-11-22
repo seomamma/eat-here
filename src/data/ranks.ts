@@ -35,10 +35,10 @@ export const RANKS: readonly RankDef[] = [
   {
     rank: 2,
     name: 'Neighborhood Spot',
-    fame: 350,
+    fame: 500,
     recipes: ['pepperoni'],
     perks: ['More guests per day'],
-    spawnRate: 1.15,
+    spawnRate: 1.05,
     reward: 'buffalo_mozzarella',
   },
   {
@@ -47,7 +47,7 @@ export const RANKS: readonly RankDef[] = [
     fame: 1400,
     recipes: [],
     perks: ['New decor', 'More guests per day'],
-    spawnRate: 1.3,
+    spawnRate: 1.15,
     reward: 'hot_honey',
   },
   {

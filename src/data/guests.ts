@@ -18,7 +18,7 @@ export const GUEST_TYPES = {
   local: {
     name: 'Local',
     walkSpeed: 2,
-    seatPatienceSec: 20,
+    seatPatienceSec: 30,
     browseSec: [2, 5],
     eatSec: [6, 11],
     variants: 3,

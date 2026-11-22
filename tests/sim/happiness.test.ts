@@ -5,6 +5,7 @@ import {
   HAPPINESS_MAX,
   ORDER_QUICK_SEC,
   SEAT_QUICK_SEC,
+  TIP_DIVISOR,
 } from '../../src/data/happiness';
 import { FURNITURE } from '../../src/data/furniture';
 import { GUEST_NAMES } from '../../src/data/guests';
@@ -183,11 +184,15 @@ describe('fame and tip formulas', () => {
     expect([0, 9, 10, 35, 99, 100].map(fameFor)).toEqual([0, 0, 1, 3, 9, 10]);
   });
 
-  it('tip = round(price x happiness / 200)', () => {
+  it('tip = round(price x happiness / TIP_DIVISOR), clearly visible for happy guests', () => {
+    expect(TIP_DIVISOR).toBe(140);
     expect(tipFor(10, 0)).toBe(0);
-    expect(tipFor(10, 35)).toBe(2);
-    expect(tipFor(13, 100)).toBe(7);
-    expect(tipFor(8, 100)).toBe(4);
+    expect(tipFor(10, 35)).toBe(3);
+    expect(tipFor(13, 100)).toBe(9);
+    expect(tipFor(8, 100)).toBe(6);
+    // A very happy (90) Pepperoni guest tips 5-8 (M10 balance goal).
+    expect(tipFor(13, 90)).toBeGreaterThanOrEqual(5);
+    expect(tipFor(13, 90)).toBeLessThanOrEqual(8);
   });
 });
 
