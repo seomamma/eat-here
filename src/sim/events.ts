@@ -24,7 +24,7 @@ export class Emitter<Events extends object> {
   }
 }
 
-export type GuestEmote = 'angry' | 'happy';
+export type GuestEmote = 'angry' | 'happy' | 'hand';
 export type GuestLeaveReason = 'done' | 'noSeat';
 
 /** Events the sim emits (Sim -> View/UI). */
@@ -36,4 +36,14 @@ export interface GameEvents {
   paid: { guestId: string; amount: number; x: number; y: number };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
   moneyChanged: { money: number };
+  /** The waiter finished taking the order; a cook job now exists. */
+  orderTaken: { orderId: string; guestId: string; recipeId: string };
+  /** Cooking started and ingredients were paid for. */
+  ingredientsBought: { orderId: string; amount: number };
+  /** The dish is on the pass. */
+  dishReady: { orderId: string };
+  /** The dish reached the guest. */
+  dishServed: { orderId: string; guestId: string };
+  /** The order was dropped because its guest left mid-flow. */
+  orderDiscarded: { orderId: string; guestId: string };
 }

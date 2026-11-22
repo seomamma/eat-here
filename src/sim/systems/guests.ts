@@ -9,6 +9,7 @@ import { buildOccupancy, type Furniture } from '../grid';
 import { findPath, type TilePos, type WalkGrid } from '../pathfinding';
 import { rngInt, rngPick } from '../rng';
 import type { GameState } from '../state';
+import { requestOrder } from './jobs';
 import { secToTicks, spawnGuest } from './spawner';
 
 export interface GuestContext {
@@ -111,6 +112,13 @@ function releaseSeatIfOff(ctx: GuestContext, g: Guest): void {
   if (!chair || Math.abs(g.x - chair.x) + Math.abs(g.y - chair.y) >= 1) g.seatId = null;
 }
 
+/** The dish arrived: the guest starts eating (called by the staff system). */
+export function startEating(ctx: GuestContext, g: Guest): void {
+  g.phase = 'eating';
+  g.timer = randomTicks(ctx.state, GUEST_TYPES[g.typeId].eatSec);
+  ctx.events.emit('guestEmote', { guestId: g.id, emote: 'happy' });
+}
+
 function updateGuest(ctx: GuestContext, g: Guest): void {
   const { state, events } = ctx;
   const type = GUEST_TYPES[g.typeId];
@@ -158,13 +166,17 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
 
     case 'browsing':
       if (--g.timer <= 0) {
-        // M3: food appears by itself. M4 replaces this with order -> cook -> serve.
         const unlocked = RECIPE_IDS.filter((id) => state.recipes[id].unlocked);
         g.recipeId = rngPick(state, unlocked);
-        g.phase = 'eating';
-        g.timer = randomTicks(state, type.eatSec);
-        events.emit('guestEmote', { guestId: g.id, emote: 'happy' });
+        g.phase = 'wantsToOrder';
+        events.emit('guestEmote', { guestId: g.id, emote: 'hand' });
+        requestOrder(state, g, g.recipeId);
       }
+      break;
+
+    case 'wantsToOrder':
+    case 'waitingForFood':
+      // Passive: the staff system moves the guest on (order taken, dish served).
       break;
 
     case 'eating':

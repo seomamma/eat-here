@@ -16,16 +16,26 @@ interface Log {
   seated: string[];
   emotes: { guestId: string; emote: string }[];
   moneyEvents: number[];
+  costs: number[];
 }
 
 function attach(g: Game): Log {
-  const log: Log = { arrived: [], left: [], paid: [], seated: [], emotes: [], moneyEvents: [] };
+  const log: Log = {
+    arrived: [],
+    left: [],
+    paid: [],
+    seated: [],
+    emotes: [],
+    moneyEvents: [],
+    costs: [],
+  };
   g.events.on('guestArrived', (e) => log.arrived.push(e.guestId));
   g.events.on('guestLeft', (e) => log.left.push(e));
   g.events.on('paid', (e) => log.paid.push(e));
   g.events.on('guestSeated', (e) => log.seated.push(e.guestId));
   g.events.on('guestEmote', (e) => log.emotes.push(e));
   g.events.on('moneyChanged', (e) => log.moneyEvents.push(e.money));
+  g.events.on('ingredientsBought', (e) => log.costs.push(e.amount));
   return log;
 }
 
@@ -77,7 +87,8 @@ describe('guest system', () => {
     expect(g.state.characters.filter(isGuest)).toHaveLength(0);
     expect(log.left.map((l) => l.guestId).sort()).toEqual([...log.arrived].sort());
     const total = log.paid.reduce((n, p) => n + p.amount, 0);
-    expect(g.state.money).toBe(300 + total);
+    const costs = log.costs.reduce((n, c) => n + c, 0);
+    expect(g.state.money).toBe(300 + total - costs);
     expect(log.moneyEvents.at(-1)).toBe(g.state.money);
     expect(log.paid.length).toBe(log.left.filter((l) => l.reason === 'done').length);
     expect(log.seated.length).toBe(log.paid.length);

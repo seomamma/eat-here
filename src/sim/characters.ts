@@ -1,5 +1,6 @@
 import { DEBUG_WALKER_SPEED, TICK_MS } from '../data/balance';
 import type { GuestTypeId } from '../data/guests';
+import type { StaffRole } from '../data/staff';
 import type { RecipeId } from '../data/recipes';
 import type { GuestLeaveReason } from './events';
 import type { TilePos } from './pathfinding';
@@ -10,7 +11,7 @@ import type { TilePos } from './pathfinding';
  */
 export type IsoDir = 'dr' | 'dl' | 'ur' | 'ul';
 
-interface CharacterBase {
+export interface CharacterBase {
   id: string;
   /** Position in tile units; integer values are tile centres. Only axis-aligned movement. */
   x: number;
@@ -33,6 +34,8 @@ export type GuestPhase =
   | 'waitingForSeat'
   | 'walkingToSeat'
   | 'browsing'
+  | 'wantsToOrder'
+  | 'waitingForFood'
   | 'eating'
   | 'paying'
   | 'leaving'
@@ -54,13 +57,42 @@ export interface Guest extends CharacterBase {
   leaveReason: GuestLeaveReason | null;
 }
 
-export type Character = DebugWalker | Guest;
+export type StaffPhase = 'idle' | 'walkingToJob' | 'working';
+export type StaffAction = 'takeOrder' | 'cook' | 'placeDish' | 'pickUpDish' | 'serveDish';
+
+/** Chef / waiter. The job stage is a plain string so the state stays serializable. */
+export interface Staff extends CharacterBase {
+  kind: 'staff';
+  role: StaffRole;
+  level: number;
+  xp: number;
+  phase: StaffPhase;
+  jobId: string | null;
+  /** Step within the current job (see systems/staff.ts). */
+  stage: string;
+  /** Tile the staff is walking to for the current stage; null = not planned yet. */
+  target: TilePos | null;
+  /** Current action while `working`, else null. */
+  action: StaffAction | null;
+  /** Ticks left of the current action. */
+  timer: number;
+  /** Dish in hands (view draws it), or null. */
+  carrying: RecipeId | null;
+  /** Idle spot the staff returns to. */
+  home: TilePos;
+}
+
+export type Character = DebugWalker | Guest | Staff;
 
 export function isGuest(c: Character): c is Guest {
   return c.kind === 'guest';
 }
 
 const TICK_S = TICK_MS / 1000;
+
+export function isStaff(c: Character): c is Staff {
+  return c.kind === 'staff';
+}
 
 export function dirFromStep(dx: number, dy: number, fallback: IsoDir): IsoDir {
   if (dx > 0) return 'dr';

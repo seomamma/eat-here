@@ -4,6 +4,7 @@ import { Emitter, type GameEvents } from './events';
 import { buildWalkGrid, findPath, isWalkable, type WalkGrid } from './pathfinding';
 import type { GameState } from './state';
 import { tickGuests } from './systems/guests';
+import { tickStaff } from './systems/staff';
 
 export type Command = { type: 'debugWalkTo'; x: number; y: number };
 
@@ -53,7 +54,9 @@ export class Game {
   /** Runs exactly one tick (also used directly by tests). */
   tickOnce(): void {
     this.state.tick++;
-    tickGuests({ state: this.state, walk: this.walk(), events: this.events });
+    const ctx = { state: this.state, walk: this.walk(), events: this.events };
+    tickGuests(ctx);
+    tickStaff(ctx);
     for (const c of this.state.characters) {
       if (c.kind === 'debug' && stepCharacter(c)) this.events.emit('walkerArrived', { id: c.id });
     }

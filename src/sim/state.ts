@@ -1,7 +1,8 @@
 import { DEFAULT_SEED } from '../data/balance';
 import { RECIPE_IDS, RECIPES, type RecipeId } from '../data/recipes';
-import { DOOR_X } from '../data/layout';
-import type { Character } from './characters';
+import { DOOR_X, START_STAFF } from '../data/layout';
+import type { Character, Staff } from './characters';
+import type { Job, Order } from './systems/jobs';
 import { createGrid, createStartFurniture, type Furniture, type GridState } from './grid';
 import { buildWalkGrid, isWalkable } from './pathfinding';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
@@ -19,6 +20,10 @@ export interface GameState {
   grid: GridState;
   furniture: Furniture[];
   characters: Character[];
+  /** Open jobs for staff (oldest first). */
+  jobs: Job[];
+  /** Orders in flight (removed once served or discarded). */
+  orders: Order[];
   recipes: Record<RecipeId, { unlocked: boolean; level: number }>;
   guestSpawn: {
     /** Set to false to stop new arrivals (tests, closing time). */
@@ -28,6 +33,8 @@ export interface GameState {
   };
   /** Counter for guest ids. */
   nextGuestId: number;
+  nextJobId: number;
+  nextOrderId: number;
 }
 
 /** Nearest free floor tile to the door (just inside the room). */
@@ -75,11 +82,39 @@ export function createInitialState(
     day: 1,
     grid,
     furniture,
-    characters: opts.debugWalker ? [debugWalker(s)] : [],
+    characters: [...(opts.debugWalker ? [debugWalker(s)] : []), ...createStaff()],
+    jobs: [],
+    orders: [],
     recipes: createRecipes(),
     guestSpawn: { enabled: true, nextInTicks: FIRST_GUEST_TICKS },
     nextGuestId: 1,
+    nextJobId: 1,
+    nextOrderId: 1,
   };
+}
+
+function createStaff(): Staff[] {
+  return START_STAFF.map((p, i) => ({
+    id: `staff${i + 1}`,
+    kind: 'staff',
+    role: p.role,
+    level: 1,
+    xp: 0,
+    phase: 'idle',
+    jobId: null,
+    stage: '',
+    target: null,
+    action: null,
+    timer: 0,
+    carrying: null,
+    home: { x: p.x, y: p.y },
+    x: p.x,
+    y: p.y,
+    prevX: p.x,
+    prevY: p.y,
+    path: [],
+    dir: 'dr',
+  }));
 }
 
 function debugWalker(s: { x: number; y: number }): Character {
