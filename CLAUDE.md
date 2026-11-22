@@ -36,5 +36,11 @@ Cozy pixel-art pizzeria **manager sim** for mobile (browser-first). Phaser + Typ
 - Pixel art: integer zoom only, nearest-neighbor, sizes per ART_DIRECTION.md (16 px tiles, 16×24 characters).
 
 ## Commands
-(Filled in at M0: `npm run dev`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`.)
+- `npm run dev` — Vite dev server
+- `npm run build` — `tsc --noEmit` then `vite build`
+- `npm run preview` — serve the production build
+- `npm test` — Vitest (`vitest run`)
+- `npm run lint` — ESLint (flat config; enforces the `src/sim/` boundary)
+- `npm run typecheck` — `tsc --noEmit`
+- `npm run format` — Prettier (docs/ and CLAUDE.md are excluded)
 Before reporting a milestone done: test, lint, typecheck and build must pass.
