@@ -5,6 +5,12 @@ function speedLine(verb: string, pct: number, next: number | null): string {
 }
 
 /** All player-facing UI strings (English). */
+/** 4300 becomes 4.3k, 10500 becomes 10.5k; below 1000 unchanged (keeps the fame text short). */
+export function compactCount(n: number): string {
+  if (n < 1000) return String(n);
+  return `${(Math.floor(n / 100) / 10).toString()}k`;
+}
+
 export const STRINGS = {
   gameTitle: 'EAT HERE!',
   title: {
@@ -238,7 +244,7 @@ export const STRINGS = {
   },
   fame: {
     rank: (rank: number) => `Rank ${rank}`,
-    progress: (fame: number, next: number) => `${fame} / ${next}`,
+    progress: (fame: number, next: number) => `${compactCount(fame)} / ${compactCount(next)}`,
     max: 'MAX',
     label: 'Fame',
   },
