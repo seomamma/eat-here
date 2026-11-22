@@ -1,31 +1,10 @@
-import { DAY_CLOSE_MINUTE } from '../../data/balance';
 import { STRINGS } from '../../data/strings';
-import { formatClock } from '../../sim/time';
 import { buildMode, exitBuild, ghost, menuOpen } from '../build';
 import { phase, report } from '../store';
 import { PizzaSliceIcon } from './MenuIcons';
 
-/** Open / Closing status; replaced by the pause notice while building. */
-function StatusPill() {
-  const p = phase.value;
-  if (buildMode.value) {
-    return (
-      <div class="status-pill status-pill--paused" role="status">
-        <span class="status-dot status-dot--paused" aria-hidden="true" />
-        {STRINGS.pausedWhileBuilding}
-      </div>
-    );
-  }
-  return (
-    <div class="status-pill" role="status">
-      <span class={`status-dot status-dot--${p}`} aria-hidden="true" />
-      {p === 'closing' ? STRINGS.statusClosing : STRINGS.statusOpen(formatClock(DAY_CLOSE_MINUTE))}
-    </div>
-  );
-}
-
 /**
- * Bottom of the screen: status pill and the round Menu button (bottom-centre). While a piece is
+ * Bottom-left of the screen: the round Menu button. While a piece is
  * being placed the Menu is hidden (the controls float by the ghost). Hidden at night and while
  * the day report is open.
  */
@@ -34,7 +13,6 @@ export function ActionBar() {
   const placing = ghost.value !== null;
   return (
     <div class="bottom-bar">
-      <StatusPill />
       {!placing && (
         <div class="menu-row">
           <button

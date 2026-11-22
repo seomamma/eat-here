@@ -182,7 +182,7 @@
 - Portrait: **Menu button bottom-left**; **status badge (Open/Closing/Night) top-left**; to its right **money + "Day X" + time**; the "EAT HERE!" title card is removed from the in-game HUD (it stays on the title screen). Fame bar stays below. Landscape follows the same order in one top row.
 
 **Acceptance criteria**
-- [ ] Layout as described in portrait 390×844 and 360×740; landscape tidy; nothing overlaps the room more than before; money breakdown still opens from the money card.
+- [x] Layout as described in portrait 390×844 and 360×740; landscape tidy; nothing overlaps the room more than before; money breakdown still opens from the money card.
 
 ## Phase B — Make it ours (order agreed after MVP sign-off)
 

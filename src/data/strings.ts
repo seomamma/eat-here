@@ -59,8 +59,7 @@ export const STRINGS = {
     dishLevel: (dish: string, level: number) => `${dish} Lv.${level}`,
   },
   weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  hudDayLine: (day: number, weekday: string, time: string) =>
-    `Day ${day} \u00b7 ${weekday} \u00b7 ${time}`,
+  hudDayLine: (day: number, weekday: string) => `Day ${day} \u00b7 ${weekday}`,
   hudNight: 'Night',
   build: {
     doneButton: 'Done',
@@ -133,10 +132,12 @@ export const STRINGS = {
   gift: {
     received: (guest: string, ingredient: string) => `${guest} left you a gift: ${ingredient}!`,
   },
-  statusOpen: (closesAt: string) => `Open \u00b7 closes ${closesAt}`,
+  statusOpen: 'Open',
+  statusClosesAt: (closesAt: string) => `closes ${closesAt}`,
   statusClosing: 'Closing\u2026',
   statusNight: 'Night',
-  pausedWhileBuilding: 'Paused while building',
+  statusPaused: 'Paused',
+  statusPausedSub: 'building',
   night: { day: (day: number) => `Day ${day}` },
   report: {
     title: (day: number) => `Day ${day} closed`,

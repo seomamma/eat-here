@@ -1,7 +1,8 @@
+import { DAY_CLOSE_MINUTE } from '../../data/balance';
 import { STRINGS } from '../../data/strings';
-import { formatHour, weekdayIndex } from '../../sim/time';
+import { formatClock, formatHour, weekdayIndex } from '../../sim/time';
 import { RANKS, rankDef } from '../../data/ranks';
-import { todayOpen } from '../build';
+import { buildMode, todayOpen } from '../build';
 import { day, fame, minuteOfDay, money, phase, rank } from '../store';
 import { Card } from './Card';
 import { MoneyAmount } from './MoneyAmount';
@@ -69,23 +70,48 @@ function FameBar() {
   );
 }
 
-/** Top bar: title card and the money card (saffron accent bumps whenever money changes). */
+/** Status badge: Open (with closing time) / Closing / Night; "Paused" while building. */
+function StatusBadge() {
+  const p = phase.value;
+  let key: string;
+  let label: string;
+  let sub: string | null = null;
+  if (buildMode.value) {
+    key = 'paused';
+    label = STRINGS.statusPaused;
+    sub = STRINGS.statusPausedSub;
+  } else if (p === 'night') {
+    key = 'night';
+    label = STRINGS.statusNight;
+  } else if (p === 'open') {
+    key = 'open';
+    label = STRINGS.statusOpen;
+    sub = STRINGS.statusClosesAt(formatClock(DAY_CLOSE_MINUTE));
+  } else {
+    key = 'closing';
+    label = STRINGS.statusClosing;
+  }
+  return (
+    <Card accent={key === 'open' ? 'basil' : 'saffron'} class="status-card">
+      <div class="status-badge" role="status">
+        <span class="status-label">
+          <span class={`status-dot status-dot--${key}`} aria-hidden="true" />
+          {label}
+        </span>
+        {sub && <span class="status-sub">{sub}</span>}
+      </div>
+    </Card>
+  );
+}
+
+/** Top bar: status badge, money/day/time card (saffron bump on money change), fame bar. */
 export function Hud() {
   const amount = money.value;
+  const night = phase.value === 'night';
   return (
     <div class="top-bar">
-      <Card accent="tomato">
-        <h1 class="card-title">{STRINGS.gameTitle}</h1>
-        <p class="card-subtitle">
-          <TimeIcon night={phase.value === 'night'} />
-          {STRINGS.hudDayLine(
-            day.value,
-            STRINGS.weekdays[weekdayIndex(day.value)] ?? '',
-            phase.value === 'night' ? STRINGS.hudNight : formatHour(minuteOfDay.value),
-          )}
-        </p>
-      </Card>
-      <Card accent="saffron">
+      <StatusBadge />
+      <Card accent="saffron" class="info-card">
         <button
           type="button"
           class="money money-btn"
@@ -98,6 +124,15 @@ export function Hud() {
           <CoinIcon />
           <MoneyAmount value={amount} />
         </button>
+        <p class="info-line">
+          <span>
+            {STRINGS.hudDayLine(day.value, STRINGS.weekdays[weekdayIndex(day.value)] ?? '')}
+          </span>
+          <span class="info-time">
+            <TimeIcon night={night} />
+            {night ? STRINGS.hudNight : formatHour(minuteOfDay.value)}
+          </span>
+        </p>
       </Card>
       <Card accent="saffron" class="fame-card">
         <FameBar />
