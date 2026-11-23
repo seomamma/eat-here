@@ -19,6 +19,31 @@
     }
    }
   },
+  "chair_high": {
+   "kind": "prop",
+   "w": 32,
+   "h": 35,
+   "pivot": [
+    16,
+    19
+   ],
+   "anims": {
+    "still_back": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "chair_high_still_back_0"
+     ]
+    },
+    "still_front": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "chair_high_still_front_0"
+     ]
+    }
+   }
+  },
   "chair_wood": {
    "kind": "prop",
    "w": 32,
@@ -259,6 +284,100 @@
     }
    }
   },
+  "dog": {
+   "kind": "critter",
+   "w": 14,
+   "h": 10,
+   "pivot": [
+    7,
+    9
+   ],
+   "anims": {
+    "idle_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "dog_idle_back_0",
+      "dog_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "dog_idle_front_0",
+      "dog_idle_front_1"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "dog_walk_back_0",
+      "dog_walk_back_1",
+      "dog_walk_back_2",
+      "dog_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "dog_walk_front_0",
+      "dog_walk_front_1",
+      "dog_walk_front_2",
+      "dog_walk_front_3"
+     ]
+    }
+   }
+  },
+  "dog1": {
+   "kind": "critter",
+   "w": 14,
+   "h": 10,
+   "pivot": [
+    7,
+    9
+   ],
+   "anims": {
+    "idle_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "dog1_idle_back_0",
+      "dog1_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "dog1_idle_front_0",
+      "dog1_idle_front_1"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "dog1_walk_back_0",
+      "dog1_walk_back_1",
+      "dog1_walk_back_2",
+      "dog1_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "dog1_walk_front_0",
+      "dog1_walk_front_1",
+      "dog1_walk_front_2",
+      "dog1_walk_front_3"
+     ]
+    }
+   }
+  },
   "door_frame": {
    "kind": "prop",
    "w": 16,
@@ -345,6 +464,24 @@
      "loop": true,
      "frames": [
       "emote_heart_still_none_0"
+     ]
+    }
+   }
+  },
+  "emote_heartbroken": {
+   "kind": "emote",
+   "w": 16,
+   "h": 16,
+   "pivot": [
+    8,
+    15
+   ],
+   "anims": {
+    "still_none": {
+     "fps": 1,
+     "loop": true,
+     "frames": [
+      "emote_heartbroken_still_none_0"
      ]
     }
    }
@@ -861,6 +998,285 @@
       "guest3_walk_front_1",
       "guest3_walk_front_2",
       "guest3_walk_front_3"
+     ]
+    }
+   }
+  },
+  "kid": {
+   "kind": "kid",
+   "w": 12,
+   "h": 18,
+   "pivot": [
+    6,
+    17
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_eat_back_0",
+      "kid_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_eat_front_0",
+      "kid_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid_hand_back_0",
+      "kid_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid_hand_front_0",
+      "kid_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_idle_back_0",
+      "kid_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_idle_front_0",
+      "kid_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid_walk_back_0",
+      "kid_walk_back_1",
+      "kid_walk_back_2",
+      "kid_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid_walk_front_0",
+      "kid_walk_front_1",
+      "kid_walk_front_2",
+      "kid_walk_front_3"
+     ]
+    }
+   }
+  },
+  "kid1": {
+   "kind": "kid",
+   "w": 12,
+   "h": 18,
+   "pivot": [
+    6,
+    17
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_eat_back_0",
+      "kid1_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_eat_front_0",
+      "kid1_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid1_hand_back_0",
+      "kid1_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid1_hand_front_0",
+      "kid1_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_idle_back_0",
+      "kid1_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_idle_front_0",
+      "kid1_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid1_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid1_walk_back_0",
+      "kid1_walk_back_1",
+      "kid1_walk_back_2",
+      "kid1_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid1_walk_front_0",
+      "kid1_walk_front_1",
+      "kid1_walk_front_2",
+      "kid1_walk_front_3"
+     ]
+    }
+   }
+  },
+  "kid2": {
+   "kind": "kid",
+   "w": 12,
+   "h": 18,
+   "pivot": [
+    6,
+    17
+   ],
+   "anims": {
+    "eat_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_eat_back_0",
+      "kid2_eat_back_1"
+     ]
+    },
+    "eat_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_eat_front_0",
+      "kid2_eat_front_1"
+     ]
+    },
+    "hand_back": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid2_hand_back_0",
+      "kid2_hand_back_1"
+     ]
+    },
+    "hand_front": {
+     "fps": 3,
+     "loop": true,
+     "frames": [
+      "kid2_hand_front_0",
+      "kid2_hand_front_1"
+     ]
+    },
+    "idle_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_idle_back_0",
+      "kid2_idle_back_1"
+     ]
+    },
+    "idle_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_idle_front_0",
+      "kid2_idle_front_1"
+     ]
+    },
+    "sit_back": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_sit_back_0"
+     ]
+    },
+    "sit_front": {
+     "fps": 2,
+     "loop": true,
+     "frames": [
+      "kid2_sit_front_0"
+     ]
+    },
+    "walk_back": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid2_walk_back_0",
+      "kid2_walk_back_1",
+      "kid2_walk_back_2",
+      "kid2_walk_back_3"
+     ]
+    },
+    "walk_front": {
+     "fps": 8,
+     "loop": true,
+     "frames": [
+      "kid2_walk_front_0",
+      "kid2_walk_front_1",
+      "kid2_walk_front_2",
+      "kid2_walk_front_3"
      ]
     }
    }

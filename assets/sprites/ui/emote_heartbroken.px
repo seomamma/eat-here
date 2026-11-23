@@ -1,0 +1,21 @@
+sprite emote_heartbroken 16x16 pivot 8,15 kind emote
+
+anim still none fps 1
+frame
+..kkkkkkkkkkkk..
+.khhhhhhhhhhhhk.
+khhhhhhhhhhhhhhk
+khhhhmmkhmmhhhhk
+khhhmnmmkmmmhhhk
+khhhmmmkmmmmhhhk
+khhhhmmmkmmhhhhk
+khhhhhmkmmhhhhhk
+khhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhk
+khhhhhhhhhhhhhhk
+.khhhhhhhhhhhhk.
+..kkkkkhhkkkkk..
+......khhk......
+......khk.......
+.......k........
+

@@ -22,7 +22,14 @@ import {
 } from './happiness';
 import { isChairUsable } from './build';
 import { requestOrder } from './jobs';
-import { assignSeats, kidMenu, liveMembers, mayUseChair, pruneParties, seatGroups } from './parties';
+import {
+  assignSeats,
+  kidMenu,
+  liveMembers,
+  mayUseChair,
+  pruneParties,
+  seatGroups,
+} from './parties';
 import { tickCampaign } from './campaigns';
 import { departTail, leaveSide } from '../street';
 import { rollGift } from './market';
@@ -162,9 +169,14 @@ function tryClaimPartySeats(ctx: GuestContext, members: readonly Guest[]): boole
     if (!seats) continue;
     const paths = members.map((m, i) => {
       const seat = seats[i] as Furniture;
-      return findPath(ctx.walk, m.path[0] ?? currentTile(m), { x: seat.x, y: seat.y }, {
-        allowGoalBlocked: true,
-      });
+      return findPath(
+        ctx.walk,
+        m.path[0] ?? currentTile(m),
+        { x: seat.x, y: seat.y },
+        {
+          allowGoalBlocked: true,
+        },
+      );
     });
     if (paths.some((p) => p === null)) continue;
     members.forEach((m, i) => {
@@ -373,7 +385,8 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
       // A party waits together: the first one waiting drives the claim and the patience.
       const party = g.partyId ? liveMembers(state, g.partyId) : [];
       const together =
-        party.length > 1 && party.every((m) => m.phase === 'arriving' || m.phase === 'waitingForSeat');
+        party.length > 1 &&
+        party.every((m) => m.phase === 'arriving' || m.phase === 'waitingForSeat');
       const driver = party.find((m) => m.phase === 'waitingForSeat');
       if (together && driver !== g) {
         if (!g.waitSpot && arrived) takeWaitSpot(ctx, g);

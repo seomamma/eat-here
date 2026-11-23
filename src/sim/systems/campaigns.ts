@@ -46,7 +46,10 @@ export function validateStartCampaign(state: GameState, id: CampaignId): Campaig
 }
 
 /** The next rush start after "now": today's if still to come, else tomorrow's first. */
-function nextRushStart(state: GameState, starts: readonly number[]): { day: number; minute: number } {
+function nextRushStart(
+  state: GameState,
+  starts: readonly number[],
+): { day: number; minute: number } {
   const { day, minuteOfDay } = state.clock;
   const today = starts.find((m) => m > minuteOfDay);
   if (today !== undefined) return { day, minute: today };

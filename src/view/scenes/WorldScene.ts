@@ -26,6 +26,7 @@ import {
 import { wallSegmentAt } from '../wallHit';
 import { selectGuest, selectedGuestId } from '../../ui/selection';
 import type { ObjectDrag } from '../CameraController';
+import { StreetRenderer } from '../StreetRenderer';
 import { WorldRenderer } from '../WorldRenderer';
 
 export class WorldScene extends Phaser.Scene {
@@ -33,6 +34,7 @@ export class WorldScene extends Phaser.Scene {
   private world!: WorldRenderer;
   private build!: BuildOverlay;
   private surroundings!: SurroundingsRenderer;
+  private street!: StreetRenderer;
   private camera!: CameraController;
   /** Room growth waiting for the RANK UP modal to close before the camera shows it. */
   private pendingExpansion: { tiles: { x: number; y: number }[]; area: Bounds } | null = null;
@@ -60,6 +62,7 @@ export class WorldScene extends Phaser.Scene {
     this.world = new WorldRenderer(this);
     this.world.sync(state);
     this.world.syncCharacters(state, this.sim.alpha);
+    this.street = new StreetRenderer(this, this.world, state.seed);
     this.build = new BuildOverlay(this);
     const unsubs = [
       this.sim.events.on('guestEmote', (e) => this.world.showEmote(e.guestId, e.emote)),
@@ -228,6 +231,7 @@ export class WorldScene extends Phaser.Scene {
     this.world.sync(this.sim.state);
     this.surroundings.sync(this.sim.state.room);
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
+    this.street.update(this.sim.isPaused ? 0 : (delta / 1000) * this.sim.speed, this.sim.state);
     this.world.syncSelection(selectedGuestId.value);
     const selected = this.sim.state.furniture.find((f) => f.id === selectedPiece.value) ?? null;
     this.build.sync(this.sim.state, buildMode.value, g, selected, paintStroke.value);

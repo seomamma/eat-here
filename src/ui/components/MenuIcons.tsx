@@ -26,7 +26,25 @@ export function PizzaSliceIcon() {
   );
 }
 
-export type MenuIconId = 'shop' | 'market' | 'recipes' | 'build' | 'staff' | 'guests' | 'settings';
+/** Megaphone: a cone with a handle and three sound lines (promotion). */
+export function Megaphone() {
+  return (
+    <>
+      <path d="M5 13h6l11-6v18l-11-6H5z" fill="var(--saffron)" {...S} />
+      <path d="M8 19l2 7h4l-2-7" fill="var(--crust)" {...S} stroke-width="2" />
+      <path
+        d="M25 11c2 2 2 8 0 10M28 8c3 4 3 12 0 16"
+        fill="none"
+        stroke="var(--tomato)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+    </>
+  );
+}
+
+export type MenuIconId =
+  'shop' | 'market' | 'recipes' | 'build' | 'staff' | 'guests' | 'promote' | 'settings';
 
 /** Simple 32x32 icons for the hub cards. */
 export function MenuCardIcon(props: { id: MenuIconId }) {
@@ -88,6 +106,8 @@ function shape(id: MenuIconId) {
           />
         </>
       );
+    case 'promote':
+      return <Megaphone />;
     case 'settings':
       return (
         <>

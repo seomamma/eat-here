@@ -81,6 +81,8 @@ export const EMOTE_TEX = {
   love: 'emote_love',
   slow: 'emote_slow',
   heart: 'emote_heart',
+  /** A dog walker finds no place for the dog (M12c). */
+  brokenHeart: 'emote_heartbroken',
 } as const;
 /** Bouncing arrow above the selected guest (11x7). */
 export const MARKER_TEX = 'select_marker';
@@ -375,6 +377,7 @@ const EMOTE_COLORS: Record<EmoteKind, { bg: string; fg: string }> = {
   tasty: { bg: C.cheese3, fg: C.outline },
   love: { bg: C.cream1, fg: C.tomato2 },
   heart: { bg: C.tomato2, fg: C.cream1 },
+  brokenHeart: { bg: C.cream1, fg: C.tomato2 },
   slow: { bg: C.cool3, fg: C.cool1 },
 };
 
@@ -436,8 +439,8 @@ function emoteBubble(kind: EmoteKind): Raster {
       r.set(x, y, fg);
     for (const x of [5, 6, 7, 8, 9, 10]) r.set(x, 9, fg);
     r.set(4, 10, bg);
-  } else if (kind === 'love' || kind === 'heart') {
-    // Heart.
+  } else if (kind === 'love' || kind === 'heart' || kind === 'brokenHeart') {
+    // Heart (a crack down the middle for the broken one).
     for (const [y, x0, x1] of [
       [3, 5, 6],
       [3, 9, 10],
@@ -448,6 +451,16 @@ function emoteBubble(kind: EmoteKind): Raster {
       [8, 7, 8],
     ] as const)
       for (let x = x0; x <= x1; x++) r.set(x, y, fg);
+    if (kind === 'brokenHeart') {
+      for (const [x, y] of [
+        [7, 3],
+        [8, 4],
+        [7, 5],
+        [8, 6],
+        [7, 7],
+      ] as const)
+        r.set(x, y, bg);
+    }
   } else if (kind === 'slow') {
     // "zz": a big and a small z.
     for (const [y, x0, x1] of [
@@ -1521,6 +1534,7 @@ export function generatePlaceholderTextures(textures: Phaser.Textures.TextureMan
   upload(textures, EMOTE_TEX.love, emoteBubble('love'));
   upload(textures, EMOTE_TEX.slow, emoteBubble('slow'));
   upload(textures, EMOTE_TEX.heart, emoteBubble('heart'));
+  upload(textures, EMOTE_TEX.brokenHeart, emoteBubble('brokenHeart'));
   upload(textures, MARKER_TEX, selectMarker());
   upload(textures, COIN_TEX, coin());
   upload(textures, SPARKLE_TEX.large, sparkle(5));

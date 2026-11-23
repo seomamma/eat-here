@@ -56,6 +56,8 @@ export const paintStyle = signal<PaintTarget | null>(null);
 export const paintStroke = signal<PaintStroke | null>(null);
 export const recipesOpen = signal(false);
 export const guestsOpen = signal(false);
+/** The Promote panel (advertising campaigns, M12c). */
+export const promoteOpen = signal(false);
 /** The Menu hub (grid of shortcut cards) and the money breakdown popover. */
 export const menuOpen = signal(false);
 export const todayOpen = signal(false);
@@ -70,13 +72,15 @@ export interface ScreenRect {
 export const ghostRect = signal<ScreenRect | null>(null);
 
 /** Opens a panel from the Menu: closes the hub first. */
-export type MenuTarget = 'shop' | 'market' | 'recipes' | 'guests' | 'build' | 'settings';
+export type MenuTarget =
+  'shop' | 'market' | 'recipes' | 'guests' | 'promote' | 'build' | 'settings';
 export function openFromMenu(target: MenuTarget): void {
   menuOpen.value = false;
   if (target === 'shop') openShop('furniture');
   else if (target === 'market') openShop('market');
   else if (target === 'recipes') openRecipes();
   else if (target === 'guests') openGuests();
+  else if (target === 'promote') openPromote();
   else if (target === 'settings') settingsOpen.value = true;
   else enterBuild();
 }
@@ -86,19 +90,29 @@ export function openShop(tab: 'furniture' | 'market' = shopTab.peek()): void {
   shopTab.value = tab;
   recipesOpen.value = false;
   guestsOpen.value = false;
+  promoteOpen.value = false;
   shopOpen.value = true;
 }
 
 export function openRecipes(): void {
   shopOpen.value = false;
   guestsOpen.value = false;
+  promoteOpen.value = false;
   recipesOpen.value = true;
 }
 
 export function openGuests(): void {
   shopOpen.value = false;
   recipesOpen.value = false;
+  promoteOpen.value = false;
   guestsOpen.value = true;
+}
+
+export function openPromote(): void {
+  shopOpen.value = false;
+  recipesOpen.value = false;
+  guestsOpen.value = false;
+  promoteOpen.value = true;
 }
 
 /** Pause reason held while build mode is on (placing or moving): time stands still. */
@@ -113,6 +127,7 @@ export const anyMenuOpen = computed(
     shopOpen.value ||
     recipesOpen.value ||
     guestsOpen.value ||
+    promoteOpen.value ||
     settingsOpen.value ||
     todayOpen.value,
 );
@@ -127,6 +142,7 @@ export function bindBuild(sim: Game): void {
       exitBuild();
       menuOpen.value = false;
       guestsOpen.value = false;
+      promoteOpen.value = false;
       todayOpen.value = false;
       settingsOpen.value = false;
     }

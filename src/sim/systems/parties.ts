@@ -112,7 +112,8 @@ export function seatGroups(state: Pick<GameState, 'furniture'>): Furniture[][] {
   const tables = state.furniture.filter((f) => FURNITURE[f.defId].kind === 'table');
   const owner = new Map<string, number>();
   tables.forEach((t, i) => {
-    for (const tile of footprintTiles(t.defId, t.x, t.y, t.rot)) owner.set(`${tile.x},${tile.y}`, i);
+    for (const tile of footprintTiles(t.defId, t.x, t.y, t.rot))
+      owner.set(`${tile.x},${tile.y}`, i);
   });
   // Union touching tables.
   const parent = tables.map((_, i) => i);

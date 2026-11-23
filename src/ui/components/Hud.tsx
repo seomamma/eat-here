@@ -3,8 +3,9 @@ import { STRINGS } from '../../data/strings';
 import { formatClock, formatHour, weekdayIndex } from '../../sim/time';
 import { RANKS, rankDef } from '../../data/ranks';
 import { anyMenuOpen, buildMode, todayOpen } from '../build';
-import { day, fame, minuteOfDay, money, phase, rank } from '../store';
+import { campaign, day, fame, minuteOfDay, money, phase, rank, rushActive } from '../store';
 import { Card } from './Card';
+import { Megaphone } from './MenuIcons';
 import { MoneyAmount } from './MoneyAmount';
 
 function CoinIcon() {
@@ -84,21 +85,29 @@ function StatusBadge() {
     key = 'night';
     label = STRINGS.statusNight;
   } else if (p === 'open') {
-    key = 'open';
-    label = STRINGS.statusOpen;
+    key = rushActive.value ? 'rush' : 'open';
+    label = rushActive.value ? STRINGS.statusRush : STRINGS.statusOpen;
     sub = STRINGS.statusClosesAt(formatClock(DAY_CLOSE_MINUTE));
   } else {
     key = 'closing';
     label = STRINGS.statusClosing;
   }
   return (
-    <Card accent={key === 'open' ? 'basil' : 'saffron'} class="status-card">
+    <Card accent={key === 'open' || key === 'rush' ? 'basil' : 'saffron'} class="status-card">
       <div class="status-badge" role="status">
         <span class="status-label">
           <span class={`status-dot status-dot--${key}`} aria-hidden="true" />
           {label}
         </span>
         {sub && <span class="status-sub">{sub}</span>}
+        {campaign.value && (
+          <span class="status-chip">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <Megaphone />
+            </svg>
+            {STRINGS.promote.activeChip(STRINGS.promote.campaigns[campaign.value].name)}
+          </span>
+        )}
       </div>
     </Card>
   );

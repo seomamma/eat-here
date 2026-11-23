@@ -10,11 +10,13 @@ import type { DayPhase } from '../sim/time';
 import type { GuestPhase } from '../sim/characters';
 import { isGuest } from '../sim/characters';
 import type { HappinessEntry } from '../sim/systems/happiness';
+import type { CampaignId } from '../data/campaigns';
 import type { MomentCard, MomentReward } from '../data/moments';
 import { REGULAR_IDS, regularDef, type RegularId } from '../data/regulars';
 import { FURNITURE } from '../data/furniture';
 import { STRINGS } from '../data/strings';
 import { unlocksAtRank } from '../data/shop';
+import { isRushActive } from '../sim/systems/campaigns';
 import { computeGoals, type Goal } from '../sim/systems/goals';
 import { nextVisitDay } from '../sim/systems/regulars';
 import { selectGuest, selectedGuestId } from './selection';
@@ -28,6 +30,10 @@ export const phase = signal<DayPhase>('open');
 export const ledger = signal<LedgerEntry[]>([]);
 /** Stats of the day that just ended; set while the report modal is shown. */
 export const report = signal<{ day: number; stats: DayStats } | null>(null);
+
+/** The running ad campaign (null when none) and whether a radio rush is on right now (M12c). */
+export const campaign = signal<CampaignId | null>(null);
+export const rushActive = signal(false);
 
 export const fame = signal(0);
 export const rank = signal(1);
@@ -156,6 +162,19 @@ export function bindStore(sim: Game): void {
   };
   syncLedger();
   sim.events.on('dayStarted', syncLedger);
+  const syncCampaign = () => {
+    const id = sim.state.campaign?.id ?? null;
+    if (campaign.peek() !== id) campaign.value = id;
+    const rush = isRushActive(sim.state);
+    if (rushActive.peek() !== rush) rushActive.value = rush;
+  };
+  syncCampaign();
+  for (const ev of ['campaignStarted', 'campaignEnded', 'rushStarted', 'clockChanged'] as const) {
+    sim.events.on(ev, syncCampaign);
+  }
+  sim.events.on('rushStarted', () =>
+    pushToast({ kind: 'notice', text: STRINGS.promote.rushNotice }),
+  );
   const syncPantry = () => {
     inventory.value = { ...sim.state.inventory };
     market.value = structuredClone(sim.state.market);

@@ -20,8 +20,6 @@ import {
   MARKER_TEX,
   OVEN_EXTRA_TEX,
   WOODPILE_H,
-  CHAR_H,
-  CHAR_W,
   ORDER_BUBBLE_TEX,
   OVEN_TEX,
   SPARKLE_TEX,
@@ -78,6 +76,8 @@ function animKey(entity: string, anim: string, facing: CharFacing): string {
 /** Seated guests sit just in front of their chair (same tile) and a bit higher than standing. */
 const DEPTH_SEATED_BIAS = 0.25;
 const SEATED_LIFT_PX = 2;
+/** A kid on a high chair sits this much higher (px). */
+const HIGH_CHAIR_LIFT_PX = 3;
 /** Grid step of a screen facing (a seated guest looks at the table this way). */
 const STEP_OF_DIR: Record<IsoDir, { x: number; y: number }> = {
   dr: { x: 1, y: 0 },
@@ -91,12 +91,17 @@ function entityOf(c: Character): string {
   if (isStaff(c)) return c.role;
   if (isGuest(c)) {
     if (c.look) return c.look;
-    return c.variant % GUEST_VARIANTS === 0 ? 'guest' : `guest${c.variant % GUEST_VARIANTS}`;
+    if (c.kid) return KID_ENTITIES[c.variant % KID_ENTITIES.length] as string;
+    return guestEntity(c.variant);
   }
   return 'guest';
 }
-/** Palette-swapped guest bodies (guest, guest1..guest3). */
+/** Palette-swapped guest bodies (guest, guest1..guest3) and kids (kid, kid1, kid2). */
 const GUEST_VARIANTS = 4;
+const KID_ENTITIES = ['kid', 'kid1', 'kid2'] as const;
+export function guestEntity(variant: number): string {
+  return variant % GUEST_VARIANTS === 0 ? 'guest' : `guest${variant % GUEST_VARIANTS}`;
+}
 
 /** Chef at the oven: share of the cook time spent sliding the pizza in / taking it out. */
 const BAKE_SHARE = 0.25;
@@ -109,11 +114,12 @@ const STOKE_PERIOD_TICKS = 50;
 const EMOTE_POP_MS = 180;
 const EMOTE_HOLD_MS = 1100;
 const EMOTE_FADE_MS = 400;
-const EMOTE_ABOVE_PX = 30;
+/** Gap between the top of a sprite and the bottom of its bubble (px). */
+const EMOTE_HEAD_GAP_PX = 6;
 /** The zzz bubble sits beside the persistent hand/dish bubble instead of covering it. */
 const EMOTE_SLOW_SIDE_PX = 18;
 /** Selection marker: gap above the head and bob period. */
-const MARKER_ABOVE_PX = 25;
+const MARKER_ABOVE_PX = 1;
 const MARKER_BOB_MS = 300;
 /** Extra touch margin (art px) around a guest sprite for tap selection. */
 const TAP_PAD_PX = 3;
@@ -190,7 +196,7 @@ export class WorldRenderer {
   /** One Phaser animation per atlas character entity and facing (from the anim manifest). */
   private createAnimations(): void {
     for (const [entity, e] of Object.entries(artEntities(this.scene))) {
-      if (e.kind !== 'character') continue;
+      if (e.kind !== 'character' && e.kind !== 'kid' && e.kind !== 'critter') continue;
       for (const [name, a] of Object.entries(e.anims)) {
         const m = /^(.*)_(front|back)$/.exec(name);
         if (!m) continue;
@@ -223,6 +229,13 @@ export class WorldRenderer {
         return 'sit';
     }
     return 'idle';
+  }
+
+  /** Extra lift of a kid sitting on a high chair (px). */
+  private highChairLift(state: GameState, c: Character): number {
+    if (!isGuest(c) || !c.kid || !c.seatId) return 0;
+    const chair = state.furniture.find((f) => f.id === c.seatId);
+    return chair && FURNITURE[chair.defId].kidsOnly ? HIGH_CHAIR_LIFT_PX : 0;
   }
 
   /** Chef baking: slide the pizza in, stoke now and then, take it out at the end. */
@@ -355,11 +368,9 @@ export class WorldRenderer {
       const view = DIR_VIEW[c.dir];
       const anim = this.animOf(c);
       const seated = anim === 'sit' || anim === 'eat' || anim === 'hand';
+      const lift = seated ? SEATED_LIFT_PX + this.highChairLift(state, c) : 0;
       sprite
-        .setPosition(
-          Math.round(o.x),
-          Math.round(o.y) + 1 - (seated ? SEATED_LIFT_PX : 0) - this.hopOffset(c.id),
-        ) // feet row sits on the centre pixel
+        .setPosition(Math.round(o.x), Math.round(o.y) + 1 - lift - this.hopOffset(c.id)) // feet row sits on the centre pixel
         .setFlipX(view.flip)
         .setDepth(depthKey(p.x, p.y) + (seated ? DEPTH_SEATED_BIAS : 0));
       const entity = entityOf(c);
@@ -400,7 +411,10 @@ export class WorldRenderer {
     this.marker ??= this.scene.add.image(0, 0, MARKER_TEX).setOrigin(0.5, 1);
     const bob = Math.floor(this.scene.time.now / MARKER_BOB_MS) % 2;
     this.marker
-      .setPosition(Math.round(sprite.x), Math.round(sprite.y) - MARKER_ABOVE_PX - bob)
+      .setPosition(
+        Math.round(sprite.x),
+        Math.round(sprite.y) - sprite.height - MARKER_ABOVE_PX - bob,
+      )
       .setDepth(DEPTH_OVERLAY + 1)
       .setVisible(true);
   }
@@ -412,8 +426,8 @@ export class WorldRenderer {
       if (!isGuest(c)) continue;
       const sprite = this.characters.get(c.id);
       if (!sprite) continue;
-      const inX = Math.abs(wx - sprite.x) <= CHAR_W / 2 + TAP_PAD_PX;
-      const inY = wy >= sprite.y - CHAR_H - TAP_PAD_PX && wy <= sprite.y + TAP_PAD_PX;
+      const inX = Math.abs(wx - sprite.x) <= sprite.width / 2 + TAP_PAD_PX;
+      const inY = wy >= sprite.y - sprite.height - TAP_PAD_PX && wy <= sprite.y + TAP_PAD_PX;
       if (inX && inY && (!best || sprite.depth > best.depth)) {
         best = { id: c.id, depth: sprite.depth };
       }
@@ -443,7 +457,7 @@ export class WorldRenderer {
       }
       img
         .setTexture(tex)
-        .setPosition(Math.round(sprite.x), Math.round(sprite.y) - EMOTE_ABOVE_PX)
+        .setPosition(Math.round(sprite.x), Math.round(sprite.y) - sprite.height - EMOTE_HEAD_GAP_PX)
         .setDepth(DEPTH_OVERLAY);
     }
     for (const [id, img] of this.bubbles) {
@@ -526,12 +540,21 @@ export class WorldRenderer {
     if (emote === 'hand') return; // shown as a state-driven bubble (syncBubbles)
     const target = this.characters.get(guestId);
     if (!target) return;
-    const img = this.scene.add.image(0, 0, EMOTE_TEX[emote]).setOrigin(0.5, 1);
-    const side = emote === 'slow' ? EMOTE_SLOW_SIDE_PX : 0;
+    this.emoteOn(target, EMOTE_TEX[emote], emote === 'slow' ? EMOTE_SLOW_SIDE_PX : 0);
+  }
+
+  /**
+   * Pops an emote bubble above any sprite (a guest, or a passer-by on the street): pops up,
+   * holds, fades, following the sprite while it exists.
+   */
+  emoteOn(target: Phaser.GameObjects.Sprite, tex: string, side = 0): void {
+    const img = this.scene.add.image(0, 0, tex).setOrigin(0.5, 1);
     const reduced = prefersReducedMotion();
     const born = this.scene.time.now;
     let lastX = target.x;
     let lastY = target.y;
+    // Above the head: the bubble sits a little over the top of the sprite (kids are shorter).
+    const above = target.height + EMOTE_HEAD_GAP_PX;
     this.effects.push({
       born,
       update: (now) => {
@@ -557,7 +580,7 @@ export class WorldRenderer {
           alpha = 1 - k;
         }
         img
-          .setPosition(Math.round(lastX) + side, Math.round(lastY) - EMOTE_ABOVE_PX + dy)
+          .setPosition(Math.round(lastX) + side, Math.round(lastY) - above + dy)
           .setScale(sx, sy)
           .setAlpha(Math.max(0, alpha))
           .setDepth(DEPTH_OVERLAY);

@@ -13,6 +13,7 @@ import { Toasts } from './components/Toasts';
 import { RankUpModal } from './components/RankUpModal';
 import { MomentModal } from './components/MomentModal';
 import { GuestsPanel } from './components/GuestsPanel';
+import { PromotePanel } from './components/PromotePanel';
 import { ReportModal } from './components/ReportModal';
 import { TitleScreen } from './components/TitleScreen';
 import { screen } from './store';
@@ -33,6 +34,7 @@ export function App() {
       <ShopPanel />
       <RecipePanel />
       <GuestsPanel />
+      <PromotePanel />
       <Toasts />
       <ReportModal />
       <RankUpModal />

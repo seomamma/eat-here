@@ -349,8 +349,7 @@ export function validateState(s: Record<string, unknown>): string | null {
     return 'bad:counters';
   if (!Array.isArray(s.parties)) return 'bad:parties';
   for (const p of s.parties as unknown[]) {
-    if (!isObj(p) || typeof p.id !== 'string' || !Array.isArray(p.memberIds))
-      return 'bad:parties';
+    if (!isObj(p) || typeof p.id !== 'string' || !Array.isArray(p.memberIds)) return 'bad:parties';
   }
   if (s.campaign !== null) {
     const c = s.campaign;

@@ -351,7 +351,7 @@ describe('sellFurniture', () => {
     const { state } = g;
     const vend = put(state, 'vending_machine', 7, 5);
     state.characters.push({
-      ...(spawnSolo(state)),
+      ...spawnSolo(state),
       errand: { kind: 'vending', furnitureId: vend.id, stage: 'walking', timer: 0 },
     });
     expect(validateSell(state, vend.id)).toEqual({ ok: false, reason: 'inUse' });

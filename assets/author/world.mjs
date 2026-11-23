@@ -603,3 +603,4 @@ export function generateWorld() {
   writePx('world/furniture.px', out.join('\n'));
 }
 if (process.argv[1] === new URL(import.meta.url).pathname) generateWorld();
+export { boxes, part, legs, hash };

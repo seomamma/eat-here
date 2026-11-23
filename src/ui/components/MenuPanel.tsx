@@ -13,6 +13,7 @@ const ACTIVE: { id: MenuTarget; label: string; icon: MenuIconId }[] = [
   { id: 'recipes', label: M.recipes, icon: 'recipes' },
   { id: 'build', label: M.build, icon: 'build' },
   { id: 'guests', label: M.guests, icon: 'guests' },
+  { id: 'promote', label: M.promote, icon: 'promote' },
   { id: 'settings', label: M.settings, icon: 'settings' },
 ];
 

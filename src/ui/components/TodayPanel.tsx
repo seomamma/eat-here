@@ -1,3 +1,4 @@
+import type { CampaignId } from '../../data/campaigns';
 import { FURNITURE, type FurnitureDefId } from '../../data/furniture';
 import { INGREDIENTS, type IngredientId } from '../../data/ingredients';
 import { RECIPES, type RecipeId } from '../../data/recipes';
@@ -35,6 +36,8 @@ export function highlightText(e: LedgerEntry): string {
       }
       return FURNITURE[e.label as FurnitureDefId]?.name ?? e.label;
     }
+    case 'ads':
+      return STRINGS.promote.campaigns[e.label as CampaignId]?.name ?? e.label;
     case 'sale':
       return T.sold(FURNITURE[e.label as FurnitureDefId]?.name ?? e.label);
     case 'market':
@@ -108,6 +111,7 @@ export function TodayPanel() {
                 <Row label={T.furniture} value={sum('furniture')} />
                 <Row label={T.market} value={sum('market')} />
                 <Row label={T.upgrades} value={sum('upgrade')} />
+                <Row label={T.ads} value={sum('ads')} />
               </ul>
             </section>
           </div>

@@ -12,6 +12,9 @@ export const OUT_DIR = join(ROOT, 'public/assets');
 export const DIRS = ['front', 'back', 'none'];
 export const KINDS = {
   character: { ws: [16, 24], h: 24 },
+  /** Kids (12x18) and pets: same rules as characters (pivot bottom-centre, feet on the last row). */
+  kid: { w: 12, h: 18 },
+  critter: {},
   floor: { w: 32, h: 16 },
   wall: { w: 16, h: 48 },
   lowwall: { w: 16, h: 12 },
@@ -234,8 +237,9 @@ export function validate(palette, sprites) {
       );
     if (s.px < 0 || s.py < 0 || s.px >= s.w || s.py >= s.h)
       errors.push(`${at}: pivot outside the frame`);
-    if (s.kind === 'character' && (s.px !== s.w / 2 || s.py !== 23))
-      errors.push(`${at}: character pivot must be ${s.w / 2},23`);
+    const walker = s.kind === 'character' || s.kind === 'kid' || s.kind === 'critter';
+    if (walker && (s.px !== s.w / 2 || s.py !== s.h - 1))
+      errors.push(`${at}: ${s.kind} pivot must be ${s.w / 2},${s.h - 1}`);
     if (s.anims.length === 0) errors.push(`${at}: no animations`);
     const animKeys = new Set();
     for (const a of s.anims) {
@@ -264,11 +268,10 @@ export function validate(palette, sprites) {
               errors.push(
                 `${fat}: row ${y} col ${x}: translucent '${c}' only allowed in shadow sprites`,
               );
-            if (s.kind === 'character' && y === s.h - 1) feet = true;
+            if (walker && y === s.h - 1) feet = true;
           });
         });
-        if (s.kind === 'character' && !feet)
-          errors.push(`${fat}: no pixel on the baseline row ${s.h - 1} (feet)`);
+        if (walker && !feet) errors.push(`${fat}: no pixel on the baseline row ${s.h - 1} (feet)`);
       });
     }
   }

@@ -36,7 +36,9 @@ function checkInvariants(g: Game): void {
       for (const y of new Set([Math.floor(c.y), Math.ceil(c.y)])) {
         const chair = g.state.furniture.find((f) => f.x === x && f.y === y);
         const onOwnChair = chair && isGuest(c) && c.seatId === chair.id;
-        expect(y > DOOR_Y || isWalkable(walk, x, y) || onOwnChair, `${c.id} at ${x},${y}`).toBe(true);
+        expect(y > DOOR_Y || isWalkable(walk, x, y) || onOwnChair, `${c.id} at ${x},${y}`).toBe(
+          true,
+        );
       }
     }
   }
