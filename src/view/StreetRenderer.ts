@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { EMOTE_TEX } from './placeholderTextures';
+import { EMOTE_TEX } from './textureKeys';
 import { ART_ATLAS } from './art';
 import { depthKey, tileToScreen } from './iso';
 import { StreetLife, dogPosition, type Passerby, type StreetContext } from './street';

@@ -7,9 +7,9 @@ import { screenToTile, tileRectBounds, tileToScreen, type Bounds } from '../iso'
 import { addedTiles } from '../../sim/systems/expansion';
 import { rankUpsClosed } from '../../ui/store';
 import { installArtAliases, preloadArt } from '../art';
-import { WALL_BACK_RISE, generatePlaceholderTextures } from '../placeholderTextures';
+import { WALL_BACK_RISE } from '../textureKeys';
 import { SurroundingsRenderer } from '../SurroundingsRenderer';
-import { GROUND_BG_COLOR, generateSurroundingsTextures } from '../surroundingsTextures';
+import { GROUND_BG_COLOR } from '../surroundingsArt';
 import {
   buildMode,
   endPaintStroke,
@@ -53,9 +53,7 @@ export class WorldScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(GROUND_BG_COLOR);
-    installArtAliases(this.textures);
-    generatePlaceholderTextures(this.textures);
-    generateSurroundingsTextures(this.textures);
+    installArtAliases(this);
     const state = this.sim.state;
     this.surroundings = new SurroundingsRenderer(this);
     this.surroundings.sync(state.room);
@@ -232,6 +230,7 @@ export class WorldScene extends Phaser.Scene {
     this.world.setHiddenFurniture(g?.placing.kind === 'move' ? g.placing.id : null);
     this.world.sync(this.sim.state);
     this.surroundings.sync(this.sim.state.room);
+    this.surroundings.setNight(this.world.syncNight(this.sim.state.clock.phase === 'night', delta));
     this.world.syncCharacters(this.sim.state, this.sim.alpha);
     this.street.update(this.sim.isPaused ? 0 : (delta / 1000) * this.sim.speed, this.sim.state);
     this.world.syncSelection(selectedGuestId.value);

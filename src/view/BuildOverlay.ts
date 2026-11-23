@@ -5,7 +5,7 @@ import type { PaintStroke } from '../ui/build';
 import { wallQuad } from './wallHit';
 import type { GameState } from '../sim/state';
 import type { Ghost } from '../ui/build';
-import { furnitureTexKey, isMirroredRot } from './placeholderTextures';
+import { furnitureTexKey, isMirroredRot } from './textureKeys';
 import { tileToScreen, ISO_HALF_H, ISO_HALF_W, type Point } from './iso';
 
 /** Above floors but below furniture; the placement tint and ghost sit above everything but UI. */

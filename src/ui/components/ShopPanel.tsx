@@ -4,7 +4,7 @@ import { RECIPES, RECIPE_IDS } from '../../data/recipes';
 import { SHOP_CATEGORIES, shopItemsOf, unlockRank } from '../../data/shop';
 import { STRINGS } from '../../data/strings';
 import { shopCategory, shopOpen, shopTab, startPaintMode, startPlacingNew } from '../build';
-import { furnitureIconUrl } from '../../view/furnitureIcons';
+import { furnitureIconUrl, iconsReady } from '../../view/furnitureIcons';
 import { effectLines } from '../pieceInfo';
 import { dispatch, inventory, market, money, rank } from '../store';
 import { Card } from './Card';
@@ -97,6 +97,7 @@ function shopLines(defId: FurnitureDefId): string[] {
 function FurnitureTab() {
   const S = STRINGS.shop;
   const have = money.value;
+  void iconsReady.value; // re-render once the atlas icons can be made
   const cat = shopCategory.value;
   const items = shopItemsOf(cat);
   return (

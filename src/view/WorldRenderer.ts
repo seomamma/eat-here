@@ -9,28 +9,35 @@ import type { GameState } from '../sim/state';
 import { prefersReducedMotion } from '../platform/motion';
 import { depthKey, tileRectBounds, tileToScreen, type Bounds, type Point } from './iso';
 import { interpolatePosition } from './interpolate';
-import { SPARKLE_FRAME_COUNT, levelTextureKey } from './levelTextures';
 import { floorStyleAt, wallStyleOf } from '../sim/systems/surfaces';
 import { coinRise, squash } from './juice';
 import { ART_ATLAS, artEntities } from './art';
 import {
-  COIN_TEX,
+  ACCENT_FRAMES,
+  COIN_ANIM,
+  COIN_FRAME,
   DISH_TEX,
   EMOTE_TEX,
+  GLOW_TEX,
+  HAS_LEVEL_OVERLAYS,
   MARKER_TEX,
   OVEN_EXTRA_TEX,
   WOODPILE_H,
   ORDER_BUBBLE_TEX,
   OVEN_TEX,
-  SPARKLE_TEX,
   TEX,
   WALL_BACK_RISE,
+  accentTexKey,
+  blinkTexKey,
   floorTexKey,
   furnitureTexKey,
   isMirroredRot,
+  sparkleTex,
+  trimTexKey,
   wallTexKey,
+  BLINK_FRAMES,
   type CharFacing,
-} from './placeholderTextures';
+} from './textureKeys';
 
 /** Floors sit below everything; back walls are never in front of anything. */
 export const DEPTH_FLOOR = -20000;
@@ -56,10 +63,31 @@ const OVEN_WOOD_FROM_LEVEL = 3;
 const OVEN_COPPER_FROM_LEVEL = 5;
 /** The woodpile's feet sit this far below the tile centre (px). */
 const WOODPILE_DROP_PX = Math.floor(WOODPILE_H / 3);
-/** Lv.5 sparkle: time between its two positions. */
-const SPARKLE_BLINK_MS = 650;
-/** Oven flicker period while baking. */
+/** Lv.5 accent: time between its two frames (candle flames, glints). */
+const ACCENT_BLINK_MS = 650;
+/** Oven flicker period while baking, flare period and how long the flare lasts when a pizza goes in or out. */
 const OVEN_FLICKER_MS = 220;
+const OVEN_FLARE_FLICKER_MS = 110;
+const OVEN_FLARE_MS = 900;
+/** Vending machine light blink period. */
+const BLINK_MS = 500;
+/** Night: veil colour/alpha (the old CSS veil), fade time, and where glow images sit above it. */
+const NIGHT_VEIL_COLOR = 0x0e1434;
+const NIGHT_VEIL_ALPHA = 0.68;
+const NIGHT_FADE_MS = 600;
+const DEPTH_NIGHT_VEIL = 2_000_000;
+const DEPTH_NIGHT_GLOW = 2_000_001;
+/** The door opens when someone is within this many tiles and stays open a moment longer. */
+const DOOR_OPEN_RANGE = 1.9;
+const DOOR_HOLD_MS = 450;
+/** Glow image: pivot (tile top corner) inside `glow_floor_lamp`. */
+const FLOOR_LAMP_GLOW_ORIGIN = [20, 48] as const;
+const FLOOR_LAMP_GLOW_SIZE = [40, 64] as const;
+/** Glows are dithered pixel art; this alpha softens them against the night veil. */
+const NIGHT_GLOW_ALPHA = 0.9;
+/** Furniture levels: the trim overlay starts here, the accent overlay (blinking) here. */
+const OVERLAY_TRIM_FROM_LEVEL = 3;
+const OVERLAY_ACCENT_FROM_LEVEL = 5;
 
 /** Front = down-right, back = up-right; the other two directions mirror them. */
 const DIR_VIEW: Record<IsoDir, { facing: CharFacing; flip: boolean }> = {
@@ -69,7 +97,7 @@ const DIR_VIEW: Record<IsoDir, { facing: CharFacing; flip: boolean }> = {
   ul: { facing: 'back', flip: true },
 };
 
-function animKey(entity: string, anim: string, facing: CharFacing): string {
+function animKey(entity: string, anim: string, facing: CharFacing | 'none'): string {
   return `${entity}_${anim}_${facing}`;
 }
 
@@ -145,6 +173,8 @@ const SERVE_HOP_RANGE_PX = 40;
 const COIN_MS = 1100;
 const COIN_FADE_MS = 400;
 const COIN_ABOVE_PX = 26;
+/** Sparkle particles cycle their twinkle frames at this period (ms). */
+const SPARKLE_FRAME_MS = 80;
 const COIN_TEXT_PX = 8;
 const COIN_TEXT_COLOR = '#ffffff';
 const COIN_TEXT_STROKE = '#111111';
@@ -177,6 +207,22 @@ export class WorldRenderer {
   private hiddenFurnitureId: string | null = null;
   private highlight: Phaser.GameObjects.Image | null = null;
   private marker: Phaser.GameObjects.Image | null = null;
+  /** Level art on top of a piece: Lv.3+ trim and Lv.5 accent, keyed by furniture id. */
+  private readonly levelOverlays = new Map<
+    string,
+    { trim: Phaser.GameObjects.Image; accent: Phaser.GameObjects.Image }
+  >();
+  /** Night: veil over the world, 0..1 fade level, floor lamp glows (above the veil). */
+  private veil: Phaser.GameObjects.Image | null = null;
+  private nightLevel = 0;
+  private readonly lampGlows = new Map<string, Phaser.GameObjects.Image>();
+  /** Door: the leaf image (closed / open) on the door tile and when it may close again. */
+  private doorLeaf: Phaser.GameObjects.Image | null = null;
+  private doorTile: Point | null = null;
+  private doorOpenUntil = 0;
+  /** Last animation of each staff member (to see a chef start baking) and the oven flare end time. */
+  private readonly lastAnim = new Map<string, string>();
+  private ovenFlareUntil = 0;
   private effects: Effect[] = [];
   /** Characters currently hopping: id -> birth time (scene ms). */
   private readonly hops = new Map<string, number>();
@@ -196,11 +242,11 @@ export class WorldRenderer {
   /** One Phaser animation per atlas character entity and facing (from the anim manifest). */
   private createAnimations(): void {
     for (const [entity, e] of Object.entries(artEntities(this.scene))) {
-      if (e.kind !== 'character' && e.kind !== 'kid' && e.kind !== 'critter') continue;
+      if (!['character', 'kid', 'critter', 'ui'].includes(e.kind)) continue;
       for (const [name, a] of Object.entries(e.anims)) {
-        const m = /^(.*)_(front|back)$/.exec(name);
+        const m = /^(.*)_(front|back|none)$/.exec(name);
         if (!m) continue;
-        const key = animKey(entity, m[1] as string, m[2] as CharFacing);
+        const key = animKey(entity, m[1] as string, m[2] as CharFacing | 'none');
         if (this.scene.anims.exists(key)) continue;
         this.scene.anims.create({
           key,
@@ -236,6 +282,56 @@ export class WorldRenderer {
     if (!isGuest(c) || !c.kid || !c.seatId) return 0;
     const chair = state.furniture.find((f) => f.id === c.seatId);
     return chair && FURNITURE[chair.defId].kidsOnly ? HIGH_CHAIR_LIFT_PX : 0;
+  }
+
+  /** A chef starting to bake or take out makes the oven mouth flare. */
+  private noteAnim(c: Character, anim: string): void {
+    const prev = this.lastAnim.get(c.id);
+    this.lastAnim.set(c.id, anim);
+    if (prev !== anim && isStaff(c) && (anim === 'bake' || anim === 'take')) {
+      this.ovenFlareUntil = this.scene.time.now + OVEN_FLARE_MS;
+    }
+  }
+
+  /** The door leaf opens while someone is near the door and closes shortly after. */
+  private syncDoor(state: GameState): void {
+    const leaf = this.doorLeaf;
+    const door = this.doorTile;
+    if (!leaf || !door) return;
+    const now = this.scene.time.now;
+    if (state.characters.some((c) => Math.hypot(c.x - door.x, c.y - door.y) < DOOR_OPEN_RANGE)) {
+      this.doorOpenUntil = now + DOOR_HOLD_MS;
+    }
+    const want = now < this.doorOpenUntil ? TEX.doorOpen : TEX.doorClosed;
+    if (leaf.texture.key !== want) leaf.setTexture(want);
+  }
+
+  /**
+   * Fades the night veil (the dark layer over the world) in and out and lights the floor lamps.
+   * The veil is part of the world so the lamp glow can be drawn above it. Returns the fade level
+   * (0..1) for other renderers (street lamps).
+   */
+  syncNight(night: boolean, deltaMs: number): number {
+    const target = night ? 1 : 0;
+    const step = prefersReducedMotion() ? 1 : deltaMs / NIGHT_FADE_MS;
+    const d = target - this.nightLevel;
+    this.nightLevel += Math.sign(d) * Math.min(Math.abs(d), step);
+    // A tinted white pixel stretched over the camera's view (the built-in `__WHITE` texture).
+    this.veil ??= this.scene.add
+      .image(0, 0, '__WHITE')
+      .setOrigin(0, 0)
+      .setTint(NIGHT_VEIL_COLOR)
+      .setDepth(DEPTH_NIGHT_VEIL)
+      .setVisible(false);
+    // The camera's origin is its top-left corner (CameraController), so its view is the box
+    // from the scroll position, `size / zoom` big.
+    const cam = this.scene.cameras.main;
+    this.veil
+      .setPosition(cam.scrollX - 2, cam.scrollY - 2)
+      .setDisplaySize(cam.width / cam.zoom + 4, cam.height / cam.zoom + 4)
+      .setAlpha(NIGHT_VEIL_ALPHA * this.nightLevel)
+      .setVisible(this.nightLevel > 0.001);
+    return this.nightLevel;
   }
 
   /** Chef baking: slide the pizza in, stoke now and then, take it out at the end. */
@@ -376,7 +472,13 @@ export class WorldRenderer {
       const entity = entityOf(c);
       let key = animKey(entity, anim, view.facing);
       if (!this.scene.anims.exists(key)) key = animKey(entity, 'idle', view.facing);
-      sprite.play(key, true);
+      // One-shot animations (the chef's peel) hold their last frame instead of restarting.
+      const finished =
+        sprite.anims.currentAnim?.key === key &&
+        !sprite.anims.isPlaying &&
+        (this.scene.anims.get(key)?.repeat ?? -1) === 0;
+      if (!finished) sprite.play(key, true);
+      this.noteAnim(c, anim);
       this.shadows
         .get(c.id)
         ?.setPosition(sprite.x, Math.round(o.y) - 1)
@@ -393,6 +495,7 @@ export class WorldRenderer {
     }
     this.syncBubbles(state);
     this.syncDishes(state);
+    this.syncDoor(state);
     const now = this.scene.time.now;
     this.effects = this.effects.filter((e) => {
       const alive = e.update(now);
@@ -610,7 +713,11 @@ export class WorldRenderer {
       })
       .setOrigin(0, 0.5)
       .setDepth(DEPTH_OVERLAY);
-    const coin = this.scene.add.image(0, 0, COIN_TEX).setOrigin(0, 0.5).setDepth(DEPTH_OVERLAY);
+    const coin = this.scene.add
+      .sprite(0, 0, ART_ATLAS, COIN_FRAME)
+      .setOrigin(0, 0.5)
+      .setDepth(DEPTH_OVERLAY);
+    if (!prefersReducedMotion() && this.scene.anims.exists(COIN_ANIM)) coin.play(COIN_ANIM);
     const gap = 2;
     const total = coin.width + gap + text.width;
     const reduced = prefersReducedMotion();
@@ -676,10 +783,8 @@ export class WorldRenderer {
     const parts = Array.from({ length: SPARKLE_COUNT }, (_, i) => {
       const angle = (i / SPARKLE_COUNT) * Math.PI * 2 + (i % 2) * 0.4;
       const reach = SPARKLE_REACH_PX[i % 2] ?? SPARKLE_REACH_PX[0];
-      const img = this.scene.add
-        .image(0, 0, i % 2 === 0 ? SPARKLE_TEX.large : SPARKLE_TEX.small)
-        .setDepth(DEPTH_OVERLAY);
-      return { img, angle, reach, delay: (i % 4) * 40 };
+      const img = this.scene.add.image(0, 0, sparkleTex(i)).setDepth(DEPTH_OVERLAY);
+      return { img, angle, reach, delay: (i % 4) * 40, index: i };
     });
     this.effects.push({
       born,
@@ -693,6 +798,7 @@ export class WorldRenderer {
           // Blink the last third out (hard on/off keeps the pixels crisp).
           const visible = k < 0.65 || Math.floor(t / 70) % 2 === 0;
           p.img
+            .setTexture(sparkleTex(reduced ? 1 : Math.floor(t / SPARKLE_FRAME_MS) + p.index))
             .setPosition(
               Math.round(wx + Math.cos(p.angle) * out),
               Math.round(wy + Math.sin(p.angle) * out * 0.6 + fall),
@@ -779,6 +885,8 @@ export class WorldRenderer {
   private destroyTiles(): void {
     for (const img of this.tileObjects) img.destroy();
     this.tileObjects = [];
+    this.doorLeaf = null;
+    this.doorTile = null;
     this.floorImages.clear();
     this.wallImages.clear();
   }
@@ -807,6 +915,13 @@ export class WorldRenderer {
           case 'door':
             this.putTile(o.x - 16, o.y, TEX.doorMat, DEPTH_FLOOR);
             this.putTile(o.x - 16, o.y - 24, TEX.doorFrame, depthKey(x, y) + DEPTH_FRONT_BIAS);
+            this.doorLeaf = this.putTile(
+              o.x - 16,
+              o.y - 24,
+              TEX.doorClosed,
+              depthKey(x, y) + DEPTH_FRONT_BIAS + 0.01,
+            );
+            this.doorTile = { x, y };
             break;
           default:
             break;
@@ -865,18 +980,22 @@ export class WorldRenderer {
     this.putTile(o.x - 16, o.y + 4, TEX.wallFrontL, depthKey(x, y) + DEPTH_FRONT_BIAS);
   }
 
-  /** Cold oven, or one of two flickering baking frames. */
+  /** Cold oven, flickering baking frames, or the bright flare while a pizza goes in or comes out. */
   private ovenTexture(baking: boolean): string {
+    const now = this.scene.time.now;
+    if (now < this.ovenFlareUntil)
+      return OVEN_TEX.flare[Math.floor(now / OVEN_FLARE_FLICKER_MS) % 2] ?? OVEN_TEX.off;
     if (!baking) return OVEN_TEX.off;
-    return OVEN_TEX.bake[Math.floor(this.scene.time.now / OVEN_FLICKER_MS) % 2] ?? OVEN_TEX.off;
+    return OVEN_TEX.bake[Math.floor(now / OVEN_FLICKER_MS) % 2] ?? OVEN_TEX.off;
   }
 
   private syncFurniture(state: GameState): void {
     const live = new Set<string>();
     const baking = state.characters.some((c) => isStaff(c) && c.action === 'cook');
-    const sparkleFrame = prefersReducedMotion()
-      ? 0
-      : Math.floor(this.scene.time.now / SPARKLE_BLINK_MS) % SPARKLE_FRAME_COUNT;
+    const now = this.scene.time.now;
+    const reduced = prefersReducedMotion();
+    const accentFrame = reduced ? 0 : Math.floor(now / ACCENT_BLINK_MS) % ACCENT_FRAMES;
+    const blinkFrame = reduced ? 0 : Math.floor(now / BLINK_MS) % BLINK_FRAMES;
     for (const f of state.furniture) {
       live.add(f.id);
       const def = FURNITURE[f.defId];
@@ -886,28 +1005,93 @@ export class WorldRenderer {
         img = this.scene.add.image(0, 0, f.defId);
         this.furniture.set(f.id, img);
       }
-      // Rot 0/1 show the front, 2/3 the back; the oven only glows when seen from the front.
-      // Higher levels get a gold trim (Lv.3+) and a blinking sparkle (Lv.5).
-      const base =
-        def.kind === 'oven' && f.rot < 2
-          ? this.ovenTexture(baking)
-          : furnitureTexKey(f.defId, f.rot);
-      img.setTexture(levelTextureKey(this.scene.textures, base, f.level, sparkleFrame));
+      // Rot 0/1 show the front, 2/3 the back; the oven only glows and the vending machine only
+      // lights up when seen from the front.
+      let tex = furnitureTexKey(f.defId, f.rot);
+      if (def.kind === 'oven' && f.rot < 2) tex = this.ovenTexture(baking);
+      else if (def.kind === 'vending' && f.rot < 2) tex = blinkTexKey(f.defId, blinkFrame);
+      img.setTexture(tex);
       // The sprite's footprint top corner sits on the projected origin of tile (x, y).
       // Odd rotations are the same sprite mirrored around that corner (flip is around the origin).
       const o = tileToScreen(f.x, f.y);
+      const depth = depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS;
+      const visible = f.id !== this.hiddenFurnitureId;
       img
         .setOrigin(def.spriteOrigin[0] / img.width, def.spriteOrigin[1] / img.height)
         .setFlipX(isMirroredRot(f.rot))
         .setPosition(o.x, o.y)
-        .setVisible(f.id !== this.hiddenFurnitureId)
-        .setDepth(depthKey(f.x + w - 1, f.y + h - 1) + DEPTH_FURNITURE_BIAS);
+        .setVisible(visible)
+        .setDepth(depth);
+      this.syncLevelArt(f, img, visible, accentFrame);
+      this.syncLampGlow(f, o, visible);
     }
     for (const [id, img] of this.furniture) {
       if (!live.has(id)) {
         img.destroy();
         this.furniture.delete(id);
+        const lv = this.levelOverlays.get(id);
+        lv?.trim.destroy();
+        lv?.accent.destroy();
+        this.levelOverlays.delete(id);
+        this.lampGlows.get(id)?.destroy();
+        this.lampGlows.delete(id);
       }
     }
+  }
+
+  /**
+   * Level art (M13b): Lv.3+ draws the piece's trim overlay on top, Lv.5 adds the accent overlay
+   * (two frames). The overlays share the piece's canvas, so they take its origin and flip.
+   */
+  private syncLevelArt(
+    f: Furniture,
+    base: Phaser.GameObjects.Image,
+    visible: boolean,
+    accentFrame: number,
+  ): void {
+    if (!HAS_LEVEL_OVERLAYS(f.defId)) return;
+    let lv = this.levelOverlays.get(f.id);
+    if (!lv && f.level < OVERLAY_TRIM_FROM_LEVEL) return;
+    if (!lv) {
+      lv = {
+        trim: this.scene.add.image(0, 0, trimTexKey(f.defId, f.rot)),
+        accent: this.scene.add.image(0, 0, accentTexKey(f.defId, f.rot, 0)),
+      };
+      this.levelOverlays.set(f.id, lv);
+    }
+    const place = (img: Phaser.GameObjects.Image, tex: string, show: boolean) =>
+      img
+        .setTexture(tex)
+        .setOrigin(base.originX, base.originY)
+        .setFlipX(base.flipX)
+        .setPosition(base.x, base.y)
+        .setDepth(base.depth + 0.01)
+        .setVisible(show && visible);
+    place(lv.trim, trimTexKey(f.defId, f.rot), f.level >= OVERLAY_TRIM_FROM_LEVEL);
+    place(
+      lv.accent,
+      accentTexKey(f.defId, f.rot, accentFrame),
+      f.level >= OVERLAY_ACCENT_FROM_LEVEL,
+    );
+  }
+
+  /** Floor lamps glow at night (their glow frame is drawn above the night veil). */
+  private syncLampGlow(f: Furniture, origin: Point, visible: boolean): void {
+    if (f.defId !== 'floor_lamp') return;
+    let glow = this.lampGlows.get(f.id);
+    if (!glow) {
+      glow = this.scene.add
+        .image(0, 0, GLOW_TEX.floorLamp)
+        .setOrigin(
+          FLOOR_LAMP_GLOW_ORIGIN[0] / FLOOR_LAMP_GLOW_SIZE[0],
+          FLOOR_LAMP_GLOW_ORIGIN[1] / FLOOR_LAMP_GLOW_SIZE[1],
+        )
+        .setDepth(DEPTH_NIGHT_GLOW);
+      this.lampGlows.set(f.id, glow);
+    }
+    glow
+      .setPosition(origin.x, origin.y)
+      .setAlpha(this.nightLevel * NIGHT_GLOW_ALPHA)
+      .setVisible(visible && this.nightLevel > 0.01);
   }
 }

@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { FURNITURE, type FurnitureDefId } from '../data/furniture';
 import { RECIPE_IDS } from '../data/recipes';
-import { DISH_TEX, ORDER_BUBBLE_TEX } from './placeholderTextures';
+import { DISH_TEX, ORDER_BUBBLE_TEX, requiredTextureKeys } from './textureKeys';
 
 /**
  * Hand-authored sprite atlas (D-040). Built by `npm run assets:build` from assets/sprites/**.px.
- * Static frames are copied into canvas textures under the keys the placeholder art used, so
- * everything not drawn yet keeps working; characters play animations straight from the atlas.
+ * Static frames are copied into canvas textures under stable keys (`installArtAliases`), so the
+ * renderers address a sprite by name; characters and kids play animations straight from the atlas.
  */
 export const ART_ATLAS = 'art';
 export const ART_ANIMS = 'art-anims';
@@ -63,27 +64,46 @@ function copyFrame(
   canvas.refresh();
 }
 
-/** Maps atlas frames onto the texture keys of the placeholder art (before it is generated). */
-export function installArtAliases(textures: Phaser.Textures.TextureManager): void {
+/** Entities that are animated sprites (drawn from the atlas directly, not copied). */
+const WALKERS = new Set(['character', 'kid', 'critter']);
+/** Not copied: the shadow is an atlas image, the bare order bubble is composited below. */
+const SKIPPED = new Set(['shadow', 'bubble_order']);
+
+/**
+ * Texture key of one frame of a static (non-walker) entity: `still` frames use the entity name
+ * (`<name>_back` for the back view), other animations `<name>_<anim>[_back]_<n>`.
+ */
+export function aliasKey(entity: string, anim: string, dir: string, n: number): string {
+  const back = dir === 'back' ? '_back' : '';
+  return anim === 'still' ? `${entity}${back}` : `${entity}_${anim}${back}_${n}`;
+}
+
+/** Copies the atlas frames of every static entity onto their texture keys (see `aliasKey`). */
+export function installArtAliases(scene: Phaser.Scene): void {
+  const textures = scene.textures;
   if (!textures.exists(ART_ATLAS)) return;
   const names = textures.get(ART_ATLAS).getFrameNames();
-  for (const name of names) {
-    let key: string | null = null;
-    const still = /^(.*)_still_(none|front|back)_0$/.exec(name);
-    if (still) key = still[2] === 'back' ? `${still[1]}_back` : (still[1] ?? null);
-    const bake = /^oven_pizza_bake_front_(\d)$/.exec(name);
-    if (bake) key = `oven_pizza_bake_${bake[1]}`;
-    if (name === 'coin_spin_none_0') key = 'coin';
-    if (!key || key === 'shadow' || key === 'bubble_order') continue;
-    const fr = textures.getFrame(ART_ATLAS, name);
-    copyFrame(textures, key, [{ name, dx: 0, dy: 0 }], fr.cutWidth, fr.cutHeight);
+  for (const [entity, e] of Object.entries(artEntities(scene))) {
+    if (WALKERS.has(e.kind) || SKIPPED.has(entity)) continue;
+    for (const [animKey, anim] of Object.entries(e.anims)) {
+      const m = /^(.*)_(front|back|none)$/.exec(animKey);
+      if (!m) continue;
+      anim.frames.forEach((name, n) => {
+        copyFrame(
+          textures,
+          aliasKey(entity, m[1] as string, m[2] as string, n),
+          [{ name, dx: 0, dy: 0 }],
+          e.w,
+          e.h,
+        );
+      });
+    }
   }
   // Order bubbles: the empty frame with the dish icon inside.
   const bubble = 'bubble_order_still_none_0';
-  if (!names.includes(bubble)) return;
   for (const id of RECIPE_IDS) {
     const dish = `${DISH_TEX[id]}_still_none_0`;
-    if (!names.includes(dish)) continue;
+    if (!names.includes(bubble) || !names.includes(dish)) continue;
     copyFrame(
       textures,
       ORDER_BUBBLE_TEX[id],
@@ -94,5 +114,30 @@ export function installArtAliases(textures: Phaser.Textures.TextureManager): voi
       18,
       19,
     );
+  }
+  ensureArtKeys(textures, Object.keys(FURNITURE) as FurnitureDefId[]);
+}
+
+/**
+ * Minimal fallback for a frame missing from the atlas: a magenta box, plus a warning in dev so a
+ * forgotten `npm run assets:build` or a misspelt key is noticed at once.
+ */
+function ensureArtKeys(
+  textures: Phaser.Textures.TextureManager,
+  furniture: readonly FurnitureDefId[],
+): void {
+  for (const key of requiredTextureKeys(furniture)) {
+    if (textures.exists(key)) continue;
+    if (import.meta.env.DEV) console.warn(`[art] missing texture "${key}", using a fallback box`);
+    const tex = textures.createCanvas(key, 16, 16);
+    if (!tex) continue;
+    const ctx = tex.getContext();
+    ctx.fillStyle = '#ff00ff';
+    ctx.fillRect(0, 0, 16, 16);
+    ctx.fillStyle = '#2b1d16';
+    ctx.fillRect(1, 1, 14, 14);
+    ctx.fillStyle = '#ff00ff';
+    ctx.fillRect(3, 3, 10, 10);
+    tex.refresh();
   }
 }

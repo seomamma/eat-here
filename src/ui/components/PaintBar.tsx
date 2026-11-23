@@ -8,6 +8,7 @@ import {
 import { STRINGS } from '../../data/strings';
 import { exitBuild, paintStyle, paintStroke, setPaintStyle, type PaintTarget } from '../build';
 import { getSim, money, rank } from '../store';
+import { floorSwatchUrl, iconsReady, wallSwatchUrl } from '../../view/furnitureIcons';
 import {
   validatePaintFloor,
   validatePaintWall,
@@ -15,6 +16,12 @@ import {
 } from '../../sim/systems/surfaces';
 
 const P = STRINGS.build.paint;
+
+/** CSS background-image of a style chip: the real tile art once the atlas is loaded. */
+function swatchImage(t: PaintTarget): string | undefined {
+  const url = t.kind === 'floor' ? floorSwatchUrl(t.id) : wallSwatchUrl(t.id);
+  return url ? `url(${url})` : undefined;
+}
 
 function styleOf(t: PaintTarget): SurfaceStyle {
   return t.kind === 'floor' ? FLOOR_STYLES[t.id] : WALL_STYLES[t.id];
@@ -36,6 +43,7 @@ export function PaintBar() {
   const style = paintStyle.value;
   if (!style) return null;
   void money.value;
+  void iconsReady.value; // re-render once the atlas swatches can be made
   const ids: readonly (PaintTarget & { kind: typeof style.kind })[] =
     style.kind === 'floor'
       ? FLOOR_STYLE_IDS.map((id) => ({ kind: 'floor' as const, id }))
@@ -82,7 +90,10 @@ export function PaintBar() {
               class={`paint-chip${on ? ' paint-chip--on' : ''}`}
               onClick={() => setPaintStyle(t)}
             >
-              <span class="paint-swatch" style={{ background: def.swatch }} />
+              <span
+                class="paint-swatch"
+                style={{ backgroundColor: def.swatch, backgroundImage: swatchImage(t) }}
+              />
               <span class="paint-chip-name">{def.name}</span>
               <span class="paint-chip-price">{locked ? P.rank(def.rank) : P.each(def.price)}</span>
             </button>

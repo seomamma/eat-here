@@ -8,12 +8,15 @@ import {
 } from '../data/surroundings';
 import type { Room } from '../data/layout';
 import { depthKey, tileToScreen, type Bounds } from './iso';
-import { GROUND_TEX, PROP_TEX } from './surroundingsTextures';
+import { GROUND_TEX, LAMP_GLOW, PROP_TEX } from './surroundingsArt';
 import { DEPTH_BACK_WALL, DEPTH_FLOOR } from './WorldRenderer';
 
 /** Ground sits below the room's floors; flat decals (flowers) just above it. */
 const DEPTH_GROUND = DEPTH_FLOOR - 1;
 const DEPTH_DECAL = DEPTH_FLOOR + 1;
+/** Lamp glows sit above the night veil (see WorldRenderer.syncNight). */
+const DEPTH_GLOW = 2_000_001;
+const GLOW_ALPHA = 0.9;
 /** Boxes sort like furniture: a bit behind things standing on the same diagonal. */
 const DEPTH_BOX_BIAS = -0.1;
 
@@ -25,6 +28,9 @@ const DEPTH_BOX_BIAS = -0.1;
 export class SurroundingsRenderer {
   private room: Room | null = null;
   private objects: Phaser.GameObjects.Image[] = [];
+  /** Night glow of each lamp post (above the night veil) and the current fade level. */
+  private glows: Phaser.GameObjects.Image[] = [];
+  private night = 0;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -33,7 +39,9 @@ export class SurroundingsRenderer {
     const r = this.room;
     if (r && r.x0 === room.x0 && r.y0 === room.y0 && r.x1 === room.x1 && r.y1 === room.y1) return;
     for (const o of this.objects) o.destroy();
+    for (const g of this.glows) g.destroy();
     this.objects = [];
+    this.glows = [];
     this.room = { ...room };
     this.buildGround(this.room);
     for (const p of surroundingProps(this.room)) this.buildProp(p, this.room);
@@ -86,6 +94,7 @@ export class SurroundingsRenderer {
       img.setOrigin(t.originX / img.width, t.originY / img.height);
       img.setDepth(this.depth(room, p.x + t.w - 1, p.y + t.h - 1) + DEPTH_BOX_BIAS);
       this.objects.push(img);
+      if (p.kind === 'lamp') this.addGlow(o.x, o.y);
       return;
     }
     const o = tileToScreen(p.x + 0.5, p.y + 0.5);
@@ -93,6 +102,24 @@ export class SurroundingsRenderer {
     img.setOrigin(t.originX / img.width, (t.originY + 1) / img.height);
     img.setDepth(flat ? DEPTH_DECAL : this.depth(room, p.x, p.y));
     this.objects.push(img);
+  }
+
+  /** Night glow for a lamp post whose tile top corner is at (x, y); hidden until it gets dark. */
+  private addGlow(x: number, y: number): void {
+    const glow = this.scene.add
+      .image(x, y, LAMP_GLOW.key)
+      .setDepth(DEPTH_GLOW)
+      .setVisible(false)
+      .setAlpha(0);
+    glow.setOrigin(LAMP_GLOW.originX / glow.width, LAMP_GLOW.originY / glow.height);
+    this.glows.push(glow);
+  }
+
+  /** Fades the lamp glows with the night veil (0 = day, 1 = night). */
+  setNight(level: number): void {
+    if (level === this.night) return;
+    this.night = level;
+    for (const g of this.glows) g.setAlpha(level * GLOW_ALPHA).setVisible(level > 0.01);
   }
 
   private depth(room: Room, x: number, y: number): number {
