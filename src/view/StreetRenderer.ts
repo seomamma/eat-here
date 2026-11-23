@@ -25,7 +25,8 @@ interface Drawn {
  * `StreetLife`. Never touches the sim; paused with it.
  */
 export class StreetRenderer {
-  private readonly life: StreetLife;
+  /** The passers-by (public for the ?debug hook and tests). */
+  readonly life: StreetLife;
   private readonly drawn = new Map<number, Drawn>();
   private readonly leash: Phaser.GameObjects.Graphics;
   /** One graphics object draws every leash: it sits in front of the frontmost dog. */

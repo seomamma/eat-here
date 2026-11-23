@@ -181,6 +181,10 @@
     align-items: baseline;
     gap: 8px;
   }
+  /* A running campaign shows its chip instead of the closing time, to leave room for the fame bar. */
+  .status-badge--ads .status-sub {
+    display: none;
+  }
   .money {
     font-size: 18px;
     gap: 6px;

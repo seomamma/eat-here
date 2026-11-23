@@ -11,7 +11,7 @@ export function bindAudioEvents(game: Game, audio: AudioEngine): () => void {
   audio.setMood(mood(game.state.clock.phase));
   const offs = [
     events.on('paid', () => audio.play('coin')),
-    events.on('guestArrived', () => audio.play('doorBell')),
+    events.on('guestEntered', () => audio.play('doorBell')),
     events.on('dishReady', () => audio.play('ovenDing')),
     events.on('guestEmote', (e) => {
       if (e.emote === 'angry') audio.play('aww');

@@ -8,6 +8,7 @@ import { randomSeed } from './platform/seed';
 import { LocalSaveStorage, loadSave, wipeSaves, writeSave } from './platform/storage';
 import { Game } from './sim/game';
 import { createInitialState, type GameState } from './sim/state';
+import { createParty } from './sim/systems/spawner';
 import { attachDeviceCanvas, deviceCanvasSize } from './view/deviceCanvas';
 import { GalleryScene } from './view/scenes/GalleryScene';
 import { WorldScene } from './view/scenes/WorldScene';
@@ -67,6 +68,19 @@ function startGame(state: GameState, fromBackup: boolean): void {
   if (debug) {
     const w = window as unknown as Record<string, unknown>;
     w.__sim = sim;
+    // Spawns a party on the sidewalk (kind, adults, kids) for screenshots and manual checks.
+    w.__spawnParty = (
+      kind: 'solo' | 'couple' | 'friends' | 'family',
+      adults: number,
+      kids: number,
+    ) => {
+      const members = createParty(sim.state, { kind, adults, kids });
+      for (const m of members) {
+        sim.state.characters.push(m);
+        sim.events.emit('guestArrived', { guestId: m.id });
+      }
+      return members.map((m) => m.id);
+    };
     w.__audio = audio;
     w.__save = () => autosave.saveNow();
     // Returns what is in storage (does not swap the running game; reload and Continue for that).

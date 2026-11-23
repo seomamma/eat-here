@@ -368,6 +368,9 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
   const { state, events } = ctx;
   const type = GUEST_TYPES[g.typeId];
   stepCharacter(g, type.walkSpeed);
+  if (g.phase === 'arriving' && g.prevY > DOOR_Y && g.y <= DOOR_Y) {
+    events.emit('guestEntered', { guestId: g.id });
+  }
   checkSlow(state, events, g);
   const arrived = g.path.length === 0;
 

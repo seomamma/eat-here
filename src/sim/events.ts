@@ -41,7 +41,10 @@ import type { DayPhase } from './time';
 /** Events the sim emits (Sim -> View/UI). */
 export interface GameEvents {
   walkerArrived: { id: string };
+  /** A guest (or a whole party, one event each) appeared on the sidewalk. */
   guestArrived: { guestId: string };
+  /** An arriving guest stepped through the door (the bell rings). */
+  guestEntered: { guestId: string };
   guestSeated: { guestId: string; seatId: string };
   guestEmote: { guestId: string; emote: GuestEmote };
   /** `amount` = `price` + `tip` (what was added to the money); `fame` = fame the guest gave. */

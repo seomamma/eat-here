@@ -60,14 +60,17 @@ export const STRINGS = {
     campaigns: {
       flyers: {
         name: 'Flyers',
+        short: 'Flyers',
         text: '+40% arrivals for the rest of today.',
       },
       poster: {
         name: 'Poster',
+        short: 'Poster',
         text: '+60% arrivals today and tomorrow.',
       },
       radio: {
         name: 'Local radio',
+        short: 'Radio',
         text: 'A lunch or dinner rush: a burst of parties within an hour.',
       },
     },

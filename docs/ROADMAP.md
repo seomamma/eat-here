@@ -186,7 +186,7 @@
 
 ## Phase B — Make it ours (order agreed after MVP sign-off)
 
-Current order: M12 → **M13 art** → M12b → M12c → … (user moved art up). Original reasoning: (1) validate our main differentiator early ("guests you care about"), (2) give money a purpose (money piles up after ~day 7), (3) pay down placeholder art before content multiplies.
+Current order: M12 → **M13 art** → M12b → M12c (done) → … (user moved art up). Original reasoning: (1) validate our main differentiator early ("guests you care about"), (2) give money a purpose (money piles up after ~day 7), (3) pay down placeholder art before content multiplies.
 
 | # | Milestone | Content |
 |---|---|---|
@@ -205,6 +205,17 @@ Current order: M12 → **M13 art** → M12b → M12c → … (user moved art up)
 | M19 | Secret recipes | Taste profiles, free experimentation, recipe book |
 | M20 | Ending & completion | Legendary Pizzeria finale, continue-play, 100 % tracker |
 | M21 | Mobile release prep | Capacitor builds, device performance, store assets |
+
+### M12c — Groups, families & street life (+ calmer start & advertising)
+
+Verified (tests, `npm run balance`, Playwright at 390×844 and 844×390, DSF 2; screenshots `m12c-*.png`):
+- [x] **Calmer start (D-042):** arrival gaps per party 24–40 / 14–22 s, rank bonus 1 / 1.3 / 1.6 / 1.9 / 2.2 / 2.5, decor curb appeal up to +30 %, Rank 2 fame 400. Scripted player, 10 seeds, before → after: day 1 arrivals 26.8 → 14.4, served 24.5 → 14.1, seat wait 9.0 → 2.8 s, chef busy 77 % → 44 %; Rank 2 on day 3.8 → 4.2, Rank 3 on day 9.0 → 11.1; profit positive on every day (lowest 144).
+- [x] **Parties (D-041):** solo, couple, friends (2–4), family (2 adults + 1–2 kids); mix by rank in data; walk in together, wait together, sit together (atomic claim inside one table group), each orders their own dish (kids pick cheap dishes), leave together after the last payment; a party that finds no table leaves together after the patience; +5 "Fun with friends" / "Family time". Oliver and Mia keep their companion logic.
+- [x] **Kids and seats:** kid sprites (12×18, 3 looks: walk, idle, sit, eat, hand), `chair_high` (kids only, Rank 2), `table_long` is the 4-seat table (Rank 2, 100 coins); kids never sit alone; adults never use kids-only seats.
+- [x] **Street life:** guests arrive along the sidewalk and turn in at the door, leavers walk away; view-only passers-by in both directions, quieter at night; dog walkers (2 colours, leash) stop at the door with a 💔 unless there is an Animal Area (data check for M16).
+- [x] **Advertising (D-042):** Promote card, Flyers / Poster / Local radio (rush), one at a time, ledger `ads`, `startCampaign`, status chip and "Rush!", first-campaign moment. Flyers on day 3: arrivals 14.0 → 19.5, profit after the ad 190 → 228.
+- [x] Save v7 with a v6 → v7 migration (fixture `tests/fixtures/save-v6.json`); tests for party mix by seed, atomic claims, kids and kid seats, leaving together, too-big parties, campaigns (cost, refusal, windows, rush burst), street paths, dog walkers, a seeded multi-day run with moves and determinism.
+- [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run assets:check` pass; `npm run assets:build` is idempotent.
 
 ### M13 — Art foundation
 

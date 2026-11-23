@@ -1,6 +1,6 @@
 # Asset List — MVP (first playable)
 
-> Status: draft v0.1. **M13 (final art, hand-authored text maps, D-040):** chef, waiter, guest bodies (4 variants), Nonna Rosa, Oliver, Mia, shadow, floors (5 styles), back walls (4 styles), low walls, door frame/mat, chair_wood, table_small, oven_pizza (+glow, woodpile, copper collar), counter_pass, dish icons (4), emotes (6) + order bubble, coin are FINAL (F). Everything else is still a placeholder (P) until M13b. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
+> Status: draft v0.1. **M12c (final, hand-authored):** kid (3 looks, 12×18: idle, walk, sit, eat, hand), dog (2 colours, 14×10: walk, idle), high chair (front/back), broken-heart emote are FINAL (F). **M13 (final art, hand-authored text maps, D-040):** chef, waiter, guest bodies (4 variants), Nonna Rosa, Oliver, Mia, shadow, floors (5 styles), back walls (4 styles), low walls, door frame/mat, chair_wood, table_small, oven_pizza (+glow, woodpile, copper collar), counter_pass, dish icons (4), emotes (6) + order bubble, coin are FINAL (F). Everything else is still a placeholder (P) until M13b. Everything below can start as a **placeholder** (P). Final art (F) is produced only after the MVP loop is validated (see ROADMAP M11).
 > Sizes follow ART_DIRECTION.md (isometric, D-025). Furniture: 2 orientations via mirroring. Naming: `<entity>_<anim>_<dir>_<frame>`.
 
 ## 1. Tiles (isometric: floor diamonds 32×16, wall segments 16×48 / front cut-away 16×12)
@@ -24,6 +24,7 @@
 | `chair_wood` | 1×1 | 16×16 | down/up/side facing | guests sit here |
 | `oven_pizza` | 2×1 | 32×24 | idle, baking (2-frame glow) | chef cooks here |
 | `counter_pass` | 2×1 | 32×20 | empty, with dish | chef → waiter handoff |
+| `chair_high` (M12c) | 1×1 | 32×35 | front, back | kids-only seat |
 | `plant_potted` | 1×1 | 16×24 | Lv.1 (Lv.2–5 post-MVP) | the purchasable decor item |
 | `menu_board` (optional) | 1×1 | 16×24 | static | wall decor, pure flavor |
 
@@ -36,6 +37,8 @@ Facings: `front` (down-right) and `back` (up-right); the other two are mirrored.
 | `chef` | idle (2), walk (4), cook-up (4), carry (4) | ≈ 2×3 + 4×3 + 4 + 4×3 = 34 |
 | `waiter` | idle (2), walk (4), walk_carry (4), take_order (2) | ≈ 6 + 12 + 12 + 4 = 34 |
 | `guest_local` | idle (2), walk (4), sit (1), eat (2), raise_hand (2) | ≈ 6 + 12 + 3 + 6 + 4 = 31 |
+| `kid` (`kid`, `kid1`, `kid2`; frame **12×18**, M12c) | idle (2), walk (4), sit (1), eat (2), raise_hand (2) | palette-swapped looks |
+| `dog` (`dog`, `dog1`; frame **14×10**, M12c) | walk (4), idle (2); front and back | street life, 2 colours |
 
 Guest variety in MVP: **palette swaps** (hair, shirt, skin ramps) applied via 3–4 pre-made recolored sheets, not runtime shaders.
 
@@ -53,7 +56,7 @@ Guest variety in MVP: **palette swaps** (hair, shirt, skin ramps) applied via 3�
 
 ## 5. Emotes & world feedback (16×16 bubble)
 
-`emote_happy`, `emote_love`, `emote_tasty`, `emote_slow` (zzz), `emote_angry`, `emote_thinking` (browsing menu), `emote_hand` (wants to order), `emote_dish_<id>` (order bubble shows the dish), `sparkle` (4 frames), `stars_bar` (5 stars, empty → full).
+`emote_happy`, `emote_love`, `emote_tasty`, `emote_slow` (zzz), `emote_angry`, `emote_heartbroken` (dog walker at the door, M12c), `emote_thinking` (browsing menu), `emote_hand` (wants to order), `emote_dish_<id>` (order bubble shows the dish), `sparkle` (4 frames), `stars_bar` (5 stars, empty → full).
 
 ## 6. UI (HTML/CSS + SVG — not pixel art)
 

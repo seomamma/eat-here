@@ -212,6 +212,8 @@ export class WorldScene extends Phaser.Scene {
   private exposeDebugHook(): void {
     const cam = this.cameras.main;
     const canvas = this.game.canvas;
+    (window as unknown as Record<string, unknown>).__street = this.street;
+    (window as unknown as Record<string, unknown>).__cam = cam;
     (window as unknown as Record<string, unknown>).__tileToClient = (x: number, y: number) => {
       const o = tileToScreen(x + 0.5, y + 0.5);
       const r = canvas.getBoundingClientRect();

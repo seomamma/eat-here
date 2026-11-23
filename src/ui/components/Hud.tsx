@@ -94,7 +94,7 @@ function StatusBadge() {
   }
   return (
     <Card accent={key === 'open' || key === 'rush' ? 'basil' : 'saffron'} class="status-card">
-      <div class="status-badge" role="status">
+      <div class={`status-badge${campaign.value ? ' status-badge--ads' : ''}`} role="status">
         <span class="status-label">
           <span class={`status-dot status-dot--${key}`} aria-hidden="true" />
           {label}
@@ -105,7 +105,7 @@ function StatusBadge() {
             <svg viewBox="0 0 32 32" aria-hidden="true">
               <Megaphone />
             </svg>
-            {STRINGS.promote.activeChip(STRINGS.promote.campaigns[campaign.value].name)}
+            {STRINGS.promote.activeChip(STRINGS.promote.campaigns[campaign.value].short)}
           </span>
         )}
       </div>

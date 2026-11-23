@@ -212,9 +212,12 @@ describe('arriving from the street', () => {
     for (let i = 1; i < xs.length; i++) {
       expect(Math.abs((xs[i] as number) - (xs[i - 1] as number))).toBeCloseTo(1, 5);
     }
-    // Everyone ends up inside the room.
+    // Everyone ends up inside the room; the door bell rings once per guest, in a line.
+    const entered: string[] = [];
+    g.events.on('guestEntered', (e) => entered.push(e.guestId));
     run(g, 150);
     for (const m of members) expect(m.y).toBeLessThanOrEqual(DOOR_Y);
+    expect(entered).toEqual(members.map((m) => m.id));
   });
 
   it('leaving guests walk out through the door and away along the sidewalk', () => {

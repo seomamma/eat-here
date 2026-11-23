@@ -8,6 +8,8 @@ import { FURNITURE, type FurnitureDefId } from '../src/data/furniture';
 import type { IngredientId } from '../src/data/ingredients';
 import { RECIPE_IDS, RECIPES } from '../src/data/recipes';
 import { REGULAR_IDS, regularDef } from '../src/data/regulars';
+import type { PartyKind } from '../src/data/parties';
+import { CAMPAIGNS } from '../src/data/campaigns';
 import { isGuest, isStaff } from '../src/sim/characters';
 import { ledgerTotal, profitOf } from '../src/sim/dayStats';
 import { Game } from '../src/sim/game';
@@ -59,6 +61,9 @@ export interface RunResult {
   levelDay: Record<number, number | null>;
   /** Day each regular became a regular (null = not within the run), and hearts at the end. */
   regulars: Record<string, { unlockDay: number | null; hearts: number }>;
+  /** Parties that arrived over the run, by kind, and the kids among the guests (M12c). */
+  mix: Record<PartyKind, number>;
+  kids: number;
 }
 
 /** Coins the player keeps back for ingredients before spending on anything. */
@@ -371,7 +376,12 @@ function think(game: Game, log: { plantDay: number | null }): void {
 }
 
 /** Plays `days` days with one seed. */
-export function runSeed(seed: number, days: number): RunResult {
+export interface RunOptions {
+  /** Starts a Flyers campaign at the opening of this day (to measure its effect). */
+  flyersOnDay?: number;
+}
+
+export function runSeed(seed: number, days: number, opts: RunOptions = {}): RunResult {
   const game = new Game(createInitialState(seed));
   const result: RunResult = {
     seed,
@@ -381,7 +391,10 @@ export function runSeed(seed: number, days: number): RunResult {
     plantDay: null,
     levelDay: { 2: null, 3: null, 4: null, 5: null },
     regulars: {},
+    mix: { solo: 0, couple: 0, friends: 0, family: 0 },
+    kids: 0,
   };
+  const seenParties = new Set<string>();
   for (const id of REGULAR_IDS) result.regulars[id] = { unlockDay: null, hearts: 0 };
   const log = { plantDay: null as number | null };
   let happy: number[] = [];
@@ -392,7 +405,18 @@ export function runSeed(seed: number, days: number): RunResult {
   let openTicks: number;
   /** Tick each guest began waiting for a seat (the walk in from the street does not count). */
   const waitStart = new Map<string, number>();
-  game.events.on('guestArrived', () => arrived++);
+  game.events.on('guestArrived', (e) => {
+    arrived++;
+    const g = game.state.characters.find((c) => c.id === e.guestId);
+    if (!g || !isGuest(g)) return;
+    if (g.kid) result.kids++;
+    if (!g.partyId) result.mix.solo++;
+    else if (!seenParties.has(g.partyId)) {
+      seenParties.add(g.partyId);
+      const party = game.state.parties.find((p) => p.id === g.partyId);
+      if (party) result.mix[party.kind]++;
+    }
+  });
   game.events.on('guestSeated', (e) => {
     const t = waitStart.get(e.guestId);
     if (t !== undefined) waits.push((game.state.tick - t) / 10);
@@ -420,6 +444,7 @@ export function runSeed(seed: number, days: number): RunResult {
     waits = [];
     chefTicks = 0;
     openTicks = 0;
+    if (d === opts.flyersOnDay) game.dispatch({ type: 'startCampaign', id: 'flyers' });
     think(game, log);
     for (let i = 0; i < maxTicks && game.state.clock.phase !== 'report'; i++) {
       game.tickOnce();
@@ -474,6 +499,27 @@ export const DEFAULT_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function runBalance(seeds: readonly number[] = DEFAULT_SEEDS, days = 10): RunResult[] {
   return seeds.map((s) => runSeed(s, days));
+}
+
+/** Day-by-day effect of a Flyers campaign started on `day` (same seeds, with and without). */
+export function campaignEffect(seeds: readonly number[], day = 3): string {
+  const rows = (flyers: boolean) =>
+    seeds.map((s) => runSeed(s, day, flyers ? { flyersOnDay: day } : {}).days[day - 1] as DayRow);
+  const base = rows(false);
+  const ads = rows(true);
+  const m = (xs: DayRow[], f: (r: DayRow) => number) => mean(xs.map(f));
+  const cost = CAMPAIGNS.flyers.cost;
+  const arrive = [m(base, (r) => r.arrived), m(ads, (r) => r.arrived)];
+  const served = [m(base, (r) => r.served), m(ads, (r) => r.served)];
+  const profit = [m(base, (r) => r.profit), m(ads, (r) => r.profit) - cost];
+  const fame = [m(base, (r) => r.fame), m(ads, (r) => r.fame)];
+  return (
+    `Flyers on day ${day} (${cost} coins), mean of ${seeds.length} seeds, without -> with: ` +
+    `arrivals ${arrive[0]?.toFixed(1)} -> ${arrive[1]?.toFixed(1)}, ` +
+    `served ${served[0]?.toFixed(1)} -> ${served[1]?.toFixed(1)}, ` +
+    `profit after the ad ${profit[0]?.toFixed(0)} -> ${profit[1]?.toFixed(0)}, ` +
+    `total fame ${fame[0]?.toFixed(0)} -> ${fame[1]?.toFixed(0)}`
+  );
 }
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -575,6 +621,16 @@ export function formatReport(results: RunResult[]): string {
         `mean hearts at end ${mean(hearts).toFixed(1)}`,
     );
   }
+  const mix = { solo: 0, couple: 0, friends: 0, family: 0 };
+  for (const r of results) for (const k of Object.keys(mix) as PartyKind[]) mix[k] += r.mix[k];
+  const parties = Object.values(mix).reduce((a, b) => a + b, 0);
+  const kids = results.reduce((n, r) => n + r.kids, 0);
+  lines.push(
+    `Party mix over ${results.length} runs (${parties} parties, ${(kids / Math.max(1, parties)).toFixed(2)} kids per party): ` +
+      (Object.keys(mix) as PartyKind[])
+        .map((k) => `${k} ${((mix[k] / Math.max(1, parties)) * 100).toFixed(0)}%`)
+        .join(', '),
+  );
   lines.push(
     `Recipe price table: ${RECIPE_IDS.map((id) => `${id}=${RECIPES[id].price}`).join(' ')}`,
   );

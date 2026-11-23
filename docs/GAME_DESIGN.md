@@ -119,7 +119,19 @@ Emotes appear at key moments: 😋 tasty, ❤️ loved it, 💤 slow, 😤 left 
 
 **On leaving:** `fame += floor(happiness / 10)`, `tip = round(price × happiness / 140)` (M10: a 90-happiness Pepperoni guest tips 8, a 90-happiness Margherita guest 6, so the day's "Big tip" highlight is usually 6 or more).
 
-**Patience and arrivals (M10):** a guest waits up to **30 s** for a free seat. Arrival gaps are 9–15 s off-peak and 5–8 s at the lunch (12–14) and dinner (18–21) peaks, scaled by the rank's arrival-rate bonus (Rank 2 ×1.05, Rank 3 ×1.15). With the four starting seats this keeps roughly 5–15 % of the guests leaving for lack of a seat once the pizzeria is busy (about 1–5 % on the first days).
+**Patience and arrivals (M10, revised in M12c/D-042):** a guest waits up to **30 s** for a free seat. A *party* arrives every 24–40 s off-peak and 14–22 s at the lunch (12–14) and dinner (18–21) peaks, divided by the arrival multiplier: the rank's bonus (×1 / 1.3 / 1.6 / 1.9 / 2.2 / 2.5), a running ad campaign and curb appeal (decor, up to +30 %). The first days are calm (about 14 guests a day, the chef about 45 % busy); growth comes from rank, decor and advertising. A few percent of the guests leaving for lack of a seat is normal once the pizzeria is busy.
+
+### Parties, families & street life (M12c, D-041)
+
+- **Parties.** Guests arrive as a **party**: solo, **couple** (2), **friends** (2–4) or **family** (2 adults + 1–2 kids). Rank 1 only brings solo guests and couples; the mix shifts towards friends and families with rank (data `PARTY_MIX`; a future Children's Area boosts families).
+- **Together.** A party walks in as a line from the street, waits together, sits down together at **one table** (or a run of touching tables) that has a free chair for everyone, orders (each their own dish; kids pick among the cheapest dishes), eats, and **leaves together** after the last payment. If no table fits within the patience, the **whole party** leaves unhappy. A lone guest prefers a table that is already taken, so whole tables stay free for parties.
+- **Kids** are smaller (12×18) and never sit alone. A **high chair** (Rank 2, 35 coins) is a kids-only seat; kids can use ordinary chairs too. The **long table** (now Rank 2, 100 coins) is the 4-seat table.
+- **Mood.** Sitting down together gives every member +5: "Fun with friends" (couples, friends) or "Family time" (families).
+- **The street.** Guests come along the sidewalk and turn in at the door; leavers walk out and away. **Passers-by** stroll the sidewalk in both directions (quieter at night); some walk a **dog** (2 colours). Without an **Animal Area** (M16) a dog walker stops at the door, shows a 💔 and walks on: a teaser for the themed area.
+
+### Advertising (M12c, D-042)
+
+The **Promote** card in the Menu starts one campaign at a time (not at night or in the report): **Flyers** (Rank 1, 30 coins, +40 % arrivals for the rest of the day), **Poster** (Rank 2, 100, +60 % today and tomorrow) and **Local radio** (Rank 3, 260: a lunch or dinner **rush**, 6 extra parties within one in-game hour). While a campaign runs the status badge shows "Flyers active"; during a rush it says "Rush!". The first campaign fires the moment "The whole street heard about your pizzas!". Ad costs are their own ledger line.
 
 ### Guest types
 
