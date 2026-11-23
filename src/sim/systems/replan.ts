@@ -4,27 +4,32 @@ import { secToTicks } from './spawner';
 import { GUEST_TYPES } from '../../data/guests';
 import { getJob, resetStaff } from './jobs';
 import { beginStage } from './staff';
+import { splitRun } from '../street';
 import { payAndFinish, type GuestContext } from './guests';
 
 /** True when every tile of the path after the one being entered is still walkable. */
 function pathStillOk(ctx: GuestContext, c: Character): boolean {
-  const goal = c.path[c.path.length - 1];
-  return c.path.every((t, i) => {
-    if (i === 0) return true; // being entered: placement refuses to cover it
+  // The sidewalk parts of a walk (arriving, leaving) are outside the grid: only the run inside counts.
+  const { head, run } = splitRun(c.path);
+  const goal = run[run.length - 1];
+  return run.every((t, i) => {
+    if (i === 0 && head.length === 0) return true; // being entered: placement refuses to cover it
     // The final tile may be a claimed chair (blocked on purpose).
-    return isWalkable(ctx.walk, t.x, t.y) || (i === c.path.length - 1 && goal === t);
+    return isWalkable(ctx.walk, t.x, t.y) || (i === run.length - 1 && goal === t);
   });
 }
 
 /** Re-plans from the tile being entered to the old goal; null when there is no route. */
 function replanned(ctx: GuestContext, c: Character): TilePos[] | null {
-  const next = c.path[0];
-  const goal = c.path[c.path.length - 1];
+  const { head, run, tail } = splitRun(c.path);
+  const next = run[0];
+  const goal = run[run.length - 1];
   if (!next || !goal) return null;
-  return findPath(ctx.walk, next, goal, {
+  const path = findPath(ctx.walk, next, goal, {
     allowStartBlocked: true,
     allowGoalBlocked: !isWalkable(ctx.walk, goal.x, goal.y),
   });
+  return path ? [...head, ...path, ...tail] : null;
 }
 
 function replanGuest(ctx: GuestContext, g: Guest): void {

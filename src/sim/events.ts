@@ -27,6 +27,7 @@ export class Emitter<Events extends object> {
 export type GuestEmote = 'angry' | 'hand' | 'tasty' | 'love' | 'slow' | 'heart';
 export type GuestLeaveReason = 'done' | 'noSeat' | 'closed';
 
+import type { CampaignId } from '../data/campaigns';
 import type { RoomGrowth } from '../data/expansion';
 import type { FurnitureDefId, Rot } from '../data/furniture';
 import type { Room } from '../data/layout';
@@ -78,6 +79,12 @@ export interface GameEvents {
   /** A regular gained a friendship heart. */
   heartGained: { regularId: RegularId; guestId: string; hearts: number };
   guestLeft: { guestId: string; reason: GuestLeaveReason };
+  /** The player paid for an ad campaign. */
+  campaignStarted: { id: CampaignId };
+  /** The campaign ran out (its days passed or its rush is over). */
+  campaignEnded: { id: CampaignId };
+  /** The radio rush begins: a burst of parties is on its way. */
+  rushStarted: { day: number };
   moneyChanged: { money: number };
   /** A new piece was bought and placed. */
   furniturePlaced: { id: string; defId: FurnitureDefId; x: number; y: number; rot: Rot };

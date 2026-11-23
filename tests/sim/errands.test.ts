@@ -260,7 +260,8 @@ describe('days with vending machine and toilet', () => {
     it(`seed ${seed}: everyone leaves by the report; claims stay unique; no one is stranded`, () => {
       setChance(0.7, 0.6);
       const g = new Game(createInitialState(seed));
-      g.state.rank = 3;
+      // Rank 6 for the busiest arrivals, so guests regularly wait for a seat and snack.
+      g.state.rank = 6;
       // Only four seats, so guests regularly wait for a seat and snack.
       put(g.state, 'vending_machine', 8, 5, 2);
       put(g.state, 'toilet', 1, 8, 2);

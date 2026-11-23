@@ -58,6 +58,8 @@ export interface FurnitureDef {
   comfort?: readonly number[];
   aura?: Aura;
   interaction?: Interaction;
+  /** A seat only kids use (the high chair, M12c); kids can sit on any other chair too. */
+  kidsOnly?: boolean;
   /** Work-time multiplier per level (oven: cook time, pass: placing and picking up dishes). */
   speed?: readonly number[];
   useSpots: readonly UseSpot[];
@@ -104,6 +106,20 @@ const DEFS = {
     useSpots: [{ dx: 0, dy: 0, facing: 'down' }],
     spriteOrigin: [16, 19],
   },
+  chair_high: {
+    name: 'High Chair',
+    kind: 'chair',
+    category: 'seating',
+    footprint: [1, 1],
+    price: 35,
+    unlock: { rank: 2 },
+    appeal: [1, 2, 3, 4, 5],
+    levelUpCost: [18, 36, 65, 105],
+    comfort: [1, 2, 3, 4, 5],
+    kidsOnly: true,
+    useSpots: [{ dx: 0, dy: 0, facing: 'down' }],
+    spriteOrigin: [16, 19],
+  },
   table_small: {
     name: 'Small Table',
     kind: 'table',
@@ -122,8 +138,8 @@ const DEFS = {
     kind: 'table',
     category: 'seating',
     footprint: [2, 1],
-    price: 140,
-    unlock: { rank: 3 },
+    price: 100,
+    unlock: { rank: 2 },
     appeal: [3, 4, 6, 8, 12],
     levelUpCost: [70, 140, 250, 400],
     comfort: [1, 2, 3, 5, 6],

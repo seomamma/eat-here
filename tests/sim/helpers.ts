@@ -1,6 +1,10 @@
+import { GUEST_NAMES } from '../../src/data/guests';
 import { LEGACY_OFFSET } from '../../src/data/layout';
+import type { Guest } from '../../src/sim/characters';
+import { rngInt, rngPick } from '../../src/sim/rng';
+import { createGuest } from '../../src/sim/systems/spawner';
 import { Game } from '../../src/sim/game';
-import { createInitialState } from '../../src/sim/state';
+import { createInitialState, type GameState } from '../../src/sim/state';
 import { minuteAtTick } from '../../src/sim/time';
 
 /** Tick of 12:30 in the open day (lunch peak). */
@@ -26,3 +30,8 @@ export function openGame(seed?: number): Game {
  */
 export const OX = LEGACY_OFFSET.x;
 export const OY = LEGACY_OFFSET.y;
+
+/** A new solo adult guest on the sidewalk (not added to the characters). */
+export function spawnSolo(state: GameState): Guest {
+  return createGuest(state, { variant: rngInt(state, 0, 3), name: rngPick(state, GUEST_NAMES) });
+}

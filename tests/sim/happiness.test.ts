@@ -25,17 +25,16 @@ import {
   qualityPoints,
   tipFor,
 } from '../../src/sim/systems/happiness';
-import { secToTicks, spawnGuest } from '../../src/sim/systems/spawner';
+import { secToTicks } from '../../src/sim/systems/spawner';
 import { NIGHT_TICKS } from '../../src/sim/time';
-import { openGame } from './helpers';
+import { openGame, spawnSolo } from './helpers';
 
 /** A freshly spawned guest on a fresh state, seated on the first chair. */
 function setup(): { state: GameState; guest: Guest; chair: Furniture } {
   const state = createInitialState(1);
   state.guestSpawn.enabled = true;
   state.guestSpawn.nextInTicks = 1;
-  const guest = spawnGuest(state);
-  if (!guest) throw new Error('no guest');
+  const guest = spawnSolo(state);
   const chair = state.furniture.find((f) => FURNITURE[f.defId].kind === 'chair');
   if (!chair) throw new Error('no chair');
   guest.seatId = chair.id;

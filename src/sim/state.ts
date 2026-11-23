@@ -18,6 +18,8 @@ import { SAVE_VERSION } from './save';
 import { createClock, type Clock } from './time';
 import { buildWalkGrid, isWalkable } from './pathfinding';
 import { createInventory, rollMarket, type MarketState } from './systems/market';
+import type { CampaignState } from './systems/campaigns';
+import type { Party } from './systems/parties';
 import { FIRST_GUEST_TICKS } from './systems/spawner';
 import {
   createCounters,
@@ -84,7 +86,12 @@ export interface GameState {
   counters: Counters;
   /** Friendship state of every regular. */
   regulars: RegularStates;
+  /** Parties (two or more guests who came together) currently in the restaurant (M12c). */
+  parties: Party[];
+  /** The running ad campaign, or null (one at a time; M12c). */
+  campaign: CampaignState | null;
   nextGuestId: number;
+  nextPartyId: number;
   nextFurnitureId: number;
   nextJobId: number;
   nextOrderId: number;
@@ -149,7 +156,10 @@ export function createInitialState(
     momentsSeen: [],
     counters: createCounters(),
     regulars: createRegularStates(),
+    parties: [],
+    campaign: null,
     nextGuestId: 1,
+    nextPartyId: 1,
     nextFurnitureId: furniture.length + 1,
     nextJobId: 1,
     nextOrderId: 1,

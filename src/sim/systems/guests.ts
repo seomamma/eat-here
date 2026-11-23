@@ -22,6 +22,9 @@ import {
 } from './happiness';
 import { isChairUsable } from './build';
 import { requestOrder } from './jobs';
+import { assignSeats, kidMenu, liveMembers, mayUseChair, pruneParties, seatGroups } from './parties';
+import { tickCampaign } from './campaigns';
+import { departTail, leaveSide } from '../street';
 import { rollGift } from './market';
 import { priceAtLevel } from './recipes';
 import { checkMoments } from './moments';
@@ -33,7 +36,7 @@ import {
   spawnRegularGuests,
   usualRecipe,
 } from './regulars';
-import { secToTicks, spawnGuest } from './spawner';
+import { secToTicks, spawnParty, spawnRushParties } from './spawner';
 
 export interface GuestContext {
   state: GameState;
@@ -83,24 +86,49 @@ function randomTicks(state: GameState, range: readonly [number, number]): number
   return rngInt(state, secToTicks(range[0]), secToTicks(range[1]));
 }
 
-/** Claims the nearest free reachable chair for the guest; returns true on success. */
-function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
-  const { state } = ctx;
+/** Furniture ids of the chairs some guest has claimed. */
+function takenChairs(state: GameState): Set<string> {
   const taken = new Set<string>();
   for (const c of state.characters) if (isGuest(c) && c.seatId) taken.add(c.seatId);
-  // A companion prefers the free chair nearest to their partner's (the same table if possible).
+  return taken;
+}
+
+/**
+ * Claims the nearest free reachable chair for one guest (a solo guest, a regular's companion or
+ * a party member whose party is already seated); returns true on success.
+ */
+function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
+  const { state } = ctx;
+  const taken = takenChairs(state);
+  // A companion or party member prefers the free chair nearest to a seated partner's.
   const partner = g.companionOf
     ? state.characters.find((c) => c.id === g.companionOf && isGuest(c))
-    : undefined;
+    : g.partyId
+      ? state.characters.find((c) => isGuest(c) && c.partyId === g.partyId && c !== g && c.seatId)
+      : undefined;
   const partnerChair =
     partner && isGuest(partner) && partner.seatId
       ? furnitureById(state, partner.seatId)
       : undefined;
   const here = partnerChair ? { x: partnerChair.x, y: partnerChair.y } : currentTile(g);
+  // A guest on their own fills tables that are already taken first, leaving whole tables free
+  // for couples and families (D-041).
+  const groupFree = new Map<string, number>();
+  if (!partnerChair) {
+    for (const group of seatGroups(state)) {
+      const n = group.filter((c) => !taken.has(c.id)).length;
+      for (const c of group) groupFree.set(c.id, n);
+    }
+  }
   const free = chairs(state)
-    .filter((f) => !taken.has(f.id) && isChairUsable(state, f))
-    .map((f, i) => ({ f, i, d: Math.abs(f.x - here.x) + Math.abs(f.y - here.y) }))
-    .sort((a, b) => a.d - b.d || a.i - b.i);
+    .filter((f) => !taken.has(f.id) && isChairUsable(state, f) && mayUseChair(g, f))
+    .map((f, i) => ({
+      f,
+      i,
+      d: Math.abs(f.x - here.x) + Math.abs(f.y - here.y),
+      n: groupFree.get(f.id) ?? 0,
+    }))
+    .sort((a, b) => a.n - b.n || a.d - b.d || a.i - b.i);
   for (const { f } of free) {
     if (planPath(ctx, g, { x: f.x, y: f.y }, { allowGoalBlocked: true })) {
       g.seatId = f.id;
@@ -109,6 +137,44 @@ function tryClaimSeat(ctx: GuestContext, g: Guest): boolean {
       g.errand = null; // a seat beats the snack: the claim on the machine is dropped
       return true;
     }
+  }
+  return false;
+}
+
+/**
+ * Claims seats for a whole party at once: all of them at one table (or a run of touching
+ * tables), or none (D-041). Everyone gets a route first, so the claim is atomic.
+ */
+function tryClaimPartySeats(ctx: GuestContext, members: readonly Guest[]): boolean {
+  const { state } = ctx;
+  const taken = takenChairs(state);
+  const first = members[0];
+  if (!first) return false;
+  const here = currentTile(first);
+  for (const group of seatGroups(state)) {
+    const free = group
+      .filter((f) => !taken.has(f.id))
+      .map((f, i) => ({ f, i, d: Math.abs(f.x - here.x) + Math.abs(f.y - here.y) }))
+      .sort((a, b) => a.d - b.d || a.i - b.i)
+      .map((e) => e.f);
+    if (free.length < members.length) continue;
+    const seats = assignSeats(members, free);
+    if (!seats) continue;
+    const paths = members.map((m, i) => {
+      const seat = seats[i] as Furniture;
+      return findPath(ctx.walk, m.path[0] ?? currentTile(m), { x: seat.x, y: seat.y }, {
+        allowGoalBlocked: true,
+      });
+    });
+    if (paths.some((p) => p === null)) continue;
+    members.forEach((m, i) => {
+      m.path = paths[i] as TilePos[];
+      m.seatId = (seats[i] as Furniture).id;
+      m.phase = 'walkingToSeat';
+      m.waitSpot = null;
+      m.errand = null;
+    });
+    return true;
   }
   return false;
 }
@@ -122,7 +188,10 @@ function startLeaving(ctx: GuestContext, g: Guest, reason: GuestLeaveReason): vo
     // No route out (should not happen): drop the guest so it can never get stuck.
     g.path = [];
     g.phase = 'gone';
+    return;
   }
+  // Out through the door and away along the sidewalk (members of a party go the same way).
+  g.path.push(...departTail(leaveSide(g.partyId ?? g.id)));
 }
 
 /** Frees the claimed chair once the guest has fully stepped off it. */
@@ -274,6 +343,15 @@ export function startEating(ctx: GuestContext, g: Guest): void {
   ctx.events.emit('guestEmote', { guestId: g.id, emote: 'tasty' });
 }
 
+/** Sends a waiting guest to the next waiting spot near the door. */
+function takeWaitSpot(ctx: GuestContext, g: Guest): void {
+  const waiting = ctx.state.characters.filter((c) => isGuest(c) && c.waitSpot).length;
+  const spot = WAITING_SPOTS[waiting % WAITING_SPOTS.length];
+  if (!spot) return;
+  g.waitSpot = { ...spot };
+  planPath(ctx, g, spot);
+}
+
 function updateGuest(ctx: GuestContext, g: Guest): void {
   const { state, events } = ctx;
   const type = GUEST_TYPES[g.typeId];
@@ -286,32 +364,48 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
       if (arrived) {
         g.phase = 'waitingForSeat';
         g.timer = secToTicks(seatPatienceSec(g, type.seatPatienceSec));
+        // The seating clock starts at the door, not out on the sidewalk.
+        beginStep(state, g);
       }
       break;
 
-    case 'waitingForSeat':
-      if (tryClaimSeat(ctx, g)) break;
+    case 'waitingForSeat': {
+      // A party waits together: the first one waiting drives the claim and the patience.
+      const party = g.partyId ? liveMembers(state, g.partyId) : [];
+      const together =
+        party.length > 1 && party.every((m) => m.phase === 'arriving' || m.phase === 'waitingForSeat');
+      const driver = party.find((m) => m.phase === 'waitingForSeat');
+      if (together && driver !== g) {
+        if (!g.waitSpot && arrived) takeWaitSpot(ctx, g);
+        break;
+      }
+      const seated =
+        together && party.every((m) => m.phase === 'waitingForSeat')
+          ? tryClaimPartySeats(ctx, party)
+          : together
+            ? false
+            : tryClaimSeat(ctx, g);
+      if (seated) break;
+      const group = together ? party : [g];
       if (state.clock.phase === 'closing') {
         // Closing time: nobody new gets seated, and this is not the guest's fault (no angry emote).
-        startLeaving(ctx, g, 'closed');
+        for (const m of group) startLeaving(ctx, m, 'closed');
         break;
       }
       if (--g.timer <= 0) {
-        events.emit('guestEmote', { guestId: g.id, emote: 'angry' });
-        startLeaving(ctx, g, 'noSeat');
+        for (const m of group) {
+          events.emit('guestEmote', { guestId: m.id, emote: 'angry' });
+          startLeaving(ctx, m, 'noSeat');
+        }
         break;
       }
       if (!g.waitSpot && arrived) {
-        const waiting = state.characters.filter((c) => isGuest(c) && c.waitSpot).length;
-        const spot = WAITING_SPOTS[waiting % WAITING_SPOTS.length];
-        if (spot) {
-          g.waitSpot = { ...spot };
-          planPath(ctx, g, spot);
-        }
-      } else {
+        takeWaitSpot(ctx, g);
+      } else if (!g.partyId) {
         updateWaitingErrand(ctx, g, arrived);
       }
       break;
+    }
 
     case 'walkingToSeat':
       if (arrived) {
@@ -334,7 +428,7 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
         const usual = usualRecipe(state, g);
         if (usual) awardHappiness(g, 'usual', HAPPINESS_POINTS.usual);
         const unlocked = RECIPE_IDS.filter((id) => state.recipes[id].unlocked);
-        g.recipeId = usual ?? rngPick(state, unlocked);
+        g.recipeId = usual ?? rngPick(state, g.kid ? kidMenu(state) : unlocked);
         g.phase = 'wantsToOrder';
         beginStep(state, g);
         events.emit('guestEmote', { guestId: g.id, emote: 'hand' });
@@ -368,7 +462,14 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
     }
 
     case 'paying':
-      if (--g.timer <= 0) startLeaving(ctx, g, 'done');
+      if (--g.timer <= 0) {
+        g.timer = 0;
+        // A party leaves together, once the last one has paid.
+        const party = g.partyId ? liveMembers(state, g.partyId) : [g];
+        if (party.every((m) => m.phase === 'paying' && m.timer <= 0)) {
+          for (const m of party) startLeaving(ctx, m, 'done');
+        }
+      }
       break;
 
     case 'leaving':
@@ -384,8 +485,8 @@ function updateGuest(ctx: GuestContext, g: Guest): void {
 /** Spawns arrivals, advances every guest by one tick and removes the ones that are gone. */
 export function tickGuests(ctx: GuestContext): void {
   const { state, events } = ctx;
-  const fresh = spawnGuest(state);
-  if (fresh) {
+  tickCampaign(state, events);
+  for (const fresh of [...spawnParty(state), ...spawnRushParties(state)]) {
     state.characters.push(fresh);
     events.emit('guestArrived', { guestId: fresh.id });
   }
@@ -401,4 +502,5 @@ export function tickGuests(ctx: GuestContext): void {
     events.emit('guestLeft', { guestId: c.id, reason: c.leaveReason ?? 'done' });
     return false;
   });
+  pruneParties(state);
 }

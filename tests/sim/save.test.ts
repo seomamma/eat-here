@@ -202,7 +202,7 @@ describe('migrate', () => {
     const { state } = res;
     expect(state.version).toBe(SAVE_VERSION);
     expect(state.momentsSeen).toEqual([]);
-    expect(state.counters).toEqual({ served: {}, servedLevel: {} });
+    expect(state.counters).toEqual({ served: {}, servedLevel: {}, campaigns: 0 });
     expect(state.regulars.nonna_rosa.unlocked).toBe(false);
     expect(state.regulars.oliver.hearts).toBe(0);
     const guests = state.characters.filter(isGuest);

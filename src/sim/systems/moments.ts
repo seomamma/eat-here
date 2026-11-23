@@ -18,6 +18,8 @@ export function triggerMet(state: GameState, t: MomentTrigger): boolean {
       return state.recipes[t.recipe].level >= t.level;
     case 'rank':
       return state.rank >= t.rank;
+    case 'campaigns':
+      return state.counters.campaigns >= t.count;
     case 'day':
       return state.clock.day >= t.day;
   }

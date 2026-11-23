@@ -9,6 +9,7 @@ export const SHOP_ITEMS: readonly FurnitureDefId[] = [
   'chair_wood',
   'table_small',
   'chair_cushion',
+  'chair_high',
   'table_long',
   'vending_machine',
   'toilet',

@@ -92,6 +92,10 @@ export interface Guest extends CharacterBase {
   look: LookId | null;
   /** Guest id of the regular this guest came with (seats at the same table if possible). */
   companionOf: string | null;
+  /** True for a kid (smaller sprite, cheaper dishes, may use a high chair, never sits alone). */
+  kid: boolean;
+  /** Party this guest came with (couple, friends, family; M12c), or null for a solo guest. */
+  partyId: string | null;
   /** Happiness meter 0..100 (GAME_DESIGN §4). */
   happiness: number;
   /** What filled the meter, in order (shown on the info card). */

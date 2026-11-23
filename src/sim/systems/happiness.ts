@@ -12,6 +12,7 @@ import {
   TIP_DIVISOR,
 } from '../../data/happiness';
 import { FURNITURE } from '../../data/furniture';
+import { PARTY_BONUS_POINTS, PARTY_KINDS } from '../../data/parties';
 import type { Guest, GuestPhase } from '../characters';
 import type { Emitter, GameEvents } from '../events';
 import { FACING_STEP, buildOccupancy, chairFacing, footprintTiles, type Furniture } from '../grid';
@@ -31,7 +32,9 @@ export type HappinessReason =
   | 'comfort'
   | 'music'
   | 'toilet'
-  | 'snack';
+  | 'snack'
+  | 'friends'
+  | 'family';
 
 export interface HappinessEntry {
   reason: HappinessReason;
@@ -90,6 +93,11 @@ export function onSeated(state: GameState, g: Guest): void {
     awardHappiness(g, 'comfort', seatComfort(state.furniture, chair));
     awardHappiness(g, 'music', auraPoints(state.furniture, chair, 'music'));
   }
+  // Sitting down together as a couple, group or family (M12c).
+  const bonus = g.partyId
+    ? PARTY_KINDS[state.parties.find((p) => p.id === g.partyId)?.kind ?? 'solo'].bonus
+    : null;
+  if (bonus) awardHappiness(g, bonus, PARTY_BONUS_POINTS);
   beginStep(state, g);
 }
 

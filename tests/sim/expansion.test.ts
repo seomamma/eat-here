@@ -9,6 +9,7 @@ import {
   LEGACY_OFFSET,
   START_ROOM,
 } from '../../src/data/layout';
+import { SAVE_VERSION } from '../../src/sim/save';
 import { RANKS } from '../../src/data/ranks';
 import { growthText } from '../../src/data/strings';
 import { isGuest, isStaff } from '../../src/sim/characters';
@@ -53,7 +54,7 @@ function checkInvariants(g: Game): void {
     for (const x of new Set([Math.floor(c.x), Math.ceil(c.x)])) {
       for (const y of new Set([Math.floor(c.y), Math.ceil(c.y)])) {
         const onChair = chair && chair.x === x && chair.y === y;
-        expect(isWalkable(walk, x, y) || onChair, `${c.id} at ${x},${y}`).toBe(true);
+        expect(y > DOOR_Y || isWalkable(walk, x, y) || onChair, `${c.id} at ${x},${y}`).toBe(true);
       }
     }
   }
@@ -262,7 +263,7 @@ describe('migration v5 -> v6', () => {
     if (!res.ok) return;
     const s = res.state;
     const { x: ox, y: oy } = LEGACY_OFFSET;
-    expect(s.version).toBe(6);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(s.room).toEqual(START_ROOM);
     expect(s.grid.width).toBe(GRID_WIDTH);
     expect(s.grid.height).toBe(GRID_HEIGHT);

@@ -10,7 +10,8 @@ export type LedgerKind =
   | 'market'
   | 'upgrade'
   | 'moment'
-  | 'sale';
+  | 'sale'
+  | 'ads';
 
 /**
  * One line of the day's money ledger (D-033). `amount` is signed (+ income, - spending).
@@ -29,7 +30,7 @@ export interface LedgerEntry {
 /**
  * Bounding rule: dish, tip, vending and ingredient events are folded into ONE aggregate entry per
  * kind (summed amount + count); only the day's single biggest tip of at least NOTABLE_TIP is
- * split out as its own entry. Furniture, market, upgrade, sale and moment entries are kept
+ * split out as its own entry. Furniture, market, upgrade, sale, ads and moment entries are kept
  * individually (the player triggers them, and money limits how many fit in a day). The ledger
  * resets every day, so it is bounded by 4 aggregates + 1 notable tip + the day's purchases.
  */
@@ -104,7 +105,8 @@ export function recordLedger(
     kind === 'market' ||
     kind === 'upgrade' ||
     kind === 'moment' ||
-    kind === 'sale'
+    kind === 'sale' ||
+    kind === 'ads'
   ) {
     ledger.entries.push({ tick, kind, amount, label, count });
     return;

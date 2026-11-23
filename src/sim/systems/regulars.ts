@@ -38,6 +38,8 @@ export interface Counters {
   served: Partial<Record<RecipeId, number>>;
   /** Highest recipe level at which a dish of the recipe was served. */
   servedLevel: Partial<Record<RecipeId, number>>;
+  /** Ad campaigns started (M12c). */
+  campaigns: number;
 }
 
 export function createRegularState(): RegularState {
@@ -59,7 +61,7 @@ export function createRegularStates(): RegularStates {
 }
 
 export function createCounters(): Counters {
-  return { served: {}, servedLevel: {} };
+  return { served: {}, servedLevel: {}, campaigns: 0 };
 }
 
 /** A dish was paid for: updates the totals the moment triggers read. */

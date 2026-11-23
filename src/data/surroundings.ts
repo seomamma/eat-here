@@ -7,7 +7,7 @@
  * again; ground and props depend only on absolute tile coordinates and the room, so what stays
  * outside keeps its look.
  */
-import { DOOR_X, DOOR_Y, type Room } from './layout';
+import { DOOR_X, SIDEWALK_Y, type Room } from './layout';
 
 export type GroundKind = 'grass' | 'soil' | 'sidewalk' | 'asphalt' | 'asphalt_line';
 
@@ -71,7 +71,6 @@ export function isRoomTile(room: Readonly<Room>, x: number, y: number): boolean 
 }
 
 /** First and last row of the sidewalk / street on the door side (the door row never moves). */
-const SIDEWALK_Y = DOOR_Y + 1;
 const STREET_Y = SIDEWALK_Y + SURROUNDINGS.sidewalk;
 const STREET_CENTRE_Y = STREET_Y + Math.floor(SURROUNDINGS.street / 2);
 const STREET_END_Y = STREET_Y + SURROUNDINGS.street - 1;

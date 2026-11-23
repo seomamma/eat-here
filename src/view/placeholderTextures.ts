@@ -1048,6 +1048,33 @@ const FURNITURE_ART: Record<FurnitureDefId, FurnitureArt> = {
         right: C.tomato1,
       }),
     ]),
+  // High chair (kids): tall legs, small seat, a tray bar in front and a tall backrest.
+  chair_high: (ox, oy, back) =>
+    boxes(1, 1, ox, oy, [
+      ...legs(0.22, 0.22, 0.78, 0.78, 8, 0.12),
+      part({
+        i0: 0.2,
+        j0: 0.2,
+        i1: 0.8,
+        j1: 0.8,
+        z0: 8,
+        z1: 11,
+        top: C.cheese3,
+        left: C.cheese2,
+        right: C.cheese1,
+      }),
+      part({
+        i0: 0.2,
+        j0: back ? 0.68 : 0.2,
+        i1: 0.8,
+        j1: back ? 0.8 : 0.32,
+        z0: 11,
+        z1: 22,
+        top: C.cheese3,
+        left: C.cheese2,
+        right: C.cheese1,
+      }),
+    ]),
   table_long: (ox, oy) =>
     boxes(2, 1, ox, oy, [
       ...legs(0.12, 0.12, 1.88, 0.88, 9),

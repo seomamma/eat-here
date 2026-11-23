@@ -1,3 +1,4 @@
+import { DOOR_Y } from '../../src/data/layout';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FURNITURE } from '../../src/data/furniture';
 import { isGuest, isStaff, type Guest, type Staff } from '../../src/sim/characters';
@@ -35,7 +36,7 @@ function checkInvariants(g: Game): void {
       for (const y of new Set([Math.floor(c.y), Math.ceil(c.y)])) {
         const chair = g.state.furniture.find((f) => f.x === x && f.y === y);
         const onOwnChair = chair && isGuest(c) && c.seatId === chair.id;
-        expect(isWalkable(walk, x, y) || onOwnChair, `${c.id} at ${x},${y}`).toBe(true);
+        expect(y > DOOR_Y || isWalkable(walk, x, y) || onOwnChair, `${c.id} at ${x},${y}`).toBe(true);
       }
     }
   }
@@ -258,12 +259,20 @@ describe('characters on the new footprint', () => {
     });
     g.invalidateWalkGrid();
     let nudged = 0;
-    for (let i = 0; i < 4000 && nudged < 3; i++) {
+    for (let i = 0; i < 12000 && nudged < 3; i++) {
       g.tickOnce();
-      const walker = guests(g).find(
-        (c) => c.path.length > 0 && Number.isInteger(c.x) && Number.isInteger(c.y),
-      );
+      // A guest on its way to a chair, put on a free tile further along its route (the calm
+      // arrival rate rarely has one standing exactly on a tile where the piece may go).
+      const walker = guests(g).find((c) => c.phase === 'walkingToSeat' && c.path.length >= 3);
       if (!walker) continue;
+      const stop = walker.path
+        .slice(0, -1)
+        .findIndex((t) => validateMove(g.state, 'extra', t.x, t.y, 0).ok);
+      if (stop < 0) continue;
+      const at = walker.path[stop] as { x: number; y: number };
+      walker.x = walker.prevX = at.x;
+      walker.y = walker.prevY = at.y;
+      walker.path = walker.path.slice(stop + 1);
       const here = { x: walker.x, y: walker.y };
       const goal = walker.path.at(-1);
       if (!validateMove(g.state, 'extra', here.x, here.y, 0).ok) continue;

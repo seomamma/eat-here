@@ -57,7 +57,7 @@ function checkInvariants(g: Game): void {
       [Math.ceil(c.x), Math.ceil(c.y)],
     ] as const) {
       const onOwnChair = chair !== undefined && chair.x === tx && chair.y === ty;
-      if (!onOwnChair && !isWalkable(walk, tx, ty)) {
+      if (!onOwnChair && ty <= DOOR_Y && !isWalkable(walk, tx, ty)) {
         throw new Error(
           `${c.id} (${c.phase}) stands on blocked tile ${tx},${ty} at tick ${g.state.tick}`,
         );

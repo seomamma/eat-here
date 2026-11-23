@@ -1,3 +1,4 @@
+import { DOOR_Y } from '../../src/data/layout';
 import { describe, expect, it } from 'vitest';
 import { isGuest, isStaff } from '../../src/sim/characters';
 import { Game } from '../../src/sim/game';
@@ -72,7 +73,7 @@ function checkNobodyStuck(g: Game): void {
       [Math.ceil(c.x), Math.ceil(c.y)],
     ] as const) {
       const onOwnChair = chair && chair.x === tx && chair.y === ty;
-      if (!onOwnChair && !isWalkable(walk, tx, ty)) {
+      if (!onOwnChair && ty <= DOOR_Y && !isWalkable(walk, tx, ty)) {
         throw new Error(`${c.id} stands on blocked tile ${tx},${ty} at tick ${g.state.tick}`);
       }
     }

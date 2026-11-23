@@ -90,7 +90,7 @@ describe('day cycle', () => {
   });
 
   it('closing: nobody new arrives, waiting guests leave as "closed" (not angry)', () => {
-    const g = new Game(createInitialState(2));
+    const g = new Game(createInitialState(6));
     const angry: string[] = [];
     g.events.on('guestEmote', (e) => e.emote === 'angry' && angry.push(e.guestId));
     const { log } = playDay(g);
@@ -98,7 +98,7 @@ describe('day cycle', () => {
     expect(log.left).toHaveLength(log.arrived);
     // Every angry emote belongs to a guest that left with noSeat; closed leavers are not angry.
     expect(angry).toHaveLength(log.left.filter((l) => l.reason === 'noSeat').length);
-    // With the data curve a few guests are still waiting for a seat at closing time.
+    // With the data curve (calm start) this seed still has a guest waiting for a seat at closing time.
     expect(closed.length).toBeGreaterThan(0);
   });
 

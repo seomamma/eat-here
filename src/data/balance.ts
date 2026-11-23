@@ -14,19 +14,21 @@ export const DEBUG_WALKER_SPEED = 2.5;
 /** Seconds until the first guest of a new game arrives. */
 export const FIRST_GUEST_SEC = 2;
 /**
- * Guest arrival rate by time of day. Each entry applies from `fromMinute` (minutes since
- * midnight) until the next entry; the gap to the next arrival is drawn from `intervalSec`.
- * Quiet morning, lunch peak 12-14, quiet afternoon, dinner peak 18-21.
+ * Party arrival rate by time of day (M12c, D-042: a calmer start). Each entry applies from
+ * `fromMinute` (minutes since midnight) until the next entry; the gap to the next arrival (a
+ * party: one guest, a couple, friends or a family) is drawn from `intervalSec` and divided by
+ * the arrival multiplier (rank, advertising, curb appeal). Quiet morning, lunch peak 12-14,
+ * quiet afternoon, dinner peak 18-21.
  */
 export const SPAWN_CURVE: readonly {
   fromMinute: number;
   intervalSec: readonly [number, number];
 }[] = [
-  { fromMinute: 600, intervalSec: [9, 15] },
-  { fromMinute: 720, intervalSec: [5, 8] },
-  { fromMinute: 840, intervalSec: [9, 15] },
-  { fromMinute: 1080, intervalSec: [5, 8] },
-  { fromMinute: 1260, intervalSec: [9, 15] },
+  { fromMinute: 600, intervalSec: [24, 40] },
+  { fromMinute: 720, intervalSec: [14, 22] },
+  { fromMinute: 840, intervalSec: [24, 40] },
+  { fromMinute: 1080, intervalSec: [14, 22] },
+  { fromMinute: 1260, intervalSec: [24, 40] },
 ];
 /** No new guests spawn while this many are in the restaurant (keeps the door tidy). */
 export const MAX_GUESTS_ALIVE = 12;

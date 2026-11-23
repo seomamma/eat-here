@@ -15,8 +15,8 @@ describe('balance (scripted player, 10 seeds x 10 days)', () => {
     }
   });
 
-  it('can afford the first plant on day 1-2', () => {
-    for (const r of results) expect(r.plantDay ?? 99, `seed ${r.seed}`).toBeLessThanOrEqual(2);
+  it('can afford the first plant on day 1-4 (calmer start, D-042)', () => {
+    for (const r of results) expect(r.plantDay ?? 99, `seed ${r.seed}`).toBeLessThanOrEqual(4);
   });
 
   it('makes a profit every day', () => {

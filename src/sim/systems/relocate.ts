@@ -16,6 +16,7 @@ import { seatFacing, type GuestContext } from './guests';
 import { getJob, resetStaff, stationSpot } from './jobs';
 import { secToTicks } from './spawner';
 import { beginStage } from './staff';
+import { splitRun } from '../street';
 
 /**
  * Carries everyone along when a piece in use is moved or turned (M12b). Runs right after the
@@ -163,7 +164,9 @@ function relocateErrand(ctx: GuestContext, g: Guest, f: Furniture): void {
 function nudge(ctx: GuestContext, c: Character, reached: ReadonlySet<number>): void {
   const { walk } = ctx;
   const here = { x: c.x, y: c.y };
-  const goal = c.path[c.path.length - 1];
+  // A walk along the sidewalk keeps its street part; only the run inside the room is re-planned.
+  const { run, tail } = splitRun(c.path);
+  const goal = run[run.length - 1];
   let best: { tile: TilePos; d: number } | null = null;
   for (const idx of reached) {
     const x = idx % walk.width;
@@ -184,7 +187,7 @@ function nudge(ctx: GuestContext, c: Character, reached: ReadonlySet<number>): v
     allowGoalBlocked: !isWalkable(walk, goal.x, goal.y),
   });
   if (path) {
-    c.path = path;
+    c.path = [...path, ...tail];
     return;
   }
   if (isGuest(c) && c.phase === 'walkingToSeat') {

@@ -8,6 +8,7 @@ import type { GameState } from './state';
 import { validateBuy, validateMove } from './systems/build';
 import { addIngredient, rollMarket, validateBuyOffer } from './systems/market';
 import { nextUpgrade, validateUpgrade } from './systems/recipes';
+import type { CampaignId } from '../data/campaigns';
 import type { RecipeId } from '../data/recipes';
 import type { FloorStyleId, WallStyleId } from '../data/surfaces';
 import { validateSell, validateUpgradeFurniture } from './systems/facilities';
@@ -17,6 +18,7 @@ import {
   validatePaintFloor,
   validatePaintWall,
 } from './systems/surfaces';
+import { startCampaign, validateStartCampaign } from './systems/campaigns';
 import { checkMoments } from './systems/moments';
 import { replanAfterBuild } from './systems/replan';
 import { relocateAfterMove } from './systems/relocate';
@@ -35,7 +37,8 @@ export type Command =
   | { type: 'upgradeFurniture'; id: string }
   | { type: 'sellFurniture'; id: string }
   | { type: 'paintFloor'; tiles: { x: number; y: number }[]; style: FloorStyleId }
-  | { type: 'paintWall'; segments: string[]; style: WallStyleId };
+  | { type: 'paintWall'; segments: string[]; style: WallStyleId }
+  | { type: 'startCampaign'; id: CampaignId };
 
 export type CommandResult = { ok: true } | { ok: false; reason: string };
 
@@ -229,6 +232,8 @@ export class Game {
         return this.paintFloor(cmd.tiles, cmd.style);
       case 'paintWall':
         return this.paintWall(cmd.segments, cmd.style);
+      case 'startCampaign':
+        return this.startCampaign(cmd.id);
     }
   }
 
@@ -322,6 +327,14 @@ export class Game {
     if (!check.ok) return check;
     for (const id of segments) setWallStyle(state, id, style);
     this.finishPaint('wall', `wall:${style}`, check.cost, check.changed);
+    return { ok: true };
+  }
+
+  private startCampaign(id: CampaignId): CommandResult {
+    const check = validateStartCampaign(this.state, id);
+    if (!check.ok) return check;
+    startCampaign(this.state, this.events, id);
+    checkMoments(this.state, this.events);
     return { ok: true };
   }
 

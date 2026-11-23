@@ -34,6 +34,8 @@ export type MomentTrigger =
   /** The recipe reached at least this level. */
   | { kind: 'recipeLevel'; recipe: RecipeId; level: number }
   | { kind: 'rank'; rank: number }
+  /** At least this many ad campaigns were started. */
+  | { kind: 'campaigns'; count: number }
   | { kind: 'day'; day: number };
 
 export interface MomentDef {
@@ -44,7 +46,17 @@ export interface MomentDef {
 }
 
 /** Moments that are not tied to a regular. */
-const STANDALONE: readonly MomentDef[] = [];
+const STANDALONE: readonly MomentDef[] = [
+  {
+    id: 'first_campaign',
+    trigger: { kind: 'campaigns', count: 1 },
+    card: {
+      title: 'The whole street heard about your pizzas!',
+      text: 'Your first ad is out. Keep an eye on the door: more people are on their way.',
+      icon: 'star',
+    },
+  },
+];
 
 function regularMoments(): MomentDef[] {
   const out: MomentDef[] = [];

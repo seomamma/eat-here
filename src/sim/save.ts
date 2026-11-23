@@ -9,10 +9,11 @@ import { GRID_HEIGHT, GRID_WIDTH, LEGACY_OFFSET, START_ROOM, type TileType } fro
 import { expandRoom } from './systems/expansion';
 import type { GameState } from './state';
 import { createInventory, rollMarket } from './systems/market';
+import { CAMPAIGNS } from '../data/campaigns';
 import { createCounters, createRegularStates } from './systems/regulars';
 
 /** Save format version. Bump it when GameState changes shape and add a step to `MIGRATIONS`. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** Coins paid for each removed common ingredient when upgrading a v3 save (old market minimum). */
 const COMMON_REFUND = 40;
@@ -167,6 +168,24 @@ export const MIGRATIONS: Migrations = {
     }
     return { ...state, ...next, furniture, characters, styles: { floor, wall } };
   },
+  // v6 -> v7: parties, kids and ad campaigns (M12c). Guests in the room are solo adults, nobody
+  // has started a campaign yet.
+  6: (state) => {
+    const characters = Array.isArray(state.characters)
+      ? state.characters.map((c: unknown) =>
+          isObj(c) && c.kind === 'guest' ? { kid: false, partyId: null, ...c } : c,
+        )
+      : state.characters;
+    const counters = isObj(state.counters) ? state.counters : {};
+    return {
+      ...state,
+      characters,
+      parties: [],
+      campaign: null,
+      nextPartyId: 1,
+      counters: { ...counters, campaigns: 0 },
+    };
+  },
 };
 
 /** `savedAt` is passed in so this stays pure (the caller owns the clock). */
@@ -242,6 +261,7 @@ export function validateState(s: Record<string, unknown>): string | null {
     'fame',
     'rank',
     'nextGuestId',
+    'nextPartyId',
     'nextFurnitureId',
     'nextJobId',
     'nextOrderId',
@@ -320,8 +340,25 @@ export function validateState(s: Record<string, unknown>): string | null {
   if (!Array.isArray(s.jobs)) return 'bad:jobs';
   if (!Array.isArray(s.momentsSeen) || !s.momentsSeen.every((m) => typeof m === 'string'))
     return 'bad:momentsSeen';
-  if (!isObj(s.counters) || !isObj(s.counters.served) || !isObj(s.counters.servedLevel))
+  if (
+    !isObj(s.counters) ||
+    !isObj(s.counters.served) ||
+    !isObj(s.counters.servedLevel) ||
+    !isInt(s.counters.campaigns)
+  )
     return 'bad:counters';
+  if (!Array.isArray(s.parties)) return 'bad:parties';
+  for (const p of s.parties as unknown[]) {
+    if (!isObj(p) || typeof p.id !== 'string' || !Array.isArray(p.memberIds))
+      return 'bad:parties';
+  }
+  if (s.campaign !== null) {
+    const c = s.campaign;
+    if (!isObj(c) || !((c.id as string) in CAMPAIGNS) || !isInt(c.startDay) || !isInt(c.endDay))
+      return 'bad:campaign';
+    if (c.rush !== null && (!isObj(c.rush) || !Array.isArray(c.rush.pending)))
+      return 'bad:campaign';
+  }
   if (!isObj(s.regulars)) return 'bad:regulars';
   for (const id of REGULAR_IDS) {
     const r = s.regulars[id];

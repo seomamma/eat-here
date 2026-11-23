@@ -8,7 +8,7 @@ import { FURNITURE, type FurnitureDefId } from '../src/data/furniture';
 import type { IngredientId } from '../src/data/ingredients';
 import { RECIPE_IDS, RECIPES } from '../src/data/recipes';
 import { REGULAR_IDS, regularDef } from '../src/data/regulars';
-import { isGuest } from '../src/sim/characters';
+import { isGuest, isStaff } from '../src/sim/characters';
 import { ledgerTotal, profitOf } from '../src/sim/dayStats';
 import { Game } from '../src/sim/game';
 import { createInitialState } from '../src/sim/state';
@@ -40,6 +40,10 @@ export interface DayRow {
   income: number;
   /** Coins spent today on furniture, furniture upgrades and floors/walls. */
   buildSpend: number;
+  /** Guests that arrived today, mean seconds from the waiting spot to a chair, share of the open day the chef was busy. */
+  arrived: number;
+  avgWaitSec: number;
+  chefBusy: number;
 }
 
 export interface RunResult {
@@ -207,10 +211,13 @@ const BUILD_PLAN: readonly {
   /** Total pieces of this kind wanted (the start layout counts). */
   cap: number;
   /** `set` buys a table with `chairs` chairs; `decor` buys at the best decor spot; `door` near the door. */
-  how: 'set' | 'decor' | 'door';
+  how: 'set' | 'decor' | 'door' | 'chair';
   chairDef?: FurnitureDefId;
   chairs?: number;
 }[] = [
+  // Groups and families (Rank 2+) need a table for four, and a high chair for the little ones.
+  { defId: 'table_long', cap: 1, how: 'set', chairDef: 'chair_wood', chairs: 4 },
+  { defId: 'chair_high', cap: 2, how: 'chair' },
   { defId: 'table_small', cap: 3, how: 'set', chairDef: 'chair_wood', chairs: 2 },
   { defId: 'plant_potted', cap: 4, how: 'decor' },
   { defId: 'flower_box', cap: 2, how: 'decor' },
@@ -229,6 +236,7 @@ const UPGRADE_TARGET: Partial<Record<FurnitureDefId, number>> = {
   counter_pass: 2,
   chair_wood: 2,
   chair_cushion: 3,
+  chair_high: 2,
   table_small: 2,
   table_long: 3,
   plant_potted: 3,
@@ -262,6 +270,16 @@ function recipeReserve(game: Game): number {
 function think(game: Game, log: { plantDay: number | null }): void {
   const { state } = game;
   if (state.clock.phase === 'night') return;
+  // From Rank 2 groups and families come: the player saves up for a table for four first.
+  const needsBigTable =
+    state.rank >= 2 &&
+    !state.furniture.some((f) => f.defId === 'table_long') &&
+    !SKIP_ITEMS.has('table_long');
+  if (needsBigTable) {
+    const total = FURNITURE.table_long.price + 4 * FURNITURE.chair_wood.price + RESERVE;
+    if (state.money < total) return;
+    if (buySet(game, 'table_long', 'chair_wood', 4, RESERVE)) return;
+  }
   // Upgrade whatever can be upgraded (keeps the reserve).
   for (const id of RECIPE_IDS) {
     const r = state.recipes[id];
@@ -297,9 +315,18 @@ function think(game: Game, log: { plantDay: number | null }): void {
         : (FURNITURE[item.defId].unlock as { rank: number }).rank)
     )
       continue;
+    if (item.how === 'chair') {
+      if (state.money < FURNITURE[item.defId].price + keep) continue;
+      const tables = state.furniture.filter((f) => f.defId === 'table_long');
+      const spot = tables.flatMap((t) => chairSpots(game, t.id))[0];
+      if (!spot) continue;
+      if (game.dispatch({ type: 'buyAndPlace', defId: item.defId, ...spot }).ok) break;
+      continue;
+    }
     if (item.how === 'set') {
-      if ((oven?.level ?? 1) < SEATS_FROM_OVEN_LEVEL) continue;
-      if (buySet(game, item.defId, item.chairDef ?? 'chair_wood', item.chairs ?? 2, keep)) break;
+      if ((oven?.level ?? 1) < SEATS_FROM_OVEN_LEVEL && item.defId !== 'table_long') continue;
+      const hold = item.defId === 'table_long' ? RESERVE : keep;
+      if (buySet(game, item.defId, item.chairDef ?? 'chair_wood', item.chairs ?? 2, hold)) break;
       continue;
     }
     // The first plants are cheap and lift happiness at once: they only keep the plain reserve.
@@ -360,7 +387,17 @@ export function runSeed(seed: number, days: number): RunResult {
   let happy: number[] = [];
   let arrived = 0;
   let bigTip = 0;
+  let waits: number[] = [];
+  let chefTicks: number;
+  let openTicks: number;
+  /** Tick each guest began waiting for a seat (the walk in from the street does not count). */
+  const waitStart = new Map<string, number>();
   game.events.on('guestArrived', () => arrived++);
+  game.events.on('guestSeated', (e) => {
+    const t = waitStart.get(e.guestId);
+    if (t !== undefined) waits.push((game.state.tick - t) / 10);
+    waitStart.delete(e.guestId);
+  });
   game.events.on('paid', (e) => {
     const g = game.state.characters.find((c) => c.id === e.guestId);
     if (g && isGuest(g)) happy.push(g.happiness);
@@ -380,13 +417,25 @@ export function runSeed(seed: number, days: number): RunResult {
     happy = [];
     arrived = 0;
     bigTip = 0;
+    waits = [];
+    chefTicks = 0;
+    openTicks = 0;
     think(game, log);
     for (let i = 0; i < maxTicks && game.state.clock.phase !== 'report'; i++) {
       game.tickOnce();
+      for (const c of game.state.characters) {
+        if (isGuest(c) && c.phase === 'waitingForSeat' && !waitStart.has(c.id))
+          waitStart.set(c.id, game.state.tick);
+        if (isStaff(c) && c.role === 'chef' && c.phase !== 'idle') chefTicks++;
+      }
+      openTicks++;
       if (i % THINK_EVERY_TICKS === 0) think(game, log);
     }
     const stats = game.state.dayStats;
     result.days.push({
+      arrived,
+      avgWaitSec: waits.length ? waits.reduce((a, b) => a + b, 0) / waits.length : 0,
+      chefBusy: openTicks ? chefTicks / openTicks : 0,
       day: d,
       money: game.state.money,
       profit: profitOf(stats),
@@ -449,6 +498,9 @@ export function formatReport(results: RunResult[]): string {
     'lvSum',
     'vend',
     'build',
+    'arrive',
+    'wait s',
+    'chef%',
   ];
   lines.push(head.map((h) => h.padStart(8)).join(''));
   for (let i = 0; i < days; i++) {
@@ -469,6 +521,9 @@ export function formatReport(results: RunResult[]): string {
       mean(rows.map((r) => r.levels)).toFixed(0),
       mean(rows.map((r) => r.vending)).toFixed(0),
       mean(rows.map((r) => r.buildSpend)).toFixed(0),
+      mean(rows.map((r) => r.arrived)).toFixed(1),
+      mean(rows.map((r) => r.avgWaitSec)).toFixed(1),
+      (mean(rows.map((r) => r.chefBusy)) * 100).toFixed(0),
     ];
     lines.push(cells.map((c) => c.padStart(8)).join(''));
   }

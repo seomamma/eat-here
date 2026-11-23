@@ -42,6 +42,8 @@ export const KITCHEN_ROWS = 3;
 /** Door tile on the room's front edge. It never moves. */
 export const DOOR_X = local(4, 0).x;
 export const DOOR_Y = START_ROOM.y1;
+/** Row of the sidewalk in front of the door (outside the sim grid; guests walk along it, M12c). */
+export const SIDEWALK_Y = DOOR_Y + 1;
 
 export interface LayoutFurniture {
   defId: FurnitureDefId;

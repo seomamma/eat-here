@@ -4,7 +4,7 @@ import { FURNITURE, MAX_FURNITURE_LEVEL, type FurnitureDefId } from '../../src/d
 import { SHOP_CATEGORIES, SHOP_ITEMS, shopItemsOf, unlockRank } from '../../src/data/shop';
 import { FLOOR_STYLES, WALL_STYLES } from '../../src/data/surfaces';
 import { SURFACE_CAP } from '../../src/data/happiness';
-import { isGuest, type Guest } from '../../src/sim/characters';
+import { isGuest } from '../../src/sim/characters';
 import { ledgerTotal } from '../../src/sim/dayStats';
 import { Game } from '../../src/sim/game';
 import type { Furniture } from '../../src/sim/grid';
@@ -14,7 +14,7 @@ import {
   isChairUsable,
   validateBuy as validateBuyAbs,
 } from '../../src/sim/systems/build';
-import { OX, OY } from './helpers';
+import { OX, OY, spawnSolo } from './helpers';
 import {
   auraPoints,
   sellRefund,
@@ -25,7 +25,6 @@ import {
 } from '../../src/sim/systems/facilities';
 import { decorPoints, onSeated, seatComfort } from '../../src/sim/systems/happiness';
 import { floorStyleAt, surfacePoints, wallSegmentIds } from '../../src/sim/systems/surfaces';
-import { spawnGuest } from '../../src/sim/systems/spawner';
 
 /** Coordinates in this file are in the pre-M12b local frame (room tiles 1..8 x 1..11). */
 function validateBuy(
@@ -267,7 +266,7 @@ describe('aura', () => {
     const state = createInitialState(1);
     state.guestSpawn.enabled = true;
     state.guestSpawn.nextInTicks = 1;
-    const guest = spawnGuest(state) as Guest;
+    const guest = spawnSolo(state);
     const chair = state.furniture.find((f) => f.defId === 'chair_wood') as Furniture;
     guest.seatId = chair.id;
     put(state, 'piano', 4, 8, 0, 3);
@@ -333,7 +332,7 @@ describe('sellFurniture', () => {
     const chair = state.furniture.find((f) => f.defId === 'chair_wood') as Furniture;
     state.guestSpawn.enabled = true;
     state.guestSpawn.nextInTicks = 1;
-    const guest = spawnGuest(state) as Guest;
+    const guest = spawnSolo(state);
     state.characters.push(guest);
     guest.seatId = chair.id;
     expect(g.dispatch({ type: 'sellFurniture', id: chair.id })).toEqual({
@@ -352,7 +351,7 @@ describe('sellFurniture', () => {
     const { state } = g;
     const vend = put(state, 'vending_machine', 7, 5);
     state.characters.push({
-      ...(spawnGuest({ ...state, guestSpawn: { enabled: true, nextInTicks: 1 } }) as Guest),
+      ...(spawnSolo(state)),
       errand: { kind: 'vending', furnitureId: vend.id, stage: 'walking', timer: 0 },
     });
     expect(validateSell(state, vend.id)).toEqual({ ok: false, reason: 'inUse' });
