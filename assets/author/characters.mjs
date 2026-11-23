@@ -164,8 +164,8 @@ const TORSO = {
   },
   nonna: {
     // dark dress, mustard shawl over the shoulders with a fringe.
-    front: ['vuuBBuut', 'vuuuuuut', 'xtuuuutw', 'xwtuutww', 'xwwtwwww', 'xwwwwwww'],
-    back: ['vuuCCuut', 'vuuuuuut', 'xuuuuuuw', 'xtuuuutw', 'xwwwwwww', 'xwwwwwww'],
+    front: ['NMMBBMML', 'NMMMMMML', 'xLMMMMLw', 'xwLMMLww', 'xwwLwwww', 'xwwwwwww'],
+    back: ['NMMCCMML', 'NMMMMMML', 'xMMMMMMw', 'xLMMMMLw', 'xwwwwwww', 'xwwwwwww'],
   },
 };
 
@@ -278,20 +278,15 @@ function render(spec, facing, pose = {}) {
   };
   if (pose.armL !== 'none' && !(pose.sit && pose.armR === 'raise')) arm('L', pose.armL ?? 'down');
   if (pose.peel) {
-    // Chef at the oven (back view): right arm out, peel/log pointing up-right.
+    // Chef at the oven (back view): right arm out, a long peel (with a pizza on its blade) or a log
+    // pointing up-right along the 2:1 line.
     const hx = ox + 13;
     const hy = 11 + top;
     g.rect(ox + 12, hy, ox + 13, hy + 2, s2);
     g.rect(hx, hy - 1, hx + 1, hy, h1);
-    const n = pose.peel.n;
-    if (pose.peel.tool === 'peel') {
-      line21(g, hx + 2, hy - 1, n, 'd');
-      for (let i = 0; i < n; i++) g.set(hx + 2 + i * 2, hy - 1 - i + 1, 'c');
-    }
-    const ex = hx + 2 + n * 2;
-    const ey = hy - 1 - n;
-    if (pose.peel.pizza) pizza(g, ex - 3, ey - 2);
-    if (pose.peel.log) g.put(ex - 1, ey - 1, ['dbb', 'dab']);
+    const r = pose.peel.r;
+    if (pose.peel.tool === 'peel') peel(g, hx + 2, hy - 1, r, pose.peel.pizza);
+    if (pose.peel.log) g.put(hx + 1 + r * 2, hy - 2 - r, ['dbb', 'dab']);
   } else arm('R', pose.armR ?? 'down');
   if (pose.pad) {
     g.put(ox + 5, 13 + top, ['hhhh', 'hjjh', 'hhhh', 'hjjh']);
@@ -322,6 +317,25 @@ function line21(g, x, y, steps, ch) {
   for (let i = 0; i < steps; i++) {
     g.set(x + i * 2, y - i, ch);
     g.set(x + i * 2 + 1, y - i, ch);
+  }
+}
+/** Peel: a 2 px handle for r steps, then a 3-step blade (4 px thick), pizza on the blade. */
+function peel(g, x, y, r, withPizza) {
+  for (let i = 0; i < r; i++) {
+    g.rect(x + i * 2, y - i, x + i * 2 + 1, y - i, 'd');
+    g.rect(x + i * 2, y - i + 1, x + i * 2 + 1, y - i + 1, 'c');
+  }
+  for (let i = r; i < r + 3; i++) {
+    const cx = x + i * 2;
+    const cy = y - i;
+    g.rect(cx, cy - 1, cx + 1, cy - 1, 'd');
+    g.rect(cx, cy, cx + 1, cy + 1, 'c');
+    g.rect(cx, cy + 2, cx + 1, cy + 2, 'b');
+  }
+  if (withPizza) {
+    const mx = x + (r + 1) * 2;
+    const my = y - (r + 1);
+    g.put(mx - 3, my - 4, ['.tttttt.', 'tuuvuuut', 'tumuvmut', '.tttttt.']);
   }
 }
 function pizza(g, x, y) {
@@ -361,9 +375,18 @@ const SPECS = {
     head: HEAD.nonna,
     torso: TORSO.nonna,
     legs: 'skirt',
-    sleeve: ['v', 'u', 't'],
+    sleeve: ['N', 'M', 'L'],
     pants: ['w', 'x'],
     shoes: ['a', 'b'],
+    headExtra: (g, { ox, top }) => {
+      // Big grey bun on top and a plum shawl that hangs wider than the shoulders, with fringe.
+      g.put(ox + 6, top, ['.JJJJ.', 'JJJJK.', 'JJJKK.']);
+      for (let y = 11; y <= 15; y++) {
+        g.set(ox + 3, y + top, 'N');
+        g.set(ox + 12, y + top, 'L');
+      }
+      for (const x of [3, 5, 7, 9, 12]) g.set(ox + x, 16 + top, x < 8 ? 'N' : 'L');
+    },
   },
   oliver: {
     ...baseGuest,
@@ -376,22 +399,27 @@ const SPECS = {
   mia: {
     ...baseGuest,
     head: HEAD.mia,
-    sleeve: ['v', 'u', 't'],
-    map: { m: 'u', n: 'v', l: 't' },
+    sleeve: ['Y', 'Y', 'X'],
+    map: { m: 'Y', n: 'U', l: 'X', b: 'Q', c: 'Z', a: 'Q' },
     pants: ['x', 'y'],
     headExtra: (g, { ox, top, facing }) => {
-      // Ponytail on the right with a red bow.
+      // Copper ponytail swinging out to the right, tied with a tomato-red bow.
       const x = ox + 13;
-      g.rect(x, 6 + top, x + 1, 10 + top, 'b');
-      g.set(x + 1, 10 + top, 'a');
-      g.set(x, 5 + top, 'm');
-      g.set(x + 1, 5 + top, 'm');
-      if (facing === 'back') g.set(x, 7 + top, 'c');
+      g.rect(x, 7 + top, x + 2, 9 + top, 'Z');
+      g.rect(x + 1, 10 + top, x + 2, 12 + top, 'Z');
+      g.set(x + 2, 13 + top, 'Q');
+      g.set(x + 1, 13 + top, 'Z');
+      g.set(x, 7 + top, 'Q');
+      g.set(x + 2, 11 + top, 'Q');
+      g.set(x, 6 + top, 'm');
+      g.set(x + 1, 6 + top, 'n');
+      g.set(x + 2, 6 + top, 'm');
+      if (facing === 'back') g.set(x + 1, 8 + top, 'W');
     },
   },
   chef: {
     ...baseGuest,
-    W: 24,
+    W: 40,
     head: CHEF_HEAD,
     headX: 2,
     headY: 1,
@@ -488,7 +516,7 @@ export function generateCharacters() {
   writePx(
     'characters/chef.px',
     spriteText(
-      header('chef', 24),
+      header('chef', 40),
       anims(SPECS.chef, [
         ['idle', 2, IDLE],
         ['walk', 8, WALK],
@@ -497,32 +525,34 @@ export function generateCharacters() {
           'bake',
           6,
           [
-            { peel: { n: 1, tool: 'peel', pizza: true } },
-            { peel: { n: 2, tool: 'peel', pizza: true } },
-            { peel: { n: 3, tool: 'peel' } },
-            { peel: { n: 1, tool: 'peel' } },
+            { peel: { r: 0, tool: 'peel', pizza: true } },
+            { peel: { r: 1, tool: 'peel', pizza: true } },
+            { peel: { r: 3, tool: 'peel', pizza: true } },
+            { peel: { r: 3, tool: 'peel' } },
+            { peel: { r: 1, tool: 'peel' } },
           ],
-          { only: 'back' },
+          { only: 'back', loop: false },
         ],
         [
           'take',
           6,
           [
-            { peel: { n: 3, tool: 'peel' } },
-            { peel: { n: 2, tool: 'peel', pizza: true } },
-            { peel: { n: 1, tool: 'peel', pizza: true } },
-            { peel: { n: 0, tool: 'peel', pizza: true } },
+            { peel: { r: 1, tool: 'peel' } },
+            { peel: { r: 3, tool: 'peel' } },
+            { peel: { r: 2, tool: 'peel', pizza: true } },
+            { peel: { r: 1, tool: 'peel', pizza: true } },
+            { peel: { r: 0, tool: 'peel', pizza: true } },
           ],
-          { only: 'back' },
+          { only: 'back', loop: false },
         ],
         [
           'stoke',
           4,
           [
-            { peel: { n: 0, log: true } },
-            { peel: { n: 1, log: true } },
-            { peel: { n: 2, log: true } },
-            { peel: { n: 2 } },
+            { peel: { r: 0, log: true } },
+            { peel: { r: 1, log: true } },
+            { peel: { r: 2, log: true } },
+            { peel: { r: 2 } },
           ],
           { only: 'back' },
         ],

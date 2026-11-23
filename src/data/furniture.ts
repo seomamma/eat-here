@@ -179,7 +179,7 @@ const DEFS = {
     levelUpCost: [325, 650, 1100, 1750],
     aura: { radius: 3, points: [4, 6, 8, 10, 12], reason: 'music' },
     useSpots: [],
-    spriteOrigin: [16, 23],
+    spriteOrigin: [16, 28],
   },
   toilet: {
     name: 'Toilet',
@@ -198,7 +198,7 @@ const DEFS = {
       reason: 'toilet',
     },
     useSpots: [{ dx: 0, dy: 1, facing: 'up' }],
-    spriteOrigin: [16, 27],
+    spriteOrigin: [16, 35],
   },
   // ---- Decor ---------------------------------------------------------------------------
   plant_potted: {
@@ -211,7 +211,7 @@ const DEFS = {
     appeal: [5, 8, 12, 17, 25],
     levelUpCost: [75, 150, 260, 420],
     useSpots: [],
-    spriteOrigin: [16, 23],
+    spriteOrigin: [16, 33],
   },
   flower_box: {
     name: 'Flower Box',
@@ -223,7 +223,7 @@ const DEFS = {
     appeal: [2, 3, 5, 7, 10],
     levelUpCost: [35, 70, 120, 200],
     useSpots: [],
-    spriteOrigin: [16, 13],
+    spriteOrigin: [16, 21],
   },
   divider: {
     name: 'Low Divider',
@@ -235,7 +235,7 @@ const DEFS = {
     appeal: [1, 2, 3, 4, 5],
     levelUpCost: [20, 40, 70, 115],
     useSpots: [],
-    spriteOrigin: [16, 17],
+    spriteOrigin: [16, 25],
   },
   floor_lamp: {
     name: 'Floor Lamp',
@@ -247,7 +247,7 @@ const DEFS = {
     appeal: [3, 5, 7, 10, 14],
     levelUpCost: [55, 110, 190, 310],
     useSpots: [],
-    spriteOrigin: [16, 29],
+    spriteOrigin: [16, 37],
   },
   painting_easel: {
     name: 'Painting on Easel',
@@ -259,7 +259,7 @@ const DEFS = {
     appeal: [4, 6, 9, 13, 18],
     levelUpCost: [90, 180, 310, 500],
     useSpots: [],
-    spriteOrigin: [16, 27],
+    spriteOrigin: [16, 33],
   },
   pillar: {
     name: 'Pillar',
@@ -271,7 +271,7 @@ const DEFS = {
     appeal: [2, 3, 4, 6, 8],
     levelUpCost: [45, 90, 160, 260],
     useSpots: [],
-    spriteOrigin: [16, 39],
+    spriteOrigin: [16, 37],
   },
   statue: {
     name: 'Marble Statue',
@@ -283,7 +283,7 @@ const DEFS = {
     appeal: [8, 12, 17, 23, 30],
     levelUpCost: [210, 420, 730, 1150],
     useSpots: [],
-    spriteOrigin: [16, 37],
+    spriteOrigin: [16, 45],
   },
   // ---- Kitchen -------------------------------------------------------------------------
   oven_pizza: {
@@ -298,7 +298,7 @@ const DEFS = {
     speed: [1, 0.9, 0.8, 0.7, 0.6],
     // Chef stands in front (below) the oven, facing it.
     useSpots: [{ dx: 0, dy: 1, facing: 'up' }],
-    spriteOrigin: [16, 23],
+    spriteOrigin: [16, 34],
   },
   counter_pass: {
     name: 'Pass Counter',

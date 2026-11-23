@@ -11,7 +11,7 @@ export const OUT_DIR = join(ROOT, 'public/assets');
 
 export const DIRS = ['front', 'back', 'none'];
 export const KINDS = {
-  character: { ws: [16, 24], h: 24 },
+  character: { ws: [16, 24, 40], h: 24 },
   /** Kids (12x18) and pets: same rules as characters (pivot bottom-centre, feet on the last row). */
   kid: { w: 12, h: 18 },
   critter: {},
@@ -274,6 +274,16 @@ export function validate(palette, sprites) {
         if (walker && !feet) errors.push(`${fat}: no pixel on the baseline row ${s.h - 1} (feet)`);
       });
     }
+  }
+  // Level overlays (trim_<piece>, accent_<piece>) share the canvas and pivot of their piece.
+  const byName = new Map(sprites.map((x) => [x.entity, x]));
+  for (const s of sprites) {
+    const m = /^(?:trim|accent)_(.+)$/.exec(s.entity);
+    if (!m) continue;
+    const base = byName.get(m[1]);
+    if (!base) errors.push(`${s.file}:${s.line} [${s.entity}]: no base sprite "${m[1]}"`);
+    else if (base.w !== s.w || base.h !== s.h || base.px !== s.px || base.py !== s.py)
+      errors.push(`${s.file}:${s.line} [${s.entity}]: size/pivot differ from ${base.entity}`);
   }
   return errors;
 }

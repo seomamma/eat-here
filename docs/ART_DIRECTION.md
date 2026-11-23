@@ -131,7 +131,7 @@ AI image tools produce "fake pixel art" (inconsistent pixel sizes, too many colo
 
 1. **Style bible first.** The approved direction is `assets/concepts/character-style-c.webp` plus the rules in this document; every new asset is compared against it (and against the gallery).
 2. **Concept generation (AI, optional).** Consistent prompt template stored in `assets/prompts/`; never name existing games or feed their screenshots in (section 8). Concepts are references, not sources.
-3. **Author the map.** One `.px` file per entity group in `assets/sprites/` (format: `assets/sprites/README.md`): header with size and pivot, animations per facing, frames as rows of single characters from the locked palette `assets/palette/world.hex`. Characters are 16x24 (chef 24x24), pivot bottom-centre, feet on row 23; kids are 12x18 (same chunky style, bigger head, pivot 6,17) and pets such as the 14x10 dog use kind `critter`; floors are 32x16 diamonds with strict 2:1 edges. Drafts may come from the helpers in `assets/author/` (layered patches plus an automatic 1 px outline); after that the `.px` files are edited directly.
+3. **Author the map.** One `.px` file per entity group in `assets/sprites/` (format: `assets/sprites/README.md`): header with size and pivot, animations per facing, frames as rows of single characters from the locked palette `assets/palette/world.hex`. Characters are 16x24 (chef 24x24), pivot bottom-centre, feet on row 23; kids are 12x18 (same chunky style, bigger head, pivot 6,17) and pets such as the 14x10 dog use kind `critter`; floors are 32x16 diamonds with strict 2:1 edges. Drafts may come from the helpers in `assets/author/` (layered patches, iso boxes and shaded ellipsoids, automatic 1 px outline); after that the `.px` files are edited directly. The chef is 40x24 so the peel has room.
 4. **Variants.** Palette swaps (e.g. guest bodies) use `variant` lines, mirrored animations use `mirror`; nothing is recoloured at runtime.
 5. **Build.** `npm run assets:build` packs everything into `public/assets/atlas.png`, `atlas.json` (Phaser JSON hash) and `anims.json` (fps and frame lists per `<anim>_<dir>`). Output is deterministic and committed; re-running produces no diff.
 6. **Validate.** `npm run assets:check` (also part of `npm test`): every pixel is in the palette, alpha is only 0 or 255 (except the shadow sprite), frame sizes match the kind, names follow `<entity>_<anim>_<dir>_<n>`, characters have feet on the baseline row; a test also fails when the committed atlas is stale.
@@ -149,9 +149,9 @@ assets/
 public/assets/   atlas.png, atlas.json, anims.json (generated, committed)
 ```
 
-### Placeholder art
+### No placeholders (M13b)
 
-Anything not yet drawn (M13b) is generated in code at the real pixel sizes (`src/view/placeholderTextures.ts`, `surroundingsTextures.ts`); the view aliases atlas frames onto the same texture keys, so drawing a piece means adding its `.px` and rebuilding, no code change.
+All art is in the atlas. `src/view/art.ts` copies static frames onto stable texture keys (`<entity>`, `<entity>_back`, `<entity>_<anim>_<n>`; keys listed in `textureKeys.ts`); a missing frame falls back to a magenta box and a dev console warning. Level art uses overlay sprites (`trim_<piece>`, `accent_<piece>`) on the piece's canvas. Palette additions in M13b: plum and teal ramps (named guests), asphalt greys.
 
 ## 8. Originality rules (mandatory)
 

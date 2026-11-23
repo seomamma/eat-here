@@ -217,6 +217,17 @@ Verified (tests, `npm run balance`, Playwright at 390×844 and 844×390, DSF 2; 
 - [x] Save v7 with a v6 → v7 migration (fixture `tests/fixtures/save-v6.json`); tests for party mix by seed, atomic claims, kids and kid seats, leaving together, too-big parties, campaigns (cost, refusal, windows, rush burst), street paths, dog walkers, a seeded multi-day run with moves and determinism.
 - [x] `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, `npm run assets:check` pass; `npm run assets:build` is idempotent.
 
+### M13b — Remaining catalog art (+ polish)
+
+- [x] Furniture drawn in the `.px` pipeline, front and back: plant, cushioned chair, long table, vending machine (blinking lights), upright piano, toilet cabin, flower box, floor lamp, easel with a landscape, statue (baker with a pizza), pillar, low divider; dome oven redrawn (round brick dome, arched mouth, chimney, prep ledge).
+- [x] Level art for all pieces: `trim_<piece>` overlay from Lv.3 (gold edges, plaques, bands) and `accent_<piece>` from Lv.5 (2 frames: candles, glints, gems, gilded statue, blossoms); oven keeps woodpile and copper collar. The derived gold tint (`levelTextures.ts`) is gone.
+- [x] Shop icons and paint-bar swatches are cut from the atlas (`furnitureIcons.ts`).
+- [x] Outdoors: sidewalk, street with dashed line, soil, 3 grass variants, round and tall trees, bushes, flowers, lamp post, bench.
+- [x] FX: selection marker, tile highlight, 4-frame sparkle, 4-frame coin spin in the pop-up, door leaf closed / ajar (opens when someone is within 1.9 tiles), night veil moved into the world so lamp posts and floor lamps glow above it.
+- [x] Polish: chef peel with a clear pizza and a longer reach (chef sprite 40 px wide, one-shot bake/take animations), oven mouth flares when a pizza goes in or out; Nonna (big bun, plum shawl) and Mia (copper ponytail, teal top) use new palette colours no random guest has; clearer dog.
+- [x] `placeholderTextures.ts`, `surroundingsTextures.ts`, `levelTextures.ts` removed; missing frames fall back to a magenta box with a dev console warning.
+- [x] `assets:check` also verifies that overlays match their piece; a test checks every furniture piece has art at its `spriteOrigin`. `npm test`, lint, typecheck, build, `assets:check` pass; `assets:build` is idempotent.
+
 ### M13 — Art foundation
 
 - [x] Pipeline: text pixel maps `assets/sprites/**/*.px` + locked palette `assets/palette/world.hex` → `npm run assets:build` (atlas PNG + Phaser JSON + anim manifest in `public/assets/`, own PNG encoder, no deps, idempotent) and `npm run assets:check` (palette, alpha, sizes, naming, feet row), the check and an "atlas is up to date" test run in `npm test` (D-040).
@@ -225,7 +236,7 @@ Verified (tests, `npm run balance`, Playwright at 390×844 and 844×390, DSF 2; 
 - [x] Dish icons, emote bubbles (hand, tasty, love, slow, angry, heart), order bubble frame, coin.
 - [x] View: atlas loaded in the scene preload, static frames aliased onto the placeholder keys (everything undrawn keeps its placeholder), characters animated from the manifest; `?gallery[=prefix,...]` shows every sprite and animation at 1x/2x/4x.
 - [x] Fame bar text fits in portrait 390 and landscape ("4.3k / 10.5k").
-- [ ] Still placeholders: see M13b.
+- [x] Still placeholders: none after M13b (see below).
 
 ### M11 — Regulars & Moments
 
