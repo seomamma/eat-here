@@ -105,7 +105,8 @@ function StatusBadge() {
             <svg viewBox="0 0 32 32" aria-hidden="true">
               <Megaphone />
             </svg>
-            {STRINGS.promote.activeChip(STRINGS.promote.campaigns[campaign.value].short)}
+            {STRINGS.promote.campaigns[campaign.value].short}
+            <span class="status-chip-suffix"> {STRINGS.promote.activeSuffix}</span>
           </span>
         )}
       </div>

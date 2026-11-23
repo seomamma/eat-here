@@ -55,7 +55,7 @@ export const STRINGS = {
     busy: 'Another campaign is running',
     rank: (rank: number) => `Rank ${rank}`,
     cost: (cost: number) => `${cost}`,
-    activeChip: (name: string) => `${name} active`,
+    activeSuffix: 'active',
     rush: 'Rush!',
     campaigns: {
       flyers: {

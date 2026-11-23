@@ -145,10 +145,28 @@ export function seatGroups(state: Pick<GameState, 'furniture'>): Furniture[][] {
   return [...groups.values()];
 }
 
+/** Upper bound on search steps in `assignSeats` (keeps the claim cheap and deterministic). */
+const SEAT_SEARCH_LIMIT = 20_000;
+
+/** Two chairs touch (same table side or neighbouring chair), diagonals included. */
+function chairsAdjacent(a: Furniture, b: Furniture): boolean {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+}
+
+/** True when every kid's chair is adjacent to at least one adult's chair. */
+function kidsNextToParent(members: readonly Pick<Guest, 'kid'>[], seats: readonly Furniture[]) {
+  const adults = seats.filter((_, i) => !members[i]?.kid);
+  return seats.every(
+    (seat, i) =>
+      !members[i]?.kid || adults.length === 0 || adults.some((a) => chairsAdjacent(a, seat)),
+  );
+}
+
 /**
  * Picks one chair per member (same order as `members`) out of `chairs`, which are sorted by
  * preference. Kids take kids-only chairs first, then ordinary ones; adults only ordinary ones.
- * Returns null when the party does not fit.
+ * Prefers an assignment where every kid sits next to a parent; falls back to the plain
+ * preference order when none exists. Returns null when the party does not fit.
  */
 export function assignSeats(
   members: readonly Pick<Guest, 'kid'>[],
@@ -156,13 +174,40 @@ export function assignSeats(
 ): Furniture[] | null {
   const high = chairs.filter((c) => FURNITURE[c.defId].kidsOnly);
   const plain = chairs.filter((c) => !FURNITURE[c.defId].kidsOnly);
+  const queueHigh = [...high];
+  const queuePlain = [...plain];
   const out: Furniture[] = [];
   // Adults first (they get the closest ordinary chairs), then kids.
   const order = members.map((m, i) => ({ m, i })).sort((a, b) => Number(a.m.kid) - Number(b.m.kid));
   for (const { m, i } of order) {
-    const chair = m.kid && high.length > 0 ? high.shift() : plain.shift();
+    const chair = m.kid && queueHigh.length > 0 ? queueHigh.shift() : queuePlain.shift();
     if (!chair) return null;
     out[i] = chair;
   }
-  return out;
+  if (kidsNextToParent(members, out)) return out;
+
+  // Depth-first search in preference order for an assignment with every kid by a parent.
+  const used = new Set<string>();
+  const cur: Furniture[] = [];
+  let steps = 0;
+  const search = (n: number): boolean => {
+    const entry = order[n];
+    if (!entry) return true;
+    const cands = entry.m.kid ? [...high, ...plain] : plain;
+    for (const c of cands) {
+      if (used.has(c.id) || ++steps > SEAT_SEARCH_LIMIT) continue;
+      if (
+        entry.m.kid &&
+        !order.some((o) => !o.m.kid && cur[o.i] && chairsAdjacent(cur[o.i] as Furniture, c)) &&
+        order.some((o) => !o.m.kid)
+      )
+        continue;
+      used.add(c.id);
+      cur[entry.i] = c;
+      if (search(n + 1)) return true;
+      used.delete(c.id);
+    }
+    return false;
+  };
+  return search(0) ? cur : out;
 }

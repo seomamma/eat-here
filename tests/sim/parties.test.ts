@@ -376,6 +376,25 @@ describe('seating a party', () => {
     ).toBeNull();
   });
 
+  it('assignSeats puts every kid next to a parent when such an assignment exists', () => {
+    const g = bareRoom();
+    put(g, 'table_small', 5, 6);
+    // Preference order puts the far chair second; the kid must still end up beside the parent.
+    const chair = (x: number, y: number) => {
+      const id = put(g, 'chair_wood', x, y, 0);
+      return g.state.furniture.find((f) => f.id === id) as (typeof g.state.furniture)[number];
+    };
+    const [p1, far, near] = [chair(5, 5), chair(9, 9), chair(5, 4)];
+    const seats = assignSeats([{ kid: false }, { kid: true }], [p1, far, near]);
+    expect(seats?.map((c) => c.id)).toEqual([p1.id, near.id]);
+    // Deterministic, and with no adjacent option it falls back to plain preference order.
+    expect(assignSeats([{ kid: false }, { kid: true }], [p1, far, near])).toEqual(seats);
+    expect(assignSeats([{ kid: false }, { kid: true }], [p1, far])?.map((c) => c.id)).toEqual([
+      p1.id,
+      far.id,
+    ]);
+  });
+
   it('kids pick one of the cheapest dishes', () => {
     const g = bareRoom();
     const menu = kidMenu(g.state);
